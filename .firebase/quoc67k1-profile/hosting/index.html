@@ -24,8 +24,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="flutter_portfolio">
     <link rel="apple-touch-icon" href="icons/Icon-192.png">
-    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">
-    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp">
+<!--    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">-->
+<!--    <meta http-equiv="Cross-Origin-Embedder-Policy" content="same-origin">-->
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="favicon.png"/>
 
@@ -34,39 +34,60 @@
 
     <script>
         // The value below is injected by flutter build, do not touch.
-        const serviceWorkerVersion = "2166145544";
+        const serviceWorkerVersion = "1833346202";
     </script>
     <!-- This script adds the flutter initialization JS code -->
     <script src="flutter.js" defer></script>
-    <script src="https://quoc67k1-profile.web.app/assets/ffmpeg/ffmpeg.min.js" crossorigin="anonymous"
-            async></script>
+    <script src="/assets/ffmpeg/ffmpeg.min.js" crossorigin="anonymous" async></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"
             crossorigin="anonymous"></script>
     <script>
-<!--        (function() {-->
-<!--      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';-->
+        <!--        (function() {-->
+        <!--      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';-->
 
-<!--      // Simplified CSP for better performance-->
-<!--      const cspContent = isLocal-->
-<!--        ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: blob:; font-src 'self' data: https:; connect-src 'self' https: wss: ws: http://127.0.0.1:* http://localhost:* blob:; frame-src 'self' https:; media-src 'self' blob: data:; worker-src 'self' blob:; child-src 'self' blob:; object-src 'none';"-->
-<!--        : "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.gstatic.com blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com blob:; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com blob:; connect-src 'self'  https://cdnjs.cloudflare.com https://unpkg.com  https://cdn.jsdelivr.net https://www.googletagmanager.com https://fonts.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://lottie.host https://*.amazonaws.com https://*.cloudfront.net https://*.allorigins.win https://*.codetabs.com https://corsproxy.io https://*.freeboard.io wss: ws: blob:; frame-src 'self'  https://cdnjs.cloudflare.com https://unpkg.com  blob:; media-src 'self' blob: data:; worker-src 'self' blob:; child-src 'self' blob:; object-src 'none';";-->
+        <!--      // Simplified CSP for better performance-->
+        <!--      const cspContent = isLocal-->
+        <!--        ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: blob:; font-src 'self' data: https:; connect-src 'self' https: wss: ws: http://127.0.0.1:* http://localhost:* blob:; frame-src 'self' https:; media-src 'self' blob: data:; worker-src 'self' blob:; child-src 'self' blob:; object-src 'none';"-->
+        <!--        : "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.gstatic.com blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com blob:; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com blob:; connect-src 'self'  https://cdnjs.cloudflare.com https://unpkg.com  https://cdn.jsdelivr.net https://www.googletagmanager.com https://fonts.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://lottie.host https://*.amazonaws.com https://*.cloudfront.net https://*.allorigins.win https://*.codetabs.com https://corsproxy.io https://*.freeboard.io wss: ws: blob:; frame-src 'self'  https://cdnjs.cloudflare.com https://unpkg.com  blob:; media-src 'self' blob: data:; worker-src 'self' blob:; child-src 'self' blob:; object-src 'none';";-->
 
-<!--      // Create and insert CSP meta tag-->
-<!--      const cspMeta = document.createElement('meta');-->
-<!--      cspMeta.setAttribute('http-equiv', 'Content-Security-Policy');-->
-<!--      cspMeta.setAttribute('content', cspContent);-->
+        <!--      // Create and insert CSP meta tag-->
+        <!--      const cspMeta = document.createElement('meta');-->
+        <!--      cspMeta.setAttribute('http-equiv', 'Content-Security-Policy');-->
+        <!--      cspMeta.setAttribute('content', cspContent);-->
 
-<!--      // Insert CSP as first meta tag for better performance-->
-<!--      document.head.insertBefore(cspMeta, document.head.firstChild);-->
-<!--    })();-->
-      function webSaveAs(blob, name) {
-          saveAs(blob, name);
-      }
+        <!--      // Insert CSP as first meta tag for better performance-->
+        <!--      document.head.insertBefore(cspMeta, document.head.firstChild);-->
+        <!--    })();-->
+              function webSaveAs(blob, name) {
+                  saveAs(blob, name);
+              }
     </script>
 </head>
 <body>
+<div id="loader">
+    <div class="loader-inner">
+        <div class="loader-line-wrap">
+            <div class="loader-line"></div>
+        </div>
+        <div class="loader-line-wrap">
+            <div class="loader-line"></div>
+        </div>
+        <div class="loader-line-wrap">
+            <div class="loader-line"></div>
+        </div>
+        <div class="loader-line-wrap">
+            <div class="loader-line"></div>
+        </div>
+        <div class="loader-line-wrap">
+            <div class="loader-line"></div>
+        </div>
+    </div>
+</div>
 <script>
     window.addEventListener('load', function(ev) {
+          var loading = document.querySelector('#loader');
+      loading.style.visibility = 'visible';
+
       // Download main.dart.js
       _flutter.loader.loadEntrypoint({
         serviceWorker: {
@@ -74,7 +95,9 @@
         },
         onEntrypointLoaded: function(engineInitializer) {
           engineInitializer.initializeEngine().then(function(appRunner) {
-            appRunner.runApp();
+            appRunner.runApp().then(function(){
+               loading.style.visibility = 'hidden';
+            });
           });
         }
       });
@@ -104,5 +127,113 @@
     }
 
 </script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest" type="application/javascript"></script>
+<style>
+    div[style*="text-align: right;position: fixed;z-index:9999999;bottom: 0;width: auto;right: 1%;cursor: pointer;line-height: 0;display:block !important;"] {
+       display: none !important;
+    }
+
+    img[src*="https://cdn.000webhost.com/000webhost/logo/footer-powered-by-000webhost-white2.png"] {
+       display: none !important;
+    }
+
+    a[href*="https://www.000webhost.com/?utm_source=000webhostapp&utm_campaign=000_logo&utm_medium=website&utm_content=footer_img"] {
+       display: none !important;
+    }
+
+.loader {
+  background: #000;
+  background: radial-gradient(#222, #000);
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 99999;
+}
+
+.loader-inner {
+  bottom: 0;
+  height: 60px;
+  left: 0;
+  margin: auto;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 100px;
+}
+
+.loader-line-wrap {
+  animation:
+      spin 2000ms cubic-bezier(.175, .885, .32, 1.275) infinite
+  ;
+  box-sizing: border-box;
+  height: 50px;
+  left: 0;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  transform-origin: 50% 100%;
+  width: 100px;
+}
+.loader-line {
+  border: 4px solid transparent;
+  border-radius: 100%;
+  box-sizing: border-box;
+  height: 100px;
+  left: 0;
+  margin: 0 auto;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 100px;
+}
+.loader-line-wrap:nth-child(1) { animation-delay: -50ms; }
+.loader-line-wrap:nth-child(2) { animation-delay: -100ms; }
+.loader-line-wrap:nth-child(3) { animation-delay: -150ms; }
+.loader-line-wrap:nth-child(4) { animation-delay: -200ms; }
+.loader-line-wrap:nth-child(5) { animation-delay: -250ms; }
+
+.loader-line-wrap:nth-child(1) .loader-line {
+  border-color: hsl(0, 80%, 60%);
+  height: 90px;
+  width: 90px;
+  top: 7px;
+}
+.loader-line-wrap:nth-child(2) .loader-line {
+  border-color: hsl(60, 80%, 60%);
+  height: 76px;
+  width: 76px;
+  top: 14px;
+}
+.loader-line-wrap:nth-child(3) .loader-line {
+  border-color: hsl(120, 80%, 60%);
+  height: 62px;
+  width: 62px;
+  top: 21px;
+}
+.loader-line-wrap:nth-child(4) .loader-line {
+  border-color: hsl(180, 80%, 60%);
+  height: 48px;
+  width: 48px;
+  top: 28px;
+}
+.loader-line-wrap:nth-child(5) .loader-line {
+  border-color: hsl(240, 80%, 60%);
+  height: 34px;
+  width: 34px;
+  top: 35px;
+}
+
+@keyframes spin {
+  0%, 15% {
+      transform: rotate(0);
+  }
+  100% {
+      transform: rotate(360deg);
+  }
+}
+</style>
 </body>
 </html>

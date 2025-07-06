@@ -24,8 +24,6 @@ class NavigationButtonList extends StatelessWidget {
                         curve: Curves.easeIn);
                   },
                   text: 'Home'),
-              if (!Responsive.isLargeMobile(context))
-                NavigationTextButton(onTap: () {}, text: 'About us'),
               NavigationTextButton(
                   onTap: () {
                     controller.animateToPage(1,
@@ -47,6 +45,11 @@ class NavigationButtonList extends StatelessWidget {
                         curve: Curves.easeIn);
                   },
                   text: 'Tools'),
+              NavigationTextButton(onTap: () {
+                controller.animateToPage(4,
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeIn);
+              }, text: 'FlutterWeb_Vlogs'),
             ],
           ),
         );
