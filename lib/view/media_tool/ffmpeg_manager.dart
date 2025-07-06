@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:js' as js;
 
 class FfmpegManager {
-  FFmpeg ffmpeg = createFFmpeg(
+  FFmpeg? ffmpeg = createFFmpeg(
     CreateFFmpegParam(
       log: true,
       // corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
@@ -11,14 +11,23 @@ class FfmpegManager {
     ),
   );
 
-  final progress = ValueNotifier<double?>(null);
+  final progress = ValueNotifier<String?>(null);
   final statistics = ValueNotifier<String?>(null);
   final status = ValueNotifier<String?>(null);
+  final cmd = ValueNotifier<String?>(null);
 
   bool isLoaded = false;
 
   Future<void> loadFFmpeg(VoidCallback onInitialized, {bool setLog = true, Function(String)? onFailed}) async {
     try{
+      if(ffmpeg?.isLoaded() ?? false) {
+        js.context.callMethod('logger', [
+          'FFmpegManager already loaded'
+        ]);
+        checkLoaded();
+        onInitialized.call();
+        return;
+      }
       js.context.callMethod('logger', [
         'FFmpegManager start 1'
       ]);
@@ -31,13 +40,13 @@ class FfmpegManager {
       );
 
       if(setLog) {
-        ffmpeg.setProgress(_onProgressHandler);
-        ffmpeg.setLogger(_onLogHandler);
+        ffmpeg?.setProgress(_onProgressHandler);
+        ffmpeg?.setLogger(_onLogHandler);
       }
       js.context.callMethod('logger', [
         'FFmpegManager start 2'
       ]);
-      await ffmpeg.load();
+      await ffmpeg?.load();
       js.context.callMethod('logger', [
         'FFmpegManager await ffmpeg.load()'
       ]);
@@ -61,7 +70,8 @@ class FfmpegManager {
   void _onProgressHandler(ProgressParam progress) {
     final isDone = progress.ratio >= 1;
 
-    this.progress.value = isDone ? null : progress.ratio;
+    this.progress.value = isDone ? null : '${((progress.ratio.isNaN ? 0 : progress.ratio) * 100).ceil()}% - ${progress.time}s';
+
     if (isDone) {
       statistics.value = null;
     }
@@ -70,6 +80,34 @@ class FfmpegManager {
   static final regex = RegExp(
     r'frame\s*=\s*(\d+)\s+fps\s*=\s*(\d+(?:\.\d+)?)\s+q\s*=\s*([\d.-]+)\s+L?size\s*=\s*(\d+)\w*\s+time\s*=\s*([\d:\.]+)\s+bitrate\s*=\s*([\d.]+)\s*(\w+)/s\s+speed\s*=\s*([\d.]+)x',
   );
+
+  Future<void> runCommand(List<String> command, {Function(String)? onFailed}) async {
+    if (!isLoaded) {
+      js.context.callMethod('logger', [
+        'FFmpegManager runCommand isLoaded is false'
+      ]);
+      onFailed?.call('FFmpeg is not loaded yet');
+      return;
+    }
+    try {
+      cmd.value = command.join(' ');
+      status.value = ProcessingStatus.started.name;
+      js.context.callMethod('logger', [
+        'FFmpegManager runCommand $command'
+      ]);
+      await ffmpeg?.run(command);
+      status.value = ProcessingStatus.completed.name;
+      js.context.callMethod('logger', [
+        'FFmpegManager runCommand completed'
+      ]);
+    } catch (e) {
+      status.value = ProcessingStatus.completed.name;
+      js.context.callMethod('logger', [
+        'FFmpegManager runCommand error: $e'
+      ]);
+      onFailed?.call(e.toString());
+    }
+  }
 
   void _onLogHandler(LoggerParam logger) {
     if (logger.type == 'fferr') {
@@ -92,9 +130,7 @@ class FfmpegManager {
         final bitrateUnit = match.group(7);
         // is the speed at which the conversion is happening, relative to real-time
         final speed = match.group(8);
-
-        statistics.value =
-            'frame: $frame, fps: $fps, q: $q, size: $size, time: $time, bitrate: $bitrate$bitrateUnit, speed: $speed';
+        statistics.value = '\n[PROGRESS]: frame: $frame, fps: $fps, q: $q, size: $size, time: $time, bitrate: $bitrate$bitrateUnit, speed: $speed';
       }
     }
   }

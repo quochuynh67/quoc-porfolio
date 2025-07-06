@@ -35,8 +35,8 @@ class _VlogMakerScreenState extends State<VlogMakerScreen> {
   /// Emit changes
   final mediaList = ValueNotifier<List<Media>>([]);
   final audioList = ValueNotifier<List<String>>([]);
-  final progress = ValueNotifier<ProgressParam?>(null);
-  final cmdStream = ValueNotifier<String>('');
+  // final progress = ValueNotifier<ProgressParam?>(null);
+  // final cmdStream = ValueNotifier<String>('');
 
   /// CMD
   List<String> cmd = [];
@@ -45,12 +45,6 @@ class _VlogMakerScreenState extends State<VlogMakerScreen> {
 
   @override
   void initState() {
-    // FfmpegManager.instance.loadFFmpeg(() {}, setLog: false);
-    if(FfmpegManager.instance.isLoaded) {
-      FfmpegManager.instance.ffmpeg?.setProgress((p) {
-        progress.value = p;
-      });
-    }
     super.initState();
   }
 
@@ -81,34 +75,34 @@ class _VlogMakerScreenState extends State<VlogMakerScreen> {
 
           /// Export button
           ///
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              ValueListenableBuilder(
-                  valueListenable: cmdStream,
-                  builder: (context, data, __) {
-                    if (data.isEmpty) return const SizedBox();
-                    return Text('cmd: $data');
-                  }),
-              ValueListenableBuilder(
-                  valueListenable: progress,
-                  builder: (context, data, __) {
-                    if (data == null) return const SizedBox();
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator()),
-                        const SizedBox(width: 12),
-                        Text(
-                            'Rendering ${(data.ratio * 300).ceil()}% - ${data.time}'),
-                      ],
-                    );
-                  })
-            ],
-          ),
+          // Column(
+          //   crossAxisAlignment: CrossAxisAlignment.end,
+          //   children: [
+          //     ValueListenableBuilder(
+          //         valueListenable: cmdStream,
+          //         builder: (context, data, __) {
+          //           if (data.isEmpty) return const SizedBox();
+          //           return Text('cmd: $data');
+          //         }),
+          //     ValueListenableBuilder(
+          //         valueListenable: progress,
+          //         builder: (context, data, __) {
+          //           if (data == null) return const SizedBox();
+          //           return Row(
+          //             mainAxisAlignment: MainAxisAlignment.end,
+          //             children: [
+          //               const SizedBox(
+          //                   width: 16,
+          //                   height: 16,
+          //                   child: CircularProgressIndicator()),
+          //               const SizedBox(width: 12),
+          //               Text(
+          //                   'Rendering ${(data.ratio * 300).ceil()}% - ${data.time}'),
+          //             ],
+          //           );
+          //         })
+          //   ],
+          // ),
 
           /// Clips list
           ///
@@ -275,9 +269,9 @@ class _VlogMakerScreenState extends State<VlogMakerScreen> {
           ['-af','atrim=duration=20', '-vf', 'scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:-1:-1:color=black','-c:v', 'libx264', 'output.mp4']);
     }
 
-    cmdStream.value = cmd.toString();
+    // cmdStream.value = cmd.toString();
     print('HAHA --- [_handleExport]  --- cmd [$cmd]');
-    await FfmpegManager.instance.ffmpeg?.run(cmd);
+    await FfmpegManager.instance.runCommand(cmd);
     final exportBytes = FfmpegManager.instance.ffmpeg?.readFile('output.mp4');
     print('HAHA --- [_handleExport]  --- exportBytes [${exportBytes?.length}]');
     if (exportBytes == null || exportBytes.isEmpty) {
@@ -289,7 +283,7 @@ class _VlogMakerScreenState extends State<VlogMakerScreen> {
     print('HAHA --- [_handleExport]  --- outputFile [$outputFile, ${outputFile.name}, ${outputFile.mimeType}]');
     if (exportBytes.isNotEmpty == true) {
       FileUtils.downloadVideoOutputInWeb('output.mp4');
-      progress.value = null;
+      // progress.value = null;
     }
   }
 }

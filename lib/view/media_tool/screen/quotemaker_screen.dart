@@ -89,8 +89,8 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
   final testMediaList = ValueNotifier<List<QuoteSource>>([]);
   final BehaviorSubject<OverlayConfigModel?> currentOverlaySelected = BehaviorSubject();
   final audioList = ValueNotifier<List<String>>([]);
-  final progress = ValueNotifier<ProgressParam?>(null);
-  final cmdStream = ValueNotifier<String>('');
+  // final progress = ValueNotifier<ProgressParam?>(null);
+  // final cmdStream = ValueNotifier<String>('');
 
   final previewRect = ValueNotifier<Rect?>(null);
   final titleRect = ValueNotifier<Rect?>(null);
@@ -148,11 +148,11 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
   @override
   void initState() {
     // FfmpegManager.instance.loadFFmpeg(() {}, setLog: false);
-    if(FfmpegManager.instance.isLoaded) {
-      FfmpegManager.instance.ffmpeg?.setProgress((p) {
-        progress.value = p;
-      });
-    }
+    // if(FfmpegManager.instance.isLoaded) {
+    //   FfmpegManager.instance.ffmpeg?.setProgress((p) {
+    //     progress.value = p;
+    //   });
+    // }
     super.initState();
   }
 
@@ -309,29 +309,29 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
                         },
                         child: const Text("Xuất video 480p")),
                   ]),
-                  ValueListenableBuilder(
-                      valueListenable: cmdStream,
-                      builder: (context, data, __) {
-                        if (data.isEmpty) return const SizedBox();
-                        return Text('cmd: $data');
-                      }),
-                  ValueListenableBuilder(
-                      valueListenable: progress,
-                      builder: (context, data, __) {
-                        if (data == null) return const SizedBox();
-                        return Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator()),
-                            const SizedBox(width: 12),
-                            Text(
-                                'Đang xuất video ${((data.ratio.isNaN ? 0 : data.ratio) * 100).ceil()}% - ${data.time}'),
-                          ],
-                        );
-                      })
+                  // ValueListenableBuilder(
+                  //     valueListenable: cmdStream,
+                  //     builder: (context, data, __) {
+                  //       if (data.isEmpty) return const SizedBox();
+                  //       return Text('cmd: $data');
+                  //     }),
+                  // ValueListenableBuilder(
+                  //     valueListenable: progress,
+                  //     builder: (context, data, __) {
+                  //       if (data == null) return const SizedBox();
+                  //       return Row(
+                  //         mainAxisAlignment: MainAxisAlignment.end,
+                  //         children: [
+                  //           const SizedBox(
+                  //               width: 16,
+                  //               height: 16,
+                  //               child: CircularProgressIndicator()),
+                  //           const SizedBox(width: 12),
+                  //           Text(
+                  //               'Đang xuất video ${((data.ratio.isNaN ? 0 : data.ratio) * 100).ceil()}% - ${data.time}'),
+                  //         ],
+                  //       );
+                  //     })
                 ],
               ),
               const SizedBox(height: 4),
@@ -797,9 +797,9 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
       'output.mp4'
     ]);
 
-    cmdStream.value = cmd.toString();
+    // cmdStream.value = cmd.toString();
     print('HAHA --- [_handleExport]  --- cmd [$cmd]');
-    await FfmpegManager.instance.ffmpeg?.run(cmd);
+    await FfmpegManager.instance.runCommand(cmd);
     final exportBytes = FfmpegManager.instance.ffmpeg?.readFile('output.mp4');
     if (exportBytes == null || exportBytes.isEmpty) {
       print('HAHA --- [_handleExport]  --- exportBytes is empty');
@@ -811,7 +811,7 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
         'HAHA --- [_handleExport]  --- outputFile [$outputFile, ${outputFile.name}, ${outputFile.mimeType}]');
     if (exportBytes.isNotEmpty) {
       FileUtils.downloadVideoOutputInWeb('output.mp4');
-      progress.value = null;
+      // progress.value = null;
     }
   }
 

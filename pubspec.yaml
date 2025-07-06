@@ -44,7 +44,7 @@ dependencies:
 
   #  MediaTool
   ffmpeg_wasm: ^1.0.1
-  file_picker: ^8.1.6
+  file_picker: 9.2.1
   cross_file:
   image_editor:
   image_size_getter:

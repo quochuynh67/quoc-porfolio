@@ -29,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         isLoaded = FfmpegManager.instance.isLoaded;
         conversionStatus =
-            FfmpegManager.instance.isLoaded ? 'Ready' : 'Loading FFmpeg...';
+            FfmpegManager.instance.isLoaded ? 'Ready' : 'FFmpeg not loaded';
       });
     }, onFailed: (e) {
       setState(() {
@@ -37,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
         conversionStatus = 'FFmpeg load failed - $e';
       });
     });
+
     super.initState();
   }
 
@@ -106,6 +107,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   : Text('Conversion Status : $conversionStatus'),
               const SizedBox(height: 8),
               ValueListenableBuilder(
+                valueListenable: FfmpegManager.instance.cmd,
+                builder: (context, value, child) {
+                  return value == null
+                      ? const SizedBox.shrink()
+                      : Text(value);
+                },
+              ),
+              const SizedBox(height: 8),
+              ValueListenableBuilder(
                 valueListenable: FfmpegManager.instance.progress,
                 builder: (context, value, child) {
                   return value == null
@@ -113,9 +123,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text('Exporting ${(value * 100).ceil()}%'),
+                            Text('Exporting $value'),
                             const SizedBox(width: 6),
-                            const CircularProgressIndicator(),
+                            const SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator()),
                           ],
                         );
                 },
@@ -131,7 +144,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Text(value),
                             const SizedBox(width: 6),
-                            const CircularProgressIndicator(),
+                            const SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator()),
                           ],
                         );
                 },
@@ -236,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       js.context.callMethod('logger', ['pickFile start 4']);
     } catch (e) {
-      js.context.callMethod('logger', ['pickFile start 5']);
+      js.context.callMethod('logger', ['pickFile start 5: $e']);
 
       setState(() {
         conversionStatus = 'File picking failed - $e';
@@ -247,7 +263,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Extracts First Frame from video
   Future<void> extractFirstFrame() async {
     await pickFile();
-    await FfmpegManager.instance.ffmpeg?.run([
+    await FfmpegManager.instance.runCommand([
       '-i',
       '$selectedFile',
       '-vf',
@@ -266,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Creates Preview Image of Video
   Future<void> createPreviewVideo() async {
     await pickFile();
-    await FfmpegManager.instance.ffmpeg?.run([
+    await FfmpegManager.instance.runCommand([
       '-i',
       'input.mp4',
       '-t',
@@ -294,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       conversionStatus = 'Started';
     });
-    await FfmpegManager.instance.ffmpeg?.run([
+    await FfmpegManager.instance.runCommand([
       '-i',
       'input.mp4',
       '-s',
@@ -324,7 +340,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       conversionStatus = 'Started';
     });
-    await FfmpegManager.instance.ffmpeg?.run([
+    await FfmpegManager.instance.runCommand([
       '-i',
       'input.mp4',
       '-s',
@@ -390,7 +406,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       conversionStatus = 'Started - MOV to MP4';
     });
-    await FfmpegManager.instance.ffmpeg?.run([
+    await FfmpegManager.instance.runCommand([
       '-i',
       '$selectedFile',
       '-c',
