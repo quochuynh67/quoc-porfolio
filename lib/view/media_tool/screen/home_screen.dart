@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_portfolio/view/media_tool/screen/screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../res/constants.dart';
 import '../ffmpeg_manager.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -61,98 +62,88 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return CustomScrollView(
       slivers: [
-        SliverToBoxAdapter(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              const SizedBox(height: 8),
-              conversionStatus.contains('failed')
-                  ? Column(
-                      children: [
-                        Text(
-                          'FFmpeg not loaded. Please check console for errors.\nError:$conversionStatus',
-                          style:
-                              const TextStyle(color: Colors.red, fontSize: 16),
-                        ),
-                        const SizedBox(height: 8),
-                        OutlinedButton(
-                          onPressed: () {
-                            FfmpegManager.instance.loadFFmpeg(() {
-                              setState(() {
-                                isLoaded = FfmpegManager.instance.isLoaded;
-                                conversionStatus =
-                                    FfmpegManager.instance.isLoaded
-                                        ? 'Ready'
-                                        : 'Loading FFmpeg...';
-                              });
-                            }, onFailed: (e) {
-                              setState(() {
-                                isLoaded = FfmpegManager.instance.isLoaded;
-                                conversionStatus = 'FFmpeg load failed - $e';
-                              });
-                            });
-                          },
-                          child: const Text('Retry FFmpeg Load'),
-                        ),
-                        const SizedBox(height: 8),
-                        OutlinedButton(
-                          onPressed: () {
-                            launchUrl(Uri.parse(
-                                "https://zalo-mini-app-mediatool.web.app/#/home"));
-                          },
-                          child: const Text('Xài ở trang khác'),
-                        ),
-                      ],
-                    )
-                  : Text('Conversion Status : $conversionStatus'),
-              const SizedBox(height: 8),
-              ValueListenableBuilder(
-                valueListenable: FfmpegManager.instance.cmd,
-                builder: (context, value, child) {
-                  return value == null
-                      ? const SizedBox.shrink()
-                      : Text(value);
-                },
-              ),
-              const SizedBox(height: 8),
-              ValueListenableBuilder(
-                valueListenable: FfmpegManager.instance.progress,
-                builder: (context, value, child) {
-                  return value == null
-                      ? const SizedBox.shrink()
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('Exporting $value'),
-                            const SizedBox(width: 6),
-                            const SizedBox(
-                                width: 12,
-                                height: 12,
-                                child: CircularProgressIndicator()),
-                          ],
-                        );
-                },
-              ),
-              const SizedBox(height: 8),
-              ValueListenableBuilder(
-                valueListenable: FfmpegManager.instance.statistics,
-                builder: (context, value, child) {
-                  return value == null
-                      ? const SizedBox.shrink()
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(value),
-                            const SizedBox(width: 6),
-                            const SizedBox(
-                                width: 12,
-                                height: 12,
-                                child: CircularProgressIndicator()),
-                          ],
-                        );
-                },
-              ),
-            ],
+        SliverAppBar(
+          pinned: true,
+          floating: true,
+          expandedHeight: 100,
+          collapsedHeight: 100,
+          backgroundColor: bgColor,
+          flexibleSpace: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                const SizedBox(height: 8),
+                conversionStatus.contains('failed')
+                    ? Column(
+                        children: [
+                          Text(
+                            'FFmpeg not loaded. Please check console for errors.\nError:$conversionStatus',
+                            style:
+                                const TextStyle(color: Colors.red, fontSize: 16),
+                          ),
+                          const SizedBox(height: 8),
+                         Row(
+                           mainAxisAlignment: MainAxisAlignment.center,
+                           children: [
+                           OutlinedButton(
+                             onPressed: () {
+                               FfmpegManager.instance.loadFFmpeg(() {
+                                 setState(() {
+                                   isLoaded = FfmpegManager.instance.isLoaded;
+                                   conversionStatus =
+                                   FfmpegManager.instance.isLoaded
+                                       ? 'Ready'
+                                       : 'Loading FFmpeg...';
+                                 });
+                               }, onFailed: (e) {
+                                 setState(() {
+                                   isLoaded = FfmpegManager.instance.isLoaded;
+                                   conversionStatus = 'FFmpeg load failed - $e';
+                                 });
+                               });
+                             },
+                             child: const Text('Retry FFmpeg Load'),
+                           ),
+                           const SizedBox(height: 8),
+                           OutlinedButton(
+                             onPressed: () {
+                               launchUrl(Uri.parse(
+                                   "https://zalo-mini-app-mediatool.web.app/#/home"));
+                             },
+                             child: const Text('Xài ở trang khác'),
+                           ),
+                         ],)
+                        ],
+                      )
+                    : Text('Conversion Status : $conversionStatus'),
+                const SizedBox(height: 8),
+                ValueListenableBuilder(
+                  valueListenable: FfmpegManager.instance.cmd,
+                  builder: (context, value, child) {
+                    return value == null ? const SizedBox.shrink() : Text('[CMD]: $value');
+                  },
+                ),
+                const SizedBox(height: 8),
+                ValueListenableBuilder(
+                  valueListenable: FfmpegManager.instance.statistics,
+                  builder: (context, value, child) {
+                    return value == null
+                        ? const SizedBox.shrink()
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(value),
+                              const SizedBox(width: 6),
+                              const SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator()),
+                            ],
+                          );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
         SliverList.list(children: [
