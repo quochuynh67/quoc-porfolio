@@ -52,6 +52,23 @@ class ProjectDetail extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
+        Tooltip(
+          message: projectList[index].tags.join(', '),
+          child: Text.rich(
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            TextSpan(
+              text: 'Tag: ',
+              style: const TextStyle(color: Colors.white),
+              children: [
+                TextSpan(
+                  text: projectList[index].tags.join(', '),
+                  style: const TextStyle(color: Colors.grey, overflow: TextOverflow.ellipsis),
+                ),
+              ],
+            ),
+          ),
+        ),
         const Spacer(),
         ProjectLinks(
           index: index,

@@ -147,12 +147,11 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
 
   @override
   void initState() {
-    FfmpegManager.instance.loadFFmpeg(() {}, setLog: false);
-    if(FfmpegManager.instance.ffmpeg?.isLoaded() == true) {
+    // FfmpegManager.instance.loadFFmpeg(() {}, setLog: false);
+    if(FfmpegManager.instance.isLoaded) {
       FfmpegManager.instance.ffmpeg?.setProgress((p) {
         progress.value = p;
       });
-
     }
     super.initState();
   }
@@ -714,48 +713,62 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
   }
 
   Future<void> pickAudioFiles() async {
-    filePickerResult = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['mp3'],
-        allowMultiple: false);
+    try {
+      filePickerResult = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['mp3'],
+          allowMultiple: false);
 
-    if (filePickerResult != null) {
-      List<String> picked = [];
-      for (int i = 0; i < filePickerResult!.files.length; ++i) {
-        final file = filePickerResult!.files.elementAt(i);
-        FfmpegManager.instance.ffmpeg?.writeFile('audio$i.mp3', file.bytes!);
-        picked.add(''
-            '\n- Tên audio file: ${file.name} '
-            '\n- extension: ${file.extension} '
-            '\n- bytes: ${file.bytes?.length}');
+      if (filePickerResult != null) {
+        List<String> picked = [];
+        for (int i = 0; i < filePickerResult!.files.length; ++i) {
+          final file = filePickerResult!.files.elementAt(i);
+          FfmpegManager.instance.ffmpeg?.writeFile('audio$i.mp3', file.bytes!);
+          picked.add(''
+              '\n- Tên audio file: ${file.name} '
+              '\n- extension: ${file.extension} '
+              '\n- bytes: ${file.bytes?.length}');
 
-        audioInput.addAll(['-i', 'audio$i.mp3']);
+          audioInput.addAll(['-i', 'audio$i.mp3']);
+        }
+        audioList.value = picked;
       }
-      audioList.value = picked;
+    } catch (e) {
+      print('HAHA --- [pickAudioFiles] --- Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking audio files: $e')),
+      );
     }
   }
 
   Future<void> pickVideoImageFiles() async {
-    filePickerResult = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['png', 'jpg', 'jpeg'],
-        allowCompression: false,
-        allowMultiple: false);
+   try {
+     filePickerResult = await FilePicker.platform.pickFiles(
+         type: FileType.custom,
+         allowedExtensions: ['png', 'jpg', 'jpeg'],
+         allowCompression: false,
+         allowMultiple: false);
 
-    if (filePickerResult != null) {
-      List<QuoteSource> picked = [];
-      for (int i = 0; i < filePickerResult!.files.length; ++i) {
-        final file = filePickerResult!.files.elementAt(i);
-        bool isVideo = QuoteSource.isVideoType(file.extension ?? '');
-        final memoryImageSize =
-            isg.ImageSizeGetter.getSize(isg.MemoryInput(file.bytes!));
-        Size mediaSize = Size(memoryImageSize.width.toDouble(),
-            memoryImageSize.height.toDouble());
-        print('HAHA picked size $mediaSize');
-        picked.add(QuoteSource(isVideo, file.bytes!, mediaSize));
-      }
-      mediaList.value = picked;
-    }
+     if (filePickerResult != null) {
+       List<QuoteSource> picked = [];
+       for (int i = 0; i < filePickerResult!.files.length; ++i) {
+         final file = filePickerResult!.files.elementAt(i);
+         bool isVideo = QuoteSource.isVideoType(file.extension ?? '');
+         final memoryImageSize =
+         isg.ImageSizeGetter.getSize(isg.MemoryInput(file.bytes!));
+         Size mediaSize = Size(memoryImageSize.width.toDouble(),
+             memoryImageSize.height.toDouble());
+         print('HAHA picked size $mediaSize');
+         picked.add(QuoteSource(isVideo, file.bytes!, mediaSize));
+       }
+       mediaList.value = picked;
+     }
+   } catch (e) {
+     print('HAHA --- [pickVideoImageFiles] --- Error: $e');
+     ScaffoldMessenger.of(context).showSnackBar(
+       SnackBar(content: Text('Error picking video/image files: $e')),
+     );
+   }
   }
 
   Future<void> _handleExport({bool is480p = false}) async {

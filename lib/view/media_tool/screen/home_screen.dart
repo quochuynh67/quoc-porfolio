@@ -5,6 +5,7 @@ import 'package:ffmpeg_wasm/ffmpeg_wasm.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_portfolio/view/media_tool/screen/screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../ffmpeg_manager.dart';
 
@@ -18,13 +19,24 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool isLoaded = false;
   String? selectedFile;
-  String? conversionStatus;
+  String conversionStatus = 'loading';
 
   FilePickerResult? filePickerResult;
 
   @override
   void initState() {
-    isLoaded = FfmpegManager.instance.isLoaded;
+    FfmpegManager.instance.loadFFmpeg(() {
+      setState(() {
+        isLoaded = FfmpegManager.instance.isLoaded;
+        conversionStatus =
+            FfmpegManager.instance.isLoaded ? 'Ready' : 'Loading FFmpeg...';
+      });
+    }, onFailed: (e) {
+      setState(() {
+        isLoaded = FfmpegManager.instance.isLoaded;
+        conversionStatus = 'FFmpeg load failed - $e';
+      });
+    });
     super.initState();
   }
 
@@ -35,116 +47,149 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void didChangeDependencies() {
-    FfmpegManager.instance.loadFFmpeg(() {
-      setState(() {
-        isLoaded = true;
-        conversionStatus = 'Ready';
-      });
-    }, onFailed: (e) {
-      conversionStatus = 'FFmpeg load failed - $e';
-    });
     super.didChangeDependencies();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                const SizedBox(height: 8),
-                Text('Conversion Status : $conversionStatus'),
-                const SizedBox(height: 8),
-                ValueListenableBuilder(
-                  valueListenable: FfmpegManager.instance.progress,
-                  builder: (context, value, child) {
-                    return value == null
-                        ? const SizedBox.shrink()
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('Exporting ${(value * 100).ceil()}%'),
-                              const SizedBox(width: 6),
-                              const CircularProgressIndicator(),
-                            ],
-                          );
-                  },
-                ),
-                const SizedBox(height: 8),
-                ValueListenableBuilder(
-                  valueListenable: FfmpegManager.instance.statistics,
-                  builder: (context, value, child) {
-                    return value == null
-                        ? const SizedBox.shrink()
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(value),
-                              const SizedBox(width: 6),
-                              const CircularProgressIndicator(),
-                            ],
-                          );
-                  },
-                ),
-              ],
+    if (conversionStatus == 'loading') {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              const SizedBox(height: 8),
+              conversionStatus.contains('failed')
+                  ? Column(
+                      children: [
+                        Text(
+                          'FFmpeg not loaded. Please check console for errors.\nError:$conversionStatus',
+                          style:
+                              const TextStyle(color: Colors.red, fontSize: 16),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton(
+                          onPressed: () {
+                            FfmpegManager.instance.loadFFmpeg(() {
+                              setState(() {
+                                isLoaded = FfmpegManager.instance.isLoaded;
+                                conversionStatus =
+                                    FfmpegManager.instance.isLoaded
+                                        ? 'Ready'
+                                        : 'Loading FFmpeg...';
+                              });
+                            }, onFailed: (e) {
+                              setState(() {
+                                isLoaded = FfmpegManager.instance.isLoaded;
+                                conversionStatus = 'FFmpeg load failed - $e';
+                              });
+                            });
+                          },
+                          child: const Text('Retry FFmpeg Load'),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton(
+                          onPressed: () {
+                            launchUrl(Uri.parse(
+                                "https://zalo-mini-app-mediatool.web.app/#/home"));
+                          },
+                          child: const Text('Xài ở trang khác'),
+                        ),
+                      ],
+                    )
+                  : Text('Conversion Status : $conversionStatus'),
+              const SizedBox(height: 8),
+              ValueListenableBuilder(
+                valueListenable: FfmpegManager.instance.progress,
+                builder: (context, value, child) {
+                  return value == null
+                      ? const SizedBox.shrink()
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Exporting ${(value * 100).ceil()}%'),
+                            const SizedBox(width: 6),
+                            const CircularProgressIndicator(),
+                          ],
+                        );
+                },
+              ),
+              const SizedBox(height: 8),
+              ValueListenableBuilder(
+                valueListenable: FfmpegManager.instance.statistics,
+                builder: (context, value, child) {
+                  return value == null
+                      ? const SizedBox.shrink()
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(value),
+                            const SizedBox(width: 6),
+                            const CircularProgressIndicator(),
+                          ],
+                        );
+                },
+              ),
+            ],
+          ),
+        ),
+        SliverList.list(children: [
+          OutlinedButton(
+            onPressed: extractFirstFrame,
+            child: const Text(
+              'Extract First Frame',
+              style: TextStyle(fontSize: 16, color: Colors.white),
             ),
           ),
-          SliverList.list(children: [
-            OutlinedButton(
-              onPressed: extractFirstFrame,
-              child: const Text(
-                'Extract First Frame',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
+          const SizedBox(height: 10),
+          OutlinedButton(
+            onPressed: createPreviewVideo,
+            child: const Text(
+              'Create Preview Image',
+              style: TextStyle(fontSize: 16, color: Colors.white),
             ),
-            const SizedBox(height: 10),
-            OutlinedButton(
-              onPressed: createPreviewVideo,
-              child: const Text(
-                'Create Preview Image',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton(
+            onPressed: create720PQualityVideo,
+            child: const Text(
+              'Video 720P Quality',
+              style: TextStyle(fontSize: 16, color: Colors.white),
             ),
-            const SizedBox(height: 10),
-            OutlinedButton(
-              onPressed: create720PQualityVideo,
-              child: const Text(
-                'Video 720P Quality',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton(
+            onPressed: create480PQualityVideo,
+            child: const Text(
+              'Video 480P Quality',
+              style: TextStyle(fontSize: 16, color: Colors.white),
             ),
-            const SizedBox(height: 10),
-
-            OutlinedButton(
-              onPressed: create480PQualityVideo,
-              child: const Text(
-                'Video 480P Quality',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton(
+            onPressed: heicToJpeg,
+            child: const Text(
+              '[IOS] HEIC to jpeg',
+              style: TextStyle(fontSize: 16, color: Colors.white),
             ),
-            const SizedBox(height: 10),
-
-            OutlinedButton(
-              onPressed: heicToJpeg,
-              child: const Text(
-                '[IOS] HEIC to jpeg',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton(
+            onPressed: movToMp4,
+            child: const Text(
+              '[IOS] MOV to MP4',
+              style: TextStyle(fontSize: 16, color: Colors.white),
             ),
-            const SizedBox(height: 10),
-
-            OutlinedButton(
-              onPressed: movToMp4,
-              child: const Text(
-                '[IOS] MOV to MP4',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(children: [
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
               Expanded(
                 child: Container(
                   height: 1000,
@@ -159,31 +204,42 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: const VlogMakerScreen(),
                 ),
               ),
-            ],)
-          ])
-        ],
-      ),
+            ],
+          )
+        ])
+      ],
     );
   }
 
   Future<void> pickFile({List<String>? allowExt}) async {
-    if (allowExt != null && allowExt.isNotEmpty) {
-      filePickerResult = await FilePicker.platform
-          .pickFiles(type: FileType.custom, allowedExtensions: allowExt);
-    } else {
-      filePickerResult =
-          await FilePicker.platform.pickFiles(type: FileType.video);
-    }
+    js.context.callMethod('logger', ['pickFile start 1']);
+    try {
+      if (allowExt != null && allowExt.isNotEmpty) {
+        filePickerResult = await FilePicker.platform
+            .pickFiles(type: FileType.custom, allowedExtensions: allowExt);
+      } else {
+        filePickerResult =
+            await FilePicker.platform.pickFiles(type: FileType.video);
+      }
+      js.context.callMethod('logger', ['pickFile start 2']);
+      if (filePickerResult != null &&
+          filePickerResult!.files.single.bytes != null) {
+        /// Writes File to memory
+        FfmpegManager.instance.ffmpeg?.writeFile(
+            'input.${filePickerResult!.files.single.extension}',
+            filePickerResult!.files.single.bytes!);
+        js.context.callMethod('logger', ['pickFile start 3']);
 
-    if (filePickerResult != null &&
-        filePickerResult!.files.single.bytes != null) {
-      /// Writes File to memory
-      FfmpegManager.instance.ffmpeg?.writeFile(
-          'input.${filePickerResult!.files.single.extension}',
-          filePickerResult!.files.single.bytes!);
+        setState(() {
+          selectedFile = 'input.${filePickerResult!.files.single.extension}';
+        });
+      }
+      js.context.callMethod('logger', ['pickFile start 4']);
+    } catch (e) {
+      js.context.callMethod('logger', ['pickFile start 5']);
 
       setState(() {
-        selectedFile = 'input.${filePickerResult!.files.single.extension}';
+        conversionStatus = 'File picking failed - $e';
       });
     }
   }

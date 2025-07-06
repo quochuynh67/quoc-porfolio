@@ -45,13 +45,11 @@ class _VlogMakerScreenState extends State<VlogMakerScreen> {
 
   @override
   void initState() {
-    FfmpegManager.instance.loadFFmpeg(() {}, setLog: false);
-
-    if(FfmpegManager.instance.ffmpeg?.isLoaded() == true) {
+    // FfmpegManager.instance.loadFFmpeg(() {}, setLog: false);
+    if(FfmpegManager.instance.isLoaded) {
       FfmpegManager.instance.ffmpeg?.setProgress((p) {
         progress.value = p;
       });
-
     }
     super.initState();
   }
@@ -195,51 +193,67 @@ class _VlogMakerScreenState extends State<VlogMakerScreen> {
   }
 
   Future<void> pickAudioFiles() async {
-    filePickerResult = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['mp3'],
-        allowMultiple: false);
+   try {
+     filePickerResult = await FilePicker.platform.pickFiles(
+         type: FileType.custom,
+         allowedExtensions: ['mp3'],
+         allowMultiple: false);
 
-    if (filePickerResult != null) {
-      List<String> picked = [];
-      for (int i = 0; i < filePickerResult!.files.length; ++i) {
-        final file = filePickerResult!.files.elementAt(i);
-        FfmpegManager.instance.ffmpeg?.writeFile('audio$i.mp3', file.bytes!);
-        picked.add(''
-            '\n- name: ${file.name} '
-            '\n- extension: ${file.extension} '
-            '\n- bytes: ${file.bytes?.length}');
+     if (filePickerResult != null) {
+       List<String> picked = [];
+       for (int i = 0; i < filePickerResult!.files.length; ++i) {
+         final file = filePickerResult!.files.elementAt(i);
+         FfmpegManager.instance.ffmpeg?.writeFile('audio$i.mp3', file.bytes!);
+         picked.add(''
+             '\n- name: ${file.name} '
+             '\n- extension: ${file.extension} '
+             '\n- bytes: ${file.bytes?.length}');
 
-        audioInput.addAll(['-i', 'audio$i.mp3']);
-      }
-      audioList.value = picked;
-    }
+         audioInput.addAll(['-i', 'audio$i.mp3']);
+       }
+       audioList.value = picked;
+     }
+   } catch(e) {
+      print('HAHA --- [pickAudioFiles]  --- Error: $e');
+      // Handle the error, e.g., show a dialog or a snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking audio files: $e')),
+      );
+   }
   }
 
   Future<void> pickVideoImageFiles() async {
-    filePickerResult = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['png', 'jpg', 'jpeg'],
-        allowMultiple: true);
+    try {
+      filePickerResult = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['png', 'jpg', 'jpeg'],
+          allowMultiple: true);
 
-    if (filePickerResult != null) {
-      List<Media> picked = [];
-      String input = '';
-      for (int i = 0; i < filePickerResult!.files.length; ++i) {
-        final file = filePickerResult!.files.elementAt(i);
-        bool isVideo = Media.isVideoType(file.extension ?? '');
-        picked.add(Media(isVideo, file.bytes!));
-        FfmpegManager.instance.ffmpeg?.writeFile('input$i.${file.extension}', file.bytes!);
-        if (isVideo) {
-          input +=
-              'file ${'input$i.${file.extension}'}\nduration ${AppConst.VIDEO_DEFAULT_DURATION}\n';
-        } else {
-          input +=
-              'file ${'input$i.${file.extension}'}\nduration ${AppConst.IMAGE_DEFAULT_DURATION}\n';
+      if (filePickerResult != null) {
+        List<Media> picked = [];
+        String input = '';
+        for (int i = 0; i < filePickerResult!.files.length; ++i) {
+          final file = filePickerResult!.files.elementAt(i);
+          bool isVideo = Media.isVideoType(file.extension ?? '');
+          picked.add(Media(isVideo, file.bytes!));
+          FfmpegManager.instance.ffmpeg?.writeFile('input$i.${file.extension}', file.bytes!);
+          if (isVideo) {
+            input +=
+            'file ${'input$i.${file.extension}'}\nduration ${AppConst.VIDEO_DEFAULT_DURATION}\n';
+          } else {
+            input +=
+            'file ${'input$i.${file.extension}'}\nduration ${AppConst.IMAGE_DEFAULT_DURATION}\n';
+          }
         }
+        FfmpegManager.instance.ffmpeg?.writeFile('input.txt', Uint8List.fromList(utf8.encode(input)));
+        mediaList.value = picked;
       }
-      FfmpegManager.instance.ffmpeg?.writeFile('input.txt', Uint8List.fromList(utf8.encode(input)));
-      mediaList.value = picked;
+    } catch (e) {
+      print('HAHA --- [pickVideoImageFiles]  --- Error: $e');
+      // Handle the error, e.g., show a dialog or a snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking video/image files: $e')),
+      );
     }
   }
 

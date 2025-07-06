@@ -15,12 +15,10 @@ class OtherGrid extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 30),
       itemCount: otherList.length,
       gridDelegate:  SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount, childAspectRatio: ratio),
+          crossAxisCount: crossAxisCount, childAspectRatio: ratio, crossAxisSpacing: defaultPadding, mainAxisSpacing: defaultPadding),
       itemBuilder: (context, index) {
         return Obx(() => AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: const EdgeInsets.symmetric(
-                vertical: defaultPadding, horizontal: defaultPadding),
+            duration: const Duration(milliseconds: 500),
             decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(30),
                 gradient: const LinearGradient(colors: [

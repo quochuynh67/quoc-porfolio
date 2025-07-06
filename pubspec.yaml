@@ -44,7 +44,7 @@ dependencies:
 
   #  MediaTool
   ffmpeg_wasm: ^1.0.1
-  file_picker:
+  file_picker: ^8.1.6
   cross_file:
   image_editor:
   image_size_getter:
@@ -79,6 +79,7 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/ffmpeg/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

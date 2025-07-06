@@ -19,7 +19,7 @@ class OthersView extends StatelessWidget {
           if(Responsive.isLargeMobile(context))const SizedBox(
             height: defaultPadding,
           ),
-          const TitleText(prefix: 'Others & ', title: 'Tools, Relaxation'),
+          const TitleText(prefix: 'Notes & ', title: 'Tools and Others'),
           const SizedBox(
             height: defaultPadding,
           ),

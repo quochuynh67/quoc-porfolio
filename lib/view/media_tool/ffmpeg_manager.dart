@@ -3,7 +3,13 @@ import 'package:flutter/material.dart';
 import 'dart:js' as js;
 
 class FfmpegManager {
-  FFmpeg? ffmpeg;
+  FFmpeg ffmpeg = createFFmpeg(
+    CreateFFmpegParam(
+      log: true,
+      // corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
+      corePath: 'https://quoc67k1-profile.web.app/assets/ffmpeg/ffmpeg-core.js',
+    ),
+  );
 
   final progress = ValueNotifier<double?>(null);
   final statistics = ValueNotifier<String?>(null);
@@ -20,28 +26,28 @@ class FfmpegManager {
         CreateFFmpegParam(
           log: true,
           // corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
-          corePath: 'https://zalo-mini-app-mediatool.web.app/assets/ffmpeg/ffmpeg-core.js',
+          corePath: 'https://quoc67k1-profile.web.app/assets/ffmpeg/ffmpeg-core.js',
         ),
       );
 
       if(setLog) {
-        ffmpeg?.setProgress(_onProgressHandler);
-        ffmpeg?.setLogger(_onLogHandler);
+        ffmpeg.setProgress(_onProgressHandler);
+        ffmpeg.setLogger(_onLogHandler);
       }
       js.context.callMethod('logger', [
         'FFmpegManager start 2'
       ]);
-      await ffmpeg?.load();
+      await ffmpeg.load();
       js.context.callMethod('logger', [
         'FFmpegManager await ffmpeg.load()'
       ]);
       checkLoaded();
       onInitialized.call();
     } catch(e) {
+      onFailed?.call(e.toString());
       js.context.callMethod('logger', [
         'FFmpegManager catch error when init $e'
       ]);
-      onFailed?.call(e.toString());
     }
   }
 
