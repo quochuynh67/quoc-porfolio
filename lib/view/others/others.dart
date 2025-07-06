@@ -5,7 +5,7 @@ import 'package:flutter_portfolio/view/projects/components/title_text.dart';
 import 'package:get/get.dart';
 import '../../res/constants.dart';
 import '../../view model/responsive.dart';
-import 'components/certification_grid.dart';
+import 'components/others_grid.dart';
 
 class Others extends StatelessWidget {
   final controller=Get.put(OtherController());
@@ -25,11 +25,11 @@ class Others extends StatelessWidget {
           ),
           Expanded(
               child: Responsive(
-                  desktop: CertificateGrid(crossAxisCount: 3,ratio: 1.5,),
-                  extraLargeScreen: CertificateGrid(crossAxisCount: 4,ratio: 1.6),
-                  largeMobile: CertificateGrid(crossAxisCount: 1,ratio: 1.8),
-                  mobile: CertificateGrid(crossAxisCount: 1,ratio: 1.4),
-                  tablet: CertificateGrid(ratio: 1.7,crossAxisCount: 2,)))
+                  desktop: OtherGrid(crossAxisCount: 3,ratio: 1.5,),
+                  extraLargeScreen: OtherGrid(crossAxisCount: 4,ratio: 1.6),
+                  largeMobile: OtherGrid(crossAxisCount: 1,ratio: 1.8),
+                  mobile: OtherGrid(crossAxisCount: 1,ratio: 1.4),
+                  tablet: OtherGrid(ratio: 1.7,crossAxisCount: 2,)))
         ],
       ),
     );

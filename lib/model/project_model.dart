@@ -1,7 +1,7 @@
 class Project {
   final String name;
   final String description;
-  final String image;
+  final String? image;
   final String? link;
   final String? githubLink;
 
@@ -10,12 +10,12 @@ class Project {
 }
 
 List<Project> projectList = [
-  // Project(
-  //   'CRM Website',
-  //   'A CRM (Customer Relationship Management) website is a web-based platform designed to help businesses manage their interactions with customers, streamline processes, and improve overall customer relationships. It typically includes features such as contact management, sales tracking, lead generation, and customer support.',
-  //   'assets/images/crm.png',
-  //   null,
-  // ),
+  Project(
+    'CRM Website',
+    'A CRM (Customer Relationship Management) website is a web-based platform designed to help businesses manage their interactions with customers, streamline processes, and improve overall customer relationships. It typically includes features such as contact management, sales tracking, lead generation, and customer support.',
+    null,
+    null,
+  ),
   Project(
     'ViiV',
     'Connecting the world of travel through vlogs\nViiV, an all-in-one travel app just for you',
@@ -38,5 +38,10 @@ List<Project> projectList = [
       'App modular builder',
       'Build modular app with ease',
       'assets/images/modular_builder.png',
-      'https://lecle-app-modular-builder.web.app/')
+      'https://lecle-app-modular-builder.web.app/'),
+  Project(
+      'RB Land',
+      'Karaoke and record your moment on RB Land',
+      'assets/images/rbland.png',
+      'https://apkpure.com/vn/rbland/vn.com.rbland.app')
 ];

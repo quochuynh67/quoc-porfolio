@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../model/certificate_model.dart';
+import '../../../model/other_model.dart';
 import '../../../res/constants.dart';
 import '../../../view model/getx_controllers/certification_controller.dart';
-import 'certificates_details.dart';
-class CertificateGrid extends StatelessWidget {
+import 'others_details.dart';
+class OtherGrid extends StatelessWidget {
   final int crossAxisCount;
   final double ratio;
-  CertificateGrid({super.key, this.crossAxisCount = 3,  this.ratio=1.3});
+  OtherGrid({super.key, this.crossAxisCount = 3,  this.ratio=1.3});
   final controller = Get.put(OtherController());
   @override
   Widget build(BuildContext context) {
