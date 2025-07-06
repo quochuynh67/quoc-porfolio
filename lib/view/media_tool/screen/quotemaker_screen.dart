@@ -191,6 +191,8 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
         children: [
           Column(
             children: [
+              const Text('Tạo quote gồm 1 ảnh + 1 nhạc nền, xuất ra video mp4',
+                  style: TextStyle(fontSize: 16,color: Colors.black)),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(

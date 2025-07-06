@@ -62,6 +62,8 @@ class _VlogMakerScreenState extends State<VlogMakerScreen> {
       padding: const EdgeInsets.all(8.0),
       child: Column(
         children: [
+          const Text('Tạo slide ảnh, có 1 nhạc nền',
+              style: TextStyle(fontSize: 16,color: Colors.black)),
           Row(
             spacing: 12,
             children: [
