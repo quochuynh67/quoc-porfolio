@@ -7,9 +7,9 @@ import '../../res/constants.dart';
 import '../../view model/responsive.dart';
 import 'components/others_grid.dart';
 
-class Others extends StatelessWidget {
+class OthersView extends StatelessWidget {
   final controller=Get.put(OtherController());
-   Others({super.key});
+   OthersView({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
