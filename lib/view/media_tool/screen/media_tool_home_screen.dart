@@ -8,6 +8,7 @@ import 'package:flutter_portfolio/view/media_tool/screen/screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../res/constants.dart';
+import '../../algo/sort_page.dart';
 import '../ffmpeg_manager.dart';
 
 class MediaToolHomeScreen extends StatefulWidget {
@@ -212,6 +213,11 @@ class _MediaToolHomeScreenState extends State<MediaToolHomeScreen> {
                 ),
               ),
             ],
+          ),
+          Container(
+            height: 1000,
+            color: Colors.grey.shade200,
+            child: const SortPage(),
           )
         ])
       ],
