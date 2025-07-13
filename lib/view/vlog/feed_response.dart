@@ -181,7 +181,7 @@ class User {
   User.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     nickname = json['nickname'];
-    photoURL = json['photoURL'];
+    photoURL =json['avatar']?['url'] ?? json['photoURL'];
     statusWithMe = json['statusWithMe'] != null
         ? new StatusWithMe.fromJson(json['statusWithMe'])
         : null;

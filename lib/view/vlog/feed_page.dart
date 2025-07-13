@@ -23,12 +23,20 @@ class _FeedPageState extends State<FeedPage> {
   @override
   void initState() {
     FeedService.fetchFeedVideo(1).then((value) {
-      final data = value.results
-              ?.map((e) {
-                final thumbnail = e.thumbnails?.first.url;
-                return VideoModel(e.source!.url!,thumbnail , e.spots ?? []);
-                })
-              .toList() ??
+      final data = value.results?.map((e) {
+            final thumbnail = e.thumbnails?.first.url;
+            return VideoModel(
+              e.source!.url!,
+              thumbnail,
+              e.spots ?? [],
+              user: e.user,
+              name: e.name,
+              description: e.description,
+              like: e.likeCount,
+              view: e.viewCount,
+              id: e.id!,
+            );
+          }).toList() ??
           [];
       videoStream.add(data);
       pagination = value.pagination;
@@ -48,12 +56,20 @@ class _FeedPageState extends State<FeedPage> {
       body: RefreshIndicator(
         onRefresh: () async {
           FeedService.fetchFeedVideo(1).then((value) {
-            final data = value.results
-                ?.map((e)  {
-              final thumbnail = e.thumbnails?.first.url;
-              return VideoModel(e.source!.url!,thumbnail , e.spots ?? []);
-            })
-                .toList() ??
+            final data = value.results?.map((e) {
+                  final thumbnail = e.thumbnails?.first.url;
+                  return VideoModel(
+                    e.source!.url!,
+                    thumbnail,
+                    e.spots ?? [],
+                    user: e.user,
+                    name: e.name,
+                    description: e.description,
+                    like: e.likeCount,
+                    view: e.viewCount,
+                    id: e.id!,
+                  );
+                }).toList() ??
                 [];
             videoStream.add(data);
             pagination = value.pagination;
@@ -70,19 +86,28 @@ class _FeedPageState extends State<FeedPage> {
                   scrollDirection: Axis.vertical,
                   itemCount: data.length,
                   onPageChanged: (index) {
-                    if(index == data.length - 1) {
-                      bool canLoadMore = (pagination?.page ??0) < (pagination?.pageCount ?? 0);
+                    if (index == data.length - 1) {
+                      bool canLoadMore = (pagination?.page ?? 0) <
+                          (pagination?.pageCount ?? 0);
                       int? currentPage = pagination?.page;
-                      if(!canLoadMore || currentPage == null) return;
+                      if (!canLoadMore || currentPage == null) return;
                       int nextPage = currentPage + 1;
                       FeedService.fetchFeedVideo(nextPage).then((value) {
                         final current = videoStream.valueOrNull ?? [];
-                        final newData = value.results
-                            ?.map((e)  {
-                          final thumbnail = e.thumbnails?.first.url;
-                          return VideoModel(e.source!.url!,thumbnail , e.spots ?? []);
-                        })
-                            .toList() ??
+                        final newData = value.results?.map((e) {
+                              final thumbnail = e.thumbnails?.first.url;
+                              return VideoModel(
+                                e.source!.url!,
+                                thumbnail,
+                                e.spots ?? [],
+                                user: e.user,
+                                name: e.name,
+                                description: e.description,
+                                like: e.likeCount,
+                                view: e.viewCount,
+                                id: e.id!,
+                              );
+                            }).toList() ??
                             [];
                         current.addAll(newData);
                         videoStream.add(current);
