@@ -16,7 +16,7 @@ class HomePage extends StatelessWidget {
       const Introduction(),
       ProjectsView(),
       OthersView(),
-      const HomeScreen(),
+      const MediaToolHomeScreen(),
       const FeedPage(),
     ]);
   }

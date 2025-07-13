@@ -10,14 +10,14 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../res/constants.dart';
 import '../ffmpeg_manager.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class MediaToolHomeScreen extends StatefulWidget {
+  const MediaToolHomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<MediaToolHomeScreen> createState() => _MediaToolHomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _MediaToolHomeScreenState extends State<MediaToolHomeScreen> {
   bool isLoaded = false;
   String? selectedFile;
   String conversionStatus = 'loading';
