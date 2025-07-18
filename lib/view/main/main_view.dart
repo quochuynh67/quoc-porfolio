@@ -7,10 +7,23 @@ import 'components/drawer/drawer.dart';
 import 'components/navigation_button_list.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 class MainView extends StatelessWidget {
-   const MainView({super.key, required this.pages});
   final List<Widget> pages;
+  final int initialPage;
+
+  const MainView({
+    super.key,
+    required this.pages,
+    this.initialPage = 0,
+  });
+
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.animateToPage(initialPage,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeIn);
+    });
+
     return Scaffold(
       drawer: const CustomDrawer(),
       body: Center(

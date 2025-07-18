@@ -6,8 +6,8 @@ class FfmpegManager {
   FFmpeg? ffmpeg = createFFmpeg(
     CreateFFmpegParam(
       log: true,
-      // corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
-      corePath: 'https://quoc67k1-profile.web.app/assets/ffmpeg/ffmpeg-core.js',
+      corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
+      // corePath: 'https://quoc67k1-profile.web.app/assets/ffmpeg/ffmpeg-core.js',
     ),
   );
 
@@ -34,8 +34,8 @@ class FfmpegManager {
       ffmpeg = createFFmpeg(
         CreateFFmpegParam(
           log: true,
-          // corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
-          corePath: 'https://quoc67k1-profile.web.app/assets/ffmpeg/ffmpeg-core.js',
+          corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
+          // corePath: 'https://quoc67k1-profile.web.app/assets/ffmpeg/ffmpeg-core.js',
         ),
       );
 

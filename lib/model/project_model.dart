@@ -11,13 +11,13 @@ class Project {
 }
 
 List<Project> projectList = [
-  Project(
-    'CRM Website',
-    'A CRM (Customer Relationship Management) website is a web-based platform designed to help businesses manage their interactions with customers, streamline processes, and improve overall customer relationships. It typically includes features such as contact management, sales tracking, lead generation, and customer support.',
-    null,
-    null,
-    tags: ['only flutter canvaskit', 'web'],
-  ),
+  // Project(
+  //   'CRM Website',
+  //   'A CRM (Customer Relationship Management) website is a web-based platform designed to help businesses manage their interactions with customers, streamline processes, and improve overall customer relationships. It typically includes features such as contact management, sales tracking, lead generation, and customer support.',
+  //   null,
+  //   null,
+  //   tags: ['only flutter canvaskit', 'web'],
+  // ),
   Project(
     'ViiV',
     'Connecting the world of travel through vlogs\nViiV, an all-in-one travel app just for you',
