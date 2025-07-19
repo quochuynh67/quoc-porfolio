@@ -206,7 +206,10 @@ class _RoomPageState extends State<RoomPage> {
               onMessageTap: _handleMessageTap,
               onPreviewDataFetched: _handlePreviewDataFetched,
               onSendPressed: _handleSendPressed,
-              user: SupabaseChatCore.instance.loggedUser!,
+              user: SupabaseChatCore.instance.loggedUser ?? types.User(
+                id: SupabaseChatCore.instance.loggedSupabaseUser?.id ?? '',
+                firstName: SupabaseChatCore.instance.loggedSupabaseUser?.email,
+              ),
               imageHeaders: SupabaseChatCore.instance.httpSupabaseHeaders,
               onMessageVisibilityChanged: (message, visible) async {
                 if (message.status != types.Status.seen &&

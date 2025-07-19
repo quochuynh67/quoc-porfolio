@@ -9,11 +9,13 @@ import '../util.dart';
 class RoomTile extends StatelessWidget {
   final types.Room room;
   final ValueChanged<types.Room> onTap;
+  final ValueChanged<types.Room> onLongPress;
 
   const RoomTile({
     super.key,
     required this.room,
     required this.onTap,
+    required this.onLongPress,
   });
 
   Widget _buildAvatar(types.Room room) {
@@ -87,7 +89,11 @@ class RoomTile extends StatelessWidget {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(room.name ?? ''),
+            Text(room.name ?? '',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                )),
             if (room.lastMessages?.isNotEmpty == true)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -102,6 +108,10 @@ class RoomTile extends StatelessWidget {
                       ),
                       locale: 'en_short',
                     ),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
                   ),
                   if (room.lastMessages!.first.status != null)
                     Padding(
@@ -112,7 +122,7 @@ class RoomTile extends StatelessWidget {
                         color:
                             room.lastMessages!.first.status == types.Status.seen
                                 ? Colors.lightBlue
-                                : null,
+                                : Colors.white,
                       ),
                     ),
                 ],
@@ -125,8 +135,12 @@ class RoomTile extends StatelessWidget {
                 (room.lastMessages!.first as types.TextMessage).text,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                ),
               )
             : null,
+        onLongPress: () => onLongPress(room),
         onTap: () => onTap(room),
       );
 }

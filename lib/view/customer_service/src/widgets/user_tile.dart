@@ -60,7 +60,7 @@ class UserTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListTile(
         leading: _buildAvatar(user),
-        title: Text(user.getUserName()),
+        title: Text(user.getUserName(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
         onTap: () => onTap(user),
       );
 }

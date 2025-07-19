@@ -1,6 +1,10 @@
 {
   "hosting": {
     "source": ".",
+    "rewrites": [ {
+      "source": "**",
+      "destination": "/index.html"
+    } ],
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -19,11 +23,11 @@
           },
           {
             "key": "Cross-Origin-Embedder-Policy",
-            "value": "credentialless"
+            "value": "cross-origin"
           },
           {
             "key": "Cross-Origin-Opener-Policy",
-            "value": "same-origin"
+            "value": "cross-origin"
           }
         ]
       }

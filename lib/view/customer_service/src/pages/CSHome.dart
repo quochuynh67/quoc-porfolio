@@ -134,7 +134,7 @@ class _CSHomePageState extends State<CSHomePage> {
                 ],
               ),
             )
-          : RoomsPage(),
+          : const RoomsPage(),
     );
   }
 }

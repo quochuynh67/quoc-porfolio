@@ -64,10 +64,11 @@ class _RoomsPageState extends State<RoomsPage> {
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          const SizedBox(height: 8),
           FractionallySizedBox(
             widthFactor: .5,
             child: TextField(
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 labelText: 'Search',
               ),
@@ -111,6 +112,10 @@ class _RoomsPageState extends State<RoomsPage> {
                             ),
                           );
                         },
+                        onLongPress: (room) async {
+                          await SupabaseChatCore.instance.deleteRoom(room.id);
+                          _fetchPage(0);
+                        }
                       ),
                     ),
                   );
