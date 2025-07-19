@@ -7,4 +7,5 @@ final Map<String, int> routeToPageIndex = {
   '/others': 2,
   '/mediaTools': 3,
   '/flutterVlogs': 4,
+  '/chatWithMe': 5,
 };

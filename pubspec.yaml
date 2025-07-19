@@ -61,6 +61,19 @@ dependencies:
   visibility_detector:
   http:
 
+  #  Customer Relationship Management (CRM)
+  flutter_supabase_chat_core:
+  flutter_chat_types:
+  supabase_flutter: ^2.9.1
+  timeago:
+  flutter_login: 5.1.0
+  file_saver:
+  flutter_chat_ui:
+  image_picker:
+  open_filex:
+  infinite_scroll_pagination: ^4.1.0
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -6,6 +6,7 @@ import 'package:flutter_portfolio/view/projects/project_view.dart';
 import 'package:flutter_portfolio/view/vlog/feed_page.dart';
 
 import '../../view model/controller.dart';
+import '../customer_service/cs_screen.dart';
 import '../media_tool/screen/screen.dart';
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -14,6 +15,7 @@ class HomePage extends StatelessWidget {
     final uri = Uri.base;
     final path = uri.path; // e.g. "/projects"
 
+    print('_getPageIndexFromRoute Current path: $path');
     return routeToPageIndex[path] ?? 0;
   }
 
@@ -28,6 +30,7 @@ class HomePage extends StatelessWidget {
         OthersView(),
         const MediaToolHomeScreen(),
         const FeedPage(),
+        const CsScreen(),
       ],
     );
   }

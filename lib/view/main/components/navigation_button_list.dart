@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_portfolio/view%20model/controller.dart';
-import 'package:flutter_portfolio/view%20model/responsive.dart';
 
 import 'navigation_button.dart';
 import 'dart:html' as html;
@@ -65,6 +64,14 @@ class NavigationButtonList extends StatelessWidget {
                 //     curve: Curves.easeIn);
                 goToPage(4);
               }, text: 'FlutterWeb_Vlogs'),
+              NavigationTextButton(
+                  onTap: () {
+                    // controller.animateToPage(5,
+                    //     duration: const Duration(milliseconds: 500),
+                    //     curve: Curves.easeIn);
+                    goToPage(5);
+                  },
+                  text: 'FlutterChatMe'),
             ],
           ),
         );
