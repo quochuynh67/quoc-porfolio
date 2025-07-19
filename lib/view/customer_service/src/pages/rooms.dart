@@ -115,6 +115,8 @@ class _RoomsPageState extends State<RoomsPage> {
                         onLongPress: (room) async {
                           await SupabaseChatCore.instance.deleteRoom(room.id);
                           _fetchPage(0);
+                          _controller.nextPageKey = 0;
+                          _controller.refresh();
                         }
                       ),
                     ),

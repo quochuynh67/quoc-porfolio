@@ -49,6 +49,10 @@ class _UsersPageState extends State<UsersPage> {
     try {
       final newItems = await SupabaseChatCore.instance
           .users(filter: _filter, offset: offset, limit: _pageSize);
+      // remove where it is currently logged in user
+      newItems.removeWhere(
+        (user) => user.id == SupabaseChatCore.instance.loggedUser?.id,
+      );
       final isLastPage = newItems.length < _pageSize;
       if (isLastPage) {
         _controller.appendLastPage(newItems);
