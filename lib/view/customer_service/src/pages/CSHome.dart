@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'auth.dart';
@@ -24,7 +25,22 @@ class _CSHomePageState extends State<CSHomePage> {
     super.initState();
   }
 
+  SupabaseChatCoreConfig config = const SupabaseChatCoreConfig(
+    'public',
+    'rooms',
+    'rooms_l',
+    'messages',
+    'messages_l',
+    'users',
+    'online-user-',
+    //online-user-${uid}
+    'chat-user-typing-',
+    //chat-user-typing-${room_id}
+    'chats_assets',
+  );
+
   void initializeSupabase() async {
+    SupabaseChatCore.instance.setConfig(config);
     try {
       Supabase.instance.client.auth.onAuthStateChange.listen((data) {
         setState(() {
@@ -88,7 +104,8 @@ class _CSHomePageState extends State<CSHomePage> {
           onPressed: _user == null ? null : logout,
         ),
         backgroundColor: Theme.of(context).colorScheme.primary,
-        title: const Text('Rooms', style: TextStyle(fontSize: 20, color: Colors.white)),
+        title: const Text('Rooms',
+            style: TextStyle(fontSize: 20, color: Colors.white)),
       ),
       body: _user == null
           ? Container(
@@ -102,13 +119,15 @@ class _CSHomePageState extends State<CSHomePage> {
                   const Text('Not authenticated'),
                   TextButton(
                     onPressed: () {
-                      showDialog(context: context, builder: (context) {
-                        return const AlertDialog(
-                          backgroundColor: Colors.transparent,
-                          content: AuthScreen(),
-                          contentPadding: EdgeInsets.all(0),
-                        );
-                      });
+                      showDialog(
+                          context: context,
+                          builder: (context) {
+                            return const AlertDialog(
+                              backgroundColor: Colors.transparent,
+                              content: AuthScreen(),
+                              contentPadding: EdgeInsets.all(0),
+                            );
+                          });
                     },
                     child: const Text('Login'),
                   ),

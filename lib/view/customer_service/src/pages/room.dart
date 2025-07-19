@@ -242,7 +242,7 @@ class _RoomPageState extends State<RoomPage> {
                   ),
                 );
                 if (confirm == true) {
-                  // await _chatController.deleteMessage(widget.room.id, p1.id);
+                  await _chatController.deleteMessage(widget.room.id, p1.id);
                 }
               },
             ),
