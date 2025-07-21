@@ -19,9 +19,10 @@ class VideoItem extends StatefulWidget {
   const VideoItem({
     Key? key,
     required this.video,
+    this.onVideoEnd,
   }) : super(key: key);
   final VideoModel video;
-
+  final VoidCallback? onVideoEnd;
   @override
   State<VideoItem> createState() => _VideoItemState();
 }
@@ -31,6 +32,7 @@ class _VideoItemState extends State<VideoItem>
   VideoPlayerController? videoController;
   bool disposed = false;
   bool videoInitialized = false;
+  bool autoPlayNext = false;
   int debugTapCount = 0;
   List<Spots> _spots = [];
   Timer? _timer;
@@ -160,6 +162,10 @@ class _VideoItemState extends State<VideoItem>
     final videoPosition = videoController?.value.position ?? Duration.zero;
     final spot = findClosestSpot(_spots, videoPosition.inSeconds.toDouble());
     _currentSpot.add(spot);
+    if (videoController?.value.isInitialized == true &&
+        videoController?.value.position == videoController?.value.duration) {
+      widget.onVideoEnd?.call();
+    }
   }
 
   void enableSound() {

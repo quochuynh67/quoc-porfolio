@@ -19,6 +19,13 @@ class HomePage extends StatelessWidget {
     return routeToPageIndex[path] ?? 0;
   }
 
+  bool playTypeParam() {
+    final uri = Uri.base;
+    final playType = uri.queryParameters['playType'];
+    print('playTypeParam: $playType');
+    return playType == '1';
+  }
+
   @override
   Widget build(BuildContext context) {
     final pageIndex = _getPageIndexFromRoute(context);
@@ -29,7 +36,7 @@ class HomePage extends StatelessWidget {
         ProjectsView(),
         OthersView(),
         const MediaToolHomeScreen(),
-        const FeedPage(),
+        FeedPage(isPlayChillVideoAtFirst: playTypeParam()),
         const CsScreen(),
       ],
     );
