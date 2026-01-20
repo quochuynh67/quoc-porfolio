@@ -66,7 +66,7 @@ dependencies:
   flutter_chat_types:
   supabase_flutter: ^2.9.1
   timeago:
-  flutter_login: 5.1.0
+  flutter_login: 5.0.0
   file_saver:
   flutter_chat_ui: ^1.6.15
   image_picker:
@@ -74,6 +74,8 @@ dependencies:
   infinite_scroll_pagination: ^4.1.0
 
 
+dependency_overrides:
+  meta: ^1.7.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
