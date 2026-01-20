@@ -21,6 +21,8 @@ List<Project> projectList = [
       'assets/images/projects/cs/cs_4.png',
       'assets/images/projects/cs/cs_5.png',
       'assets/images/projects/cs/cs_6.png',
+      'assets/images/projects/cs/cs_7.png',
+      'assets/images/projects/cs/cs_8.png',
     ],
     null,
     tags: ['flutter web canvaskit', 'web', 'websocket', 'chatting', 'livechat'],
