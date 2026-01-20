@@ -107,6 +107,7 @@ flutter:
     - assets/images/projects/crm/
     - assets/images/projects/chatbot/
     - assets/images/projects/aloxide/
+    - assets/images/projects/cs/
     - assets/icons/
     - assets/ffmpeg/
   #   - images/a_dot_ham.jpeg
