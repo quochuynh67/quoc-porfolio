@@ -3223,6 +3223,26 @@
                 <p style="color: var(--text-secondary); margin: 1rem 0; font-size: 1.1rem;">
                     📍 ${request.location} | ${request.category}
                 </p>
+                <div style="margin:1rem 0;">
+                    <button class="btn btn-primary" onclick="(function(lat,lng){
+                        if(lat == null || lng == null){ alert('Coordinates unavailable'); return; }
+                        if(navigator.geolocation){
+                            navigator.geolocation.getCurrentPosition(function(p){
+                                const origin = p.coords.latitude + ',' + p.coords.longitude;
+                                const dest = lat + ',' + lng;
+                                const url = 'https://www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(origin) + '&destination=' + encodeURIComponent(dest) + '&travelmode=driving';
+                                window.open(url, '_blank');
+                            }, function(){
+                                const dest = lat + ',' + lng;
+                                const url = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(dest) + '&travelmode=driving';
+                                window.open(url, '_blank');
+                            }, { enableHighAccuracy: true, timeout: 8000 });
+                        } else {
+                            const dest = lat + ',' + lng;
+                            window.open('https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(dest) + '&travelmode=driving', '_blank');
+                        }
+                    })(${request.latitude}, ${request.longitude})">🧭 Chỉ đường</button>
+                </div>
                 ${imagesHtml}
                 <p style="line-height: 1.8; color: var(--text-primary); margin-bottom: 2rem; font-size: 1.05rem;">${request.description}</p>
 
@@ -3324,7 +3344,13 @@
                         <label>Địa Điểm *</label>
                         <input type="text" name="location" placeholder="VD: Ấp Phú Hoà, Phú Tân" required>
                     </div>
-
+                    <div class="form-group">
+                        <label>Định vị (Tự động)</label>
+                        <div style="display:flex; gap:0.6rem; align-items:center;">
+                            <button type="button" class="filter-btn" onclick="getCurrentLocation(this)">📍 Lấy vị trí hiện tại</button>
+                            <small id="locStatus" style="color:var(--text-secondary); margin-left:0.4rem;">Chưa có vị trí</small>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label>Thêm hình ảnh (tối đa 10 ảnh)</label>
                         <input type="file" id="postImages" name="images" accept="image/*" multiple onchange="handleImageSelect(event)" />
@@ -3342,6 +3368,10 @@
                         <label>Số Điện Thoại *</label>
                         <input type="tel" name="contact_phone" placeholder="0xxx-xxx-xxx" required>
                     </div>
+
+                    <!-- hidden inputs for coordinates -->
+                    <input type="hidden" name="latitude" id="locLat" />
+                    <input type="hidden" name="longitude" id="locLon" />
 
                     <button type="submit" class="submit-btn">📤 Đăng Bài</button>
                 </form>
@@ -3466,7 +3496,10 @@
                 location: formData.get('location'),
                 contact_name: formData.get('contact_name'),
                 contact_phone: formData.get('contact_phone'),
-                volunteers_count: 0
+                volunteers_count: 0,
+                // include coordinates if available
+                latitude: formData.get('latitude') ? parseFloat(formData.get('latitude')) : null,
+                longitude: formData.get('longitude') ? parseFloat(formData.get('longitude')) : null
             }
             const { data: insertData, error: insertErr } = await supabaseClient
                 .from('requests')
@@ -3649,6 +3682,45 @@
     window.addEventListener('DOMContentLoaded', () => {
         renderRequests()
     })
+      async function getCurrentLocation(btn) {
+        const status = document.getElementById('locStatus')
+        const input = document.querySelector('input[name="location"]')
+        const latInput = document.getElementById('locLat')
+        const lonInput = document.getElementById('locLon')
+        if (!navigator.geolocation) {
+            status.textContent = 'Trình duyệt không hỗ trợ vị trí.'
+            return
+        }
+        btn.disabled = true
+        status.textContent = 'Đang lấy vị trí...'
+        navigator.geolocation.getCurrentPosition(async pos => {
+            const lat = pos.coords.latitude.toFixed(6)
+            const lon = pos.coords.longitude.toFixed(6)
+            // try reverse geocoding via Nominatim for a friendly address
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
+                if (res.ok) {
+                    const json = await res.json()
+                    input.value = json.display_name || `${lat}, ${lon}`
+                    status.textContent = 'Vị trí đã được thêm'
+                } else {
+                    input.value = `${lat}, ${lon}`
+                    status.textContent = 'Vị trí (tọa độ) đã thêm'
+                }
+            } catch (err) {
+                input.value = `${lat}, ${lon}`
+                status.textContent = 'Lỗi khi lấy địa chỉ; đã lưu tọa độ'
+            } finally {
+                // set hidden inputs for latitude/longitude
+                if (latInput) latInput.value = lat
+                if (lonInput) lonInput.value = lon
+                btn.disabled = false
+            }
+        }, err => {
+            status.textContent = 'Không thể lấy vị trí: ' + err.message
+            btn.disabled = false
+        }, { enableHighAccuracy: true, timeout: 10000 })
+    }
 </script>
 </body>
 </html>
