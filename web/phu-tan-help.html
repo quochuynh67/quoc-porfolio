@@ -3128,42 +3128,89 @@
         }
     }
 
-    async function renderRequests() {
-        const grid = document.getElementById('requestsGrid')
-        const requests = await loadRequestsFromDB(currentFilter)
+   async function renderRequests() {
+    const grid = document.getElementById('requestsGrid')
 
-        if (requests.length === 0) {
-            grid.innerHTML = '<div class="loading">📭 Không có nhu cầu nào hiện tại</div>'
-            updateStats()
-            return
+    // get current position (best-effort, timeout 8s)
+    let currentCoords = null
+    try {
+        currentCoords = await new Promise(resolve => {
+            if (!navigator.geolocation) return resolve(null)
+            const timer = setTimeout(() => resolve(null), 8000)
+            navigator.geolocation.getCurrentPosition(
+                pos => { clearTimeout(timer); resolve(pos.coords) },
+                () => { clearTimeout(timer); resolve(null) },
+                { enableHighAccuracy: true, maximumAge: 60000, timeout: 8000 }
+            )
+        })
+    } catch (err) {
+        currentCoords = null
+    }
+
+    // haversine: returns distance in meters
+    function haversine(lat1, lon1, lat2, lon2) {
+        const toRad = v => (v * Math.PI) / 180
+        const R = 6371000 // meters
+        const dLat = toRad(lat2 - lat1)
+        const dLon = toRad(lon2 - lon1)
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        return R * c
+    }
+
+    const requests = await loadRequestsFromDB(currentFilter)
+
+    if (requests.length === 0) {
+        grid.innerHTML = '<div class="loading">📭 Không có nhu cầu nào hiện tại</div>'
+        updateStats()
+        return
+    }
+
+    grid.innerHTML = requests.map(req => {
+        const lat = Number(req.latitude)
+        const lon = Number(req.longitude)
+        let distanceDisplay = ''
+        if (currentCoords && !isNaN(lat) && !isNaN(lon)) {
+            const meters = haversine(currentCoords.latitude, currentCoords.longitude, lat, lon)
+            if (meters < 1000) {
+                distanceDisplay = `Khoảng cách: ${Math.round(meters)} (mét)`
+            } else {
+                distanceDisplay = `Khoảng cách: ${(meters / 1000).toFixed(2)} (km)`
+            }
+            distanceDisplay = `· ${distanceDisplay}`
+        } else {
+            distanceDisplay = '' // hide when unknown
         }
 
-        grid.innerHTML = requests.map(req => `
-            <div class="card" onclick="viewDetail(${req.id})">
-                <div class="card-header">
-                    <div class="card-emoji">${getEmoji(req.category)}</div>
-                    <span class="card-category ${req.urgency}">${getUrgencyLabel(req.urgency)}</span>
-                    <h3 class="card-title">${req.title}</h3>
-                    <div class="card-meta">
-                        <span>📍 ${req.location}</span>
-                        <span>${req.category}</span>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <p class="card-description">${(req.description || '').substring(0, 100)}...</p>
-                </div>
-                <div class="card-footer">
-                    <span class="volunteers-count">👥 ${req.volunteers_count || 0} người giúp</span>
-                    <div style="display:flex; gap:0.6rem; align-items:center;">
-                        <button class="volunteer-btn" onclick="event.stopPropagation(); openVolunteerModal(${req.id})">Giúp Đỡ</button>
-                        <button class="delete-btn" onclick="event.stopPropagation(); adminDelete(${req.id})">Xoá</button>
-                    </div>
+        return `
+        <div class="card" onclick="viewDetail(${req.id})">
+            <div class="card-header">
+                <div class="card-emoji">${getEmoji(req.category)}</div>
+                <span class="card-category ${req.urgency}">${getUrgencyLabel(req.urgency)}</span>
+                <h3 class="card-title">${req.title}</h3>
+                <div class="card-meta">
+                    <span>📍 ${req.location} ${distanceDisplay}</span>
+                    <span>${req.category}</span>
                 </div>
             </div>
-        `).join('')
+            <div class="card-body">
+                <p class="card-description">${(req.description || '').substring(0, 100)}...</p>
+            </div>
+            <div class="card-footer">
+                <span class="volunteers-count">👥 ${req.volunteers_count || 0} người giúp</span>
+                <div style="display:flex; gap:0.6rem; align-items:center;">
+                    <button class="volunteer-btn" onclick="event.stopPropagation(); openVolunteerModal(${req.id})">Giúp Đỡ</button>
+                    <button class="delete-btn" onclick="event.stopPropagation(); adminDelete(${req.id})">Xoá</button>
+                </div>
+            </div>
+        </div>
+        `
+    }).join('')
 
-        updateStats()
-    }
+    updateStats()
+}
 
     function getEmoji(category) {
         const emojis = {
