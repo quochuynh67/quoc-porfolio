@@ -3575,7 +3575,7 @@
             const { data: setting, error: settingErr } = await supabaseClient
                 .from('admin_settings')
                 .select('value')
-                .eq('key', 'admin_delete_password')
+                .eq('row_key', 'admin_delete_password')
                 .single()
 
             if (settingErr) {
