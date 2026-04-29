@@ -32,12 +32,7 @@
     <title>flutter_portfolio</title>
     <link rel="manifest" href="manifest.json">
 
-    <script>
-        // The value below is injected by flutter build, do not touch.
-        var serviceWorkerVersion = null;
-    </script>
     <!-- This script adds the flutter initialization JS code -->
-    <script src="flutter.js" defer></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" crossorigin="anonymous" async></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"
             crossorigin="anonymous"></script>
@@ -63,14 +58,16 @@
     </div>
 </div>
 <script>
+    {{flutter_bootstrap_js}}
+</script>
+<script>
     window.addEventListener('load', function(ev) {
           var loading = document.querySelector('#loader');
       loading.style.visibility = 'visible';
 
-      // Download main.dart.js
-      _flutter.loader.loadEntrypoint({
-        serviceWorker: {
-          serviceWorkerVersion: serviceWorkerVersion,
+      _flutter.loader.load({
+        serviceWorkerSettings: {
+          serviceWorkerVersion: "{{flutter_service_worker_version}}",
         },
         onEntrypointLoaded: function(engineInitializer) {
           engineInitializer.initializeEngine().then(function(appRunner) {
