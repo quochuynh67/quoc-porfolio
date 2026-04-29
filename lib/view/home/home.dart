@@ -26,11 +26,19 @@ class HomePage extends StatelessWidget {
     return chill == '1';
   }
 
+  bool isVideoViewMode() {
+    final uri = Uri.base;
+    final mode = uri.queryParameters['videoViewMode'];
+    print('videoViewMode: $mode');
+    return mode == '1';
+  }
+
   @override
   Widget build(BuildContext context) {
     final pageIndex = _getPageIndexFromRoute(context);
     return MainView(
       initialPage: pageIndex,
+      videoViewMode: isVideoViewMode(),
       pages: [
         const Introduction(),
         ProjectsView(),

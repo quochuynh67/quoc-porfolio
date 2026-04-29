@@ -9,11 +9,13 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 class MainView extends StatelessWidget {
   final List<Widget> pages;
   final int initialPage;
+  final bool videoViewMode;
 
   const MainView({
     super.key,
     required this.pages,
     this.initialPage = 0,
+    this.videoViewMode = false,
   });
 
   @override
@@ -25,16 +27,18 @@ class MainView extends StatelessWidget {
     });
 
     return Scaffold(
-      drawer: const CustomDrawer(),
+      drawer: videoViewMode ? null : const CustomDrawer(),
       body: Center(
         child: Column(
           children: [
-            kIsWeb && !Responsive.isLargeMobile(context) ? const SizedBox(height:defaultPadding*2,) : const SizedBox(height:defaultPadding/2,),
-             const SizedBox(
-                height: 80,
-                child: TopNavigationBar(),
-            ),
-            if(Responsive.isLargeMobile(context))  const Row(children: [Spacer(),NavigationButtonList(),Spacer()],),
+            if (!videoViewMode) ...[
+              kIsWeb && !Responsive.isLargeMobile(context) ? const SizedBox(height:defaultPadding*2,) : const SizedBox(height:defaultPadding/2,),
+              const SizedBox(
+                  height: 80,
+                  child: TopNavigationBar(),
+              ),
+              if(Responsive.isLargeMobile(context))  const Row(children: [Spacer(),NavigationButtonList(),Spacer()],),
+            ],
             Expanded(
                 flex: 9,
                 child: PageView(
