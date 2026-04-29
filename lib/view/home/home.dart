@@ -19,11 +19,11 @@ class HomePage extends StatelessWidget {
     return routeToPageIndex[path] ?? 0;
   }
 
-  bool playTypeParam() {
+  bool isChillVideo() {
     final uri = Uri.base;
-    final playType = uri.queryParameters['playType'];
-    print('playTypeParam: $playType');
-    return playType == '1';
+    final chill = uri.queryParameters['chill'];
+    print('chill: $chill');
+    return chill == '1';
   }
 
   @override
@@ -36,7 +36,7 @@ class HomePage extends StatelessWidget {
         ProjectsView(),
         OthersView(),
         const MediaToolHomeScreen(),
-        FeedPage(isPlayChillVideoAtFirst: playTypeParam()),
+        FeedPage(isPlayChillVideoAtFirst: isChillVideo()),
         const CsScreen(),
       ],
     );
