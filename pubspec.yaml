@@ -110,7 +110,6 @@ flutter:
     - assets/images/projects/cs/
     - assets/icons/
     - assets/ffmpeg/
-    - assets/gif/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
