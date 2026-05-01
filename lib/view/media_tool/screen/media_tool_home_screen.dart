@@ -1,4 +1,3 @@
-import 'dart:html' as html;
 import 'dart:js' as js;
 
 import 'package:ffmpeg_wasm/ffmpeg_wasm.dart';
@@ -10,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../res/constants.dart';
 import '../../algo/sort_page.dart';
 import '../ffmpeg_manager.dart';
+import '../file_utils.dart';
 
 class MediaToolHomeScreen extends StatefulWidget {
   const MediaToolHomeScreen({super.key});
@@ -272,10 +272,11 @@ class _MediaToolHomeScreenState extends State<MediaToolHomeScreen> {
       'frame1.webp'
     ]);
     final data = FfmpegManager.instance.ffmpeg?.readFile('frame1.webp');
-    js.context.callMethod('webSaveAs', [
-      html.Blob([data]),
-      'frame1.webp'
-    ]);
+    if (!FileUtils.downloadBytesInWeb(data, 'frame1.webp', mimeType: 'image/webp')) {
+      setState(() {
+        conversionStatus = 'Failed - frame1.webp is empty';
+      });
+    }
   }
 
   /// Creates Preview Image of Video
@@ -298,10 +299,11 @@ class _MediaToolHomeScreenState extends State<MediaToolHomeScreen> {
     ]);
     final previewWebpData =
         FfmpegManager.instance.ffmpeg?.readFile('previewWebp.webp');
-    js.context.callMethod('webSaveAs', [
-      html.Blob([previewWebpData]),
-      'previewWebp.webp'
-    ]);
+    if (!FileUtils.downloadBytesInWeb(previewWebpData, 'previewWebp.webp', mimeType: 'image/webp')) {
+      setState(() {
+        conversionStatus = 'Failed - previewWebp.webp is empty';
+      });
+    }
   }
 
   Future<void> create720PQualityVideo() async {
@@ -322,13 +324,15 @@ class _MediaToolHomeScreenState extends State<MediaToolHomeScreen> {
       conversionStatus = 'Saving';
     });
     final hqVideo = FfmpegManager.instance.ffmpeg?.readFile('720P_output.mp4');
+    if (!FileUtils.downloadBytesInWeb(hqVideo, '720P_output.mp4', mimeType: 'video/mp4')) {
+      setState(() {
+        conversionStatus = 'Failed - 720P_output.mp4 is empty';
+      });
+      return;
+    }
     setState(() {
       conversionStatus = 'Downloading';
     });
-    js.context.callMethod('webSaveAs', [
-      html.Blob([hqVideo]),
-      '720P_output.mp4'
-    ]);
     setState(() {
       conversionStatus = 'Completed';
     });
@@ -352,13 +356,15 @@ class _MediaToolHomeScreenState extends State<MediaToolHomeScreen> {
       conversionStatus = 'Saving';
     });
     final hqVideo = FfmpegManager.instance.ffmpeg?.readFile('480P_output.mp4');
+    if (!FileUtils.downloadBytesInWeb(hqVideo, '480P_output.mp4', mimeType: 'video/mp4')) {
+      setState(() {
+        conversionStatus = 'Failed - 480P_output.mp4 is empty';
+      });
+      return;
+    }
     setState(() {
       conversionStatus = 'Downloading';
     });
-    js.context.callMethod('webSaveAs', [
-      html.Blob([hqVideo]),
-      '480P_output.mp4'
-    ]);
     setState(() {
       conversionStatus = 'Completed';
     });
@@ -383,18 +389,15 @@ class _MediaToolHomeScreenState extends State<MediaToolHomeScreen> {
       conversionStatus = 'Saving';
     });
     final hqVideo = FfmpegManager.instance.ffmpeg?.readFile('output.jpg');
-    if (hqVideo?.isEmpty == true) {
+    if (!FileUtils.downloadBytesInWeb(hqVideo, 'output.jpg', mimeType: 'image/jpeg')) {
       setState(() {
-        conversionStatus = 'Failed';
+        conversionStatus = 'Failed - output.jpg is empty';
       });
+      return;
     }
     setState(() {
       conversionStatus = 'Downloading';
     });
-    js.context.callMethod('webSaveAs', [
-      html.Blob([hqVideo]),
-      'output.jpg'
-    ]);
     setState(() {
       conversionStatus = 'Completed';
     });
@@ -418,18 +421,15 @@ class _MediaToolHomeScreenState extends State<MediaToolHomeScreen> {
       conversionStatus = 'Saving';
     });
     final hqVideo = FfmpegManager.instance.ffmpeg?.readFile('output.mp4');
-    if (hqVideo?.isEmpty == true) {
+    if (!FileUtils.downloadBytesInWeb(hqVideo, 'output.mp4', mimeType: 'video/mp4')) {
       setState(() {
-        conversionStatus = 'Failed';
+        conversionStatus = 'Failed - output.mp4 is empty';
       });
+      return;
     }
     setState(() {
       conversionStatus = 'Downloading';
     });
-    js.context.callMethod('webSaveAs', [
-      html.Blob([hqVideo]),
-      'output.mp4'
-    ]);
     setState(() {
       conversionStatus = 'Completed';
     });

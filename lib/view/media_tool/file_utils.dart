@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:html';
-import 'dart:js';
 
 import 'package:ffmpeg_wasm/ffmpeg_wasm.dart';
 
@@ -28,15 +27,36 @@ class FileUtils {
     return bytes;
   }
 
-  static void downloadVideoOutputInWeb(String outputFileName) {
-    final outputVideo = FfmpegManager.instance.ffmpeg?.readFile(outputFileName);
-    if (outputVideo == null) {
-      print('Output video is null, cannot download.');
-      return;
+  static bool downloadBytesInWeb(
+    List<int>? bytes,
+    String outputFileName, {
+    String mimeType = 'application/octet-stream',
+  }) {
+    if (bytes == null || bytes.isEmpty) {
+      print('Output file is null or empty, cannot download.');
+      return false;
     }
-    context.callMethod('webSaveAs', [
-      Blob([outputVideo]),
-      outputFileName
-    ]);
+
+    final blob = Blob([bytes], mimeType);
+    final url = Url.createObjectUrlFromBlob(blob);
+    final anchor = document.createElement('a') as AnchorElement
+      ..href = url
+      ..style.display = 'none'
+      ..download = outputFileName;
+
+    document.body?.children.add(anchor);
+    anchor.click();
+    document.body?.children.remove(anchor);
+    Url.revokeObjectUrl(url);
+    return true;
+  }
+
+  static bool downloadVideoOutputInWeb(String outputFileName) {
+    final outputVideo = FfmpegManager.instance.ffmpeg?.readFile(outputFileName);
+    return downloadBytesInWeb(
+      outputVideo,
+      outputFileName,
+      mimeType: 'video/mp4',
+    );
   }
 }

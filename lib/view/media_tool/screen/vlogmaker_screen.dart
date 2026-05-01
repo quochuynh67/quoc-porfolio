@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:cross_file/cross_file.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:ffmpeg_wasm/ffmpeg_wasm.dart';
@@ -278,10 +277,8 @@ class _VlogMakerScreenState extends State<VlogMakerScreen> {
       print('HAHA --- [_handleExport]  --- exportBytes is null or empty');
       return;
     }
-    final outputFile = XFile.fromData(exportBytes);
-
-    print('HAHA --- [_handleExport]  --- outputFile [$outputFile, ${outputFile.name}, ${outputFile.mimeType}]');
-    if (exportBytes.isNotEmpty == true) {
+    print('HAHA --- [_handleExport]  --- ready to download output.mp4 [${exportBytes.length} bytes]');
+    if (exportBytes.isNotEmpty) {
       FileUtils.downloadVideoOutputInWeb('output.mp4');
       // progress.value = null;
     }
