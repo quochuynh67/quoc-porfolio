@@ -21,9 +21,7 @@ class MainView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.animateToPage(initialPage,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeIn);
+      controller.jumpToPage(initialPage);
     });
 
     return Scaffold(

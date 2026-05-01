@@ -1,13 +1,18 @@
 import 'package:ffmpeg_wasm/ffmpeg_wasm.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'dart:js' as js;
 
 class FfmpegManager {
+  static const String ffmpegVersion = '0.11.6';
+  static const String _ffmpegCoreAsset = 'assets/ffmpeg/ffmpeg-core.js';
+  static const String unsupportedEnvironmentMessage =
+      'FFmpeg WebAssembly requires SharedArrayBuffer and cross-origin isolation (COOP/COEP).';
+
   FFmpeg? ffmpeg = createFFmpeg(
     CreateFFmpegParam(
       log: true,
-      corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
-      // corePath: 'https://quoc67k1-profile.web.app/assets/ffmpeg/ffmpeg-core.js',
+      corePath: Uri.base.resolve(_ffmpegCoreAsset).toString(),
     ),
   );
 
@@ -18,7 +23,32 @@ class FfmpegManager {
 
   bool isLoaded = false;
 
+  bool get isWebFfmpegSupported {
+    if (!kIsWeb) return true;
+    final hasSharedArrayBuffer = js.context.hasProperty('SharedArrayBuffer');
+    final isCrossOriginIsolated = js.context['crossOriginIsolated'] == true;
+    return hasSharedArrayBuffer && isCrossOriginIsolated;
+  }
+
+  String get webSupportDetails {
+    if (!kIsWeb) return 'non-web platform';
+    final hasSharedArrayBuffer = js.context.hasProperty('SharedArrayBuffer');
+    final isCrossOriginIsolated = js.context['crossOriginIsolated'] == true;
+    return 'SharedArrayBuffer=$hasSharedArrayBuffer, crossOriginIsolated=$isCrossOriginIsolated';
+  }
+
+  String get resolvedCorePath => Uri.base.resolve(_ffmpegCoreAsset).toString();
+
   Future<void> loadFFmpeg(VoidCallback onInitialized, {bool setLog = true, Function(String)? onFailed}) async {
+    if (!isWebFfmpegSupported) {
+      isLoaded = false;
+      onFailed?.call('$unsupportedEnvironmentMessage ($webSupportDetails)');
+      js.context.callMethod('logger', [
+        'FFmpegManager unsupported environment: $webSupportDetails, corePath=$resolvedCorePath'
+      ]);
+      return;
+    }
+
     try{
       if(ffmpeg?.isLoaded() ?? false) {
         js.context.callMethod('logger', [
@@ -34,10 +64,12 @@ class FfmpegManager {
       ffmpeg = createFFmpeg(
         CreateFFmpegParam(
           log: true,
-          corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
-          // corePath: 'https://quoc67k1-profile.web.app/assets/ffmpeg/ffmpeg-core.js',
+          corePath: resolvedCorePath,
         ),
       );
+      js.context.callMethod('logger', [
+        'FFmpegManager loading ffmpeg core from $resolvedCorePath'
+      ]);
 
       if(setLog) {
         ffmpeg?.setProgress(_onProgressHandler);

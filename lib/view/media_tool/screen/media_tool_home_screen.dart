@@ -78,7 +78,9 @@ class _MediaToolHomeScreenState extends State<MediaToolHomeScreen> {
                     ? Column(
                         children: [
                           Text(
-                            'FFmpeg not loaded. Please check console for errors.\nError:$conversionStatus',
+                            conversionStatus.contains('SharedArrayBuffer')
+                                ? 'FFmpeg requires cross-origin isolation.\nPlease serve with COOP/COEP headers.\nError: $conversionStatus'
+                                : 'FFmpeg not loaded. Please check console for errors.\nError: $conversionStatus',
                             style:
                                 const TextStyle(color: Colors.red, fontSize: 16),
                           ),
