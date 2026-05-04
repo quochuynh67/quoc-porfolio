@@ -6,13 +6,15 @@ import 'dart:js' as js;
 class FfmpegManager {
   static const String ffmpegVersion = '0.11.6';
   static const String _ffmpegCoreAsset = 'assets/ffmpeg/ffmpeg-core.js';
+  static const String _ffmpegCoreSingleThreadCdn =
+      'https://unpkg.com/@ffmpeg/core-st@0.11.0/dist/ffmpeg-core.js';
   static const String unsupportedEnvironmentMessage =
       'FFmpeg WebAssembly requires SharedArrayBuffer and cross-origin isolation (COOP/COEP).';
 
   FFmpeg? ffmpeg = createFFmpeg(
     CreateFFmpegParam(
       log: true,
-      corePath: Uri.base.resolve(_ffmpegCoreAsset).toString(),
+      corePath: _ffmpegCoreSingleThreadCdn,
     ),
   );
 
@@ -24,6 +26,10 @@ class FfmpegManager {
   bool isLoaded = false;
 
   bool get isWebFfmpegSupported {
+    return true;
+  }
+
+  bool get canUseMultiThreadCore {
     if (!kIsWeb) return true;
     final hasSharedArrayBuffer = js.context.hasProperty('SharedArrayBuffer');
     final isCrossOriginIsolated = js.context['crossOriginIsolated'] == true;
@@ -37,18 +43,16 @@ class FfmpegManager {
     return 'SharedArrayBuffer=$hasSharedArrayBuffer, crossOriginIsolated=$isCrossOriginIsolated';
   }
 
-  String get resolvedCorePath => Uri.base.resolve(_ffmpegCoreAsset).toString();
+  String get resolvedCorePath {
+    if (!kIsWeb) return Uri.base.resolve(_ffmpegCoreAsset).toString();
+    if (canUseMultiThreadCore) {
+      return Uri.base.resolve(_ffmpegCoreAsset).toString();
+    }
+    // Fallback for iframe/non-isolated environments where SharedArrayBuffer is unavailable.
+    return _ffmpegCoreSingleThreadCdn;
+  }
 
   Future<void> loadFFmpeg(VoidCallback onInitialized, {bool setLog = true, Function(String)? onFailed}) async {
-    if (!isWebFfmpegSupported) {
-      isLoaded = false;
-      onFailed?.call('$unsupportedEnvironmentMessage ($webSupportDetails)');
-      js.context.callMethod('logger', [
-        'FFmpegManager unsupported environment: $webSupportDetails, corePath=$resolvedCorePath'
-      ]);
-      return;
-    }
-
     try{
       if(ffmpeg?.isLoaded() ?? false) {
         js.context.callMethod('logger', [
@@ -61,6 +65,11 @@ class FfmpegManager {
       js.context.callMethod('logger', [
         'FFmpegManager start 1'
       ]);
+      if (!canUseMultiThreadCore) {
+        js.context.callMethod('logger', [
+          'FFmpegManager non-isolated environment detected ($webSupportDetails). Falling back to single-thread core.'
+        ]);
+      }
       ffmpeg = createFFmpeg(
         CreateFFmpegParam(
           log: true,

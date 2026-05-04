@@ -23,11 +23,11 @@
           },
           {
             "key": "Cross-Origin-Embedder-Policy",
-            "value": "cross-origin"
+            "value": "require-corp"
           },
           {
             "key": "Cross-Origin-Opener-Policy",
-            "value": "cross-origin"
+            "value": "same-origin"
           }
         ]
       }
