@@ -6,8 +6,9 @@ import 'dart:js' as js;
 class FfmpegManager {
   static const String ffmpegVersion = '0.11.6';
   static const String _ffmpegCoreAsset = 'assets/ffmpeg/ffmpeg-core.js';
+  // core-st@0.11.0 is missing ffmpeg-core.worker.js on unpkg (404), which breaks iframe fallback.
   static const String _ffmpegCoreSingleThreadCdn =
-      'https://unpkg.com/@ffmpeg/core-st@0.11.0/dist/ffmpeg-core.js';
+      'https://unpkg.com/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js';
   static const String unsupportedEnvironmentMessage =
       'FFmpeg WebAssembly requires SharedArrayBuffer and cross-origin isolation (COOP/COEP).';
 
