@@ -12,7 +12,9 @@ class NavigationButtonList extends StatelessWidget {
         curve: Curves.easeIn);
     final newPath = routeToPageIndex.entries.firstWhere((e) => e.value == index).key;
     // Updates the URL without reload
-    final uri = Uri(path: newPath);
+    final uri = index == 6
+        ? Uri(path: newPath, queryParameters: const {'game': 'bounce'})
+        : Uri(path: newPath);
     html.window.history.pushState(null, '', uri.toString());
   }
 
@@ -72,6 +74,11 @@ class NavigationButtonList extends StatelessWidget {
                     goToPage(5);
                   },
                   text: 'FlutterChatMe'),
+              NavigationTextButton(
+                  onTap: () {
+                    goToPage(6);
+                  },
+                  text: 'Games'),
             ],
           ),
         );

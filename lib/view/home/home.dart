@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_portfolio/view/others/others.dart';
 import 'package:flutter_portfolio/view/intro/introduction.dart';
 import 'package:flutter_portfolio/view/main/main_view.dart';
+import 'package:flutter_portfolio/view/games/games_page.dart';
 import 'package:flutter_portfolio/view/projects/project_view.dart';
 import 'package:flutter_portfolio/view/vlog/feed_page.dart';
 
@@ -14,6 +15,11 @@ class HomePage extends StatelessWidget {
   int _getPageIndexFromRoute(BuildContext context) {
     final uri = Uri.base;
     final path = uri.path; // e.g. "/projects"
+    final game = uri.queryParameters['game'];
+
+    if (game != null && game.isNotEmpty) {
+      return routeToPageIndex['/games'] ?? 0;
+    }
 
     print('_getPageIndexFromRoute Current path: $path');
     return routeToPageIndex[path] ?? 0;
@@ -33,12 +39,20 @@ class HomePage extends StatelessWidget {
     return mode == '1';
   }
 
+  bool isGameTabMode() {
+    final uri = Uri.base;
+    final game = uri.queryParameters['game'];
+    return uri.path == '/games' || (game != null && game.isNotEmpty);
+  }
+
   @override
   Widget build(BuildContext context) {
     final pageIndex = _getPageIndexFromRoute(context);
+    final immersiveMode = isVideoViewMode() || isGameTabMode();
+
     return MainView(
       initialPage: pageIndex,
-      videoViewMode: isVideoViewMode(),
+      videoViewMode: immersiveMode,
       pages: [
         const Introduction(),
         ProjectsView(),
@@ -46,6 +60,7 @@ class HomePage extends StatelessWidget {
         const MediaToolHomeScreen(),
         FeedPage(isPlayChillVideoAtFirst: isChillVideo()),
         const CsScreen(),
+        const GamesPage(),
       ],
     );
   }
