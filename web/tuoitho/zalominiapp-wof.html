@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>EmulatorJS Simple + Overlay</title>
+  <style>
+    html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hidden;font-family:system-ui,sans-serif}
+    .app{position:relative;width:100%;height:100%}
+    #game{position:absolute;inset:0}
+    .overlay{position:absolute;inset:0;pointer-events:none;display:flex;align-items:flex-end;justify-content:space-between;padding:16px;gap:16px}
+    .pad,.actions{pointer-events:auto;display:grid;gap:10px}
+    .dpad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(3,64px);gap:8px}
+    .hole{width:64px;height:64px}
+    button{appearance:none;border:1px solid #2c3441;background:linear-gradient(180deg,#1a2431,#10161f);color:#fff;border-radius:16px;font-weight:800;touch-action:none;user-select:none;-webkit-user-select:none}
+    .dpad button{width:64px;height:64px;font-size:24px}
+    .actions{grid-template-columns:repeat(2,80px);align-content:end}
+    .actions button{width:80px;height:80px;border-radius:999px;font-size:20px}
+    .meta{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:8px}
+    .meta button{width:100%;height:44px;border-radius:12px}
+    .status{position:absolute;left:12px;top:12px;z-index:5;padding:10px 12px;border-radius:12px;background:rgba(10,14,20,.78);color:#dbe7f4;border:1px solid rgba(255,255,255,.12);max-width:min(720px,calc(100vw - 24px));font-size:13px;line-height:1.5}
+    .pressed{transform:scale(.96);border-color:#31d0aa;box-shadow:0 0 0 3px rgba(49,208,170,.16)}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div id="status" class="status">Loading EmulatorJS...</div>
+    <div id="game"></div>
+<!--    <div class="overlay">-->
+<!--      <div class="pad">-->
+<!--        <div class="dpad">-->
+<!--          <div class="hole"></div><button type="button" data-key="ArrowUp">↑</button><div class="hole"></div>-->
+<!--          <button type="button" data-key="ArrowLeft">←</button><button type="button" data-key="ArrowDown">↓</button><button type="button" data-key="ArrowRight">→</button>-->
+<!--          <div class="hole"></div><button type="button" data-key="5">Coin</button><div class="hole"></div>-->
+<!--        </div>-->
+<!--      </div>-->
+<!--      <div class="actions">-->
+<!--        <button type="button" data-key="z">A</button>-->
+<!--        <button type="button" data-key="x">B</button>-->
+<!--        <button type="button" data-key="a">C</button>-->
+<!--        <button type="button" data-key="s">D</button>-->
+<!--        <div class="meta"><button type="button" data-key="1">Start</button><button type="button" data-key="Enter">Menu</button></div>-->
+<!--      </div>-->
+<!--    </div>-->
+  </div>
+
+  <script>
+    const ROM_URL = 'https://api.gametuoitho.vn/api/v1/files/roms/0de5b711-1ba4-44e0-a901-bff0612e40a5/wof.zip';
+    const DATA_URL = 'https://cdn.emulatorjs.org/stable/data/';
+    const LOADER_URL = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+    const statusEl = document.getElementById('status');
+    function setStatus(t){ statusEl.textContent = t; }
+    function focusGame(){ const c = document.querySelector('#game canvas, #game iframe') || document.getElementById('game'); if (c && c.focus) c.focus(); window.focus(); }
+    function emitKey(type, key){ focusGame(); const e = new KeyboardEvent(type, { key, bubbles:true, cancelable:true }); document.dispatchEvent(e); window.dispatchEvent(e); }
+
+    document.querySelectorAll('[data-key]').forEach(btn => {
+      const key = btn.dataset.key;
+      const down = e => { e.preventDefault(); btn.classList.add('pressed'); emitKey('keydown', key); };
+      const up = e => { e.preventDefault(); btn.classList.remove('pressed'); emitKey('keyup', key); };
+      btn.addEventListener('pointerdown', down);
+      btn.addEventListener('pointerup', up);
+      btn.addEventListener('pointercancel', up);
+      btn.addEventListener('pointerleave', up);
+    });
+
+    window.EJS_player = '#game';
+    window.EJS_core = 'arcade';
+    window.EJS_color = '0064ff';
+    window.EJS_startOnLoaded = true;
+    window.EJS_pathtodata = DATA_URL;
+    window.EJS_gameUrl = ROM_URL;
+    window.EJS_language = 'vi-VN';
+
+    const s = document.createElement('script');
+    s.src = LOADER_URL;
+    s.async = true;
+    s.onload = () => setStatus('');
+    s.onerror = () => setStatus('Cannot load loader.js.');
+    document.body.appendChild(s);
+  </script>
+</body>
+</html>
