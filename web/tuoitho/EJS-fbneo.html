@@ -980,7 +980,12 @@
             document.body.appendChild(script);
         }
 
-
+        window.addEventListener('unhandledrejection', (event) => {
+          if (event.reason && event.reason.name === 'NotAllowedError') {
+            console.warn('[EJS] Swallow NotAllowedError:', event.reason);
+            event.preventDefault();
+          }
+        });
     </script>
 </body>
 
