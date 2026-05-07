@@ -883,7 +883,9 @@
             window.EJS_gameUrl = url;
             window.EJS_core = core;
             window.EJS_pathtodata = "data/";
-            window.EJS_startOnLoaded = true;
+            window.EJS_startOnLoaded = false;
+            window.EJS_fullscreenOnLoaded = false;
+            window.EJS_softLoad = true;
             window.EJS_DEBUG_XX = enableDebug;
             window.EJS_disableDatabases = true;
             window.EJS_threads = enableThreads;
@@ -896,9 +898,11 @@
                 // Lower cache cap to reduce WebKit memory pressure
                 window.EJS_cacheConfig = {
                     enabled: true,
-                    cacheMaxSizeMB: 256,
+                    cacheMaxSizeMB: 128,
                     cacheMaxAgeMins: 7200
                 };
+                window.EJS_backgroundBlur = false;
+
                 // Hide non-essential controls that add DOM overhead
                 window.EJS_Buttons = {
                     saveState: false,
