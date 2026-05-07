@@ -659,7 +659,19 @@
             <option value="fb_neo_rom/zookeep.zip">Zoo Keeper</option>
         </select>
     </div>
-
+    <script>
+        // Monkey-patch getExtension TRƯỚC khi load emulator.min.js
+        (function() {
+          const origGetExtension = WebGLRenderingContext.prototype.getExtension;
+          WebGLRenderingContext.prototype.getExtension = function(name) {
+            if (name === 'WEBGL_polygon_mode') {
+              // Không enable extension này -> browser sẽ không log warning
+              return null;
+            }
+            return origGetExtension.call(this, name);
+          };
+        })();
+    </script>
     <script>
         // ── iOS detection (covers iPhone/iPad and iPadOS-as-Mac) ──────────────
         const isIOS =

@@ -351,5 +351,9 @@
   "Direct Keyboard Input": "Nhập bàn phím trực tiếp",
   "Forward Alt key": "Chuyển tiếp phím Alt",
   "Lock Mouse": "Khóa chuột",
-  "System Save interval": "Khoảng thời gian lưu hệ thống"
+  "System Save interval": "Khoảng thời gian lưu hệ thống",
+  "Menu Bar Button": "Nút thanh menu",
+  "visible": "hiển thị",
+  "hidden": "ẩn",
+  "Click to resume Emulator": "Nhấp để tiếp tục trình giả lập"
 }
