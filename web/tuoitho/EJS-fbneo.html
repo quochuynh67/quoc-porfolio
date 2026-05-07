@@ -706,12 +706,11 @@
         }
 
 
-        // ── Overlay logic ────────────────────────────────────────────────────
-        let _readyScript = null;   // holds the <script> element after decompression
-
+        // ── Overlay logic: show on EJS_onGameStart, tap to hide ─────────────
         function _spawnStars() {
             const ov = document.getElementById('tap-overlay');
-            ov.querySelectorAll('.tap-star').forEach(function(s){ s.remove(); });
+            if (!ov) return;
+            ov.querySelectorAll('.tap-star').forEach(function (s) { s.remove(); });
             for (let i = 0; i < 40; i++) {
                 const s = document.createElement('div');
                 s.className = 'tap-star';
@@ -720,32 +719,29 @@
                 s.style.animationDuration = (4 + Math.random() * 6) + 's';
                 s.style.animationDelay = (Math.random() * 8) + 's';
                 const sz = (1 + Math.random() * 3) + 'px';
-                s.style.width = sz; s.style.height = sz;
+                s.style.width = sz;
+                s.style.height = sz;
                 ov.appendChild(s);
             }
         }
 
-        // Called when user picks a game: show loading overlay, start decompression
+        // Start game immediately after user selects from dropdown
         function selectGame(value) {
-            const sel = document.getElementById('game-select');
-            let label = value.split('/').pop().replace(/\.zip$/i, '');
-            for (let i = 0; i < sel.options.length; i++) {
-                if (sel.options[i].value === value) { label = sel.options[i].textContent; break; }
-            }
             const ov = document.getElementById('tap-overlay');
-            document.getElementById('tap-game-title').textContent = label;
-            ov.classList.remove('ready');
-            ov.classList.add('visible');
-            _readyScript = null;
-            _spawnStars();
-            // Run in next tick so the overlay paints first
-            setTimeout(function() { run(false, value); }, 50);
+            if (ov) {
+                ov.classList.remove('visible');
+                ov.classList.remove('ready');
+            }
+            run(false, value);
         }
 
-        // Called by run() after all decompression is done
-        function showReadyOverlay(script) {
-            _readyScript = script;
+        function showTapOverlay(titleText) {
             const ov = document.getElementById('tap-overlay');
+            if (!ov) return;
+            const title = document.getElementById('tap-game-title');
+            if (title) title.textContent = titleText || 'Game started';
+            _spawnStars();
+            ov.classList.add('visible');
             ov.classList.add('ready');
         }
 
@@ -753,18 +749,12 @@
             function _initOverlay() {
                 const ov = document.getElementById('tap-overlay');
                 if (!ov) return;
-                function startGame(e) {
-                    if (!_readyScript) return;  // not ready yet
-                    e.preventDefault();
-                    const s = _readyScript;
-                    _readyScript = null;
+                function dismissOverlay() {
                     ov.classList.remove('visible');
                     ov.classList.remove('ready');
-                    // appendChild runs emulator (AudioContext) inside user gesture
-                    document.body.appendChild(s);
                 }
-                ov.addEventListener('click',      startGame, { passive: false });
-                ov.addEventListener('touchstart', startGame, { passive: false });
+                ov.addEventListener('click', dismissOverlay);
+                ov.addEventListener('touchstart', dismissOverlay, { passive: true });
             }
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', _initOverlay);
@@ -879,7 +869,14 @@
             box.remove()
             div.appendChild(sub)
             document.body.appendChild(div)
-
+            window.EJS_onGameStart = function (e) {
+                console.log('[EJS] Game started', {
+                    gameName: window.EJS_gameName,
+                    core: window.EJS_core,
+                    event: e,
+                });
+                showTapOverlay(window.EJS_gameName);
+            };
             window.EJS_player = "#game";
             window.EJS_gameName = parts.shift();
             window.EJS_biosUrl = "";
@@ -980,7 +977,7 @@
 
             script.src = await decompressToBlobURL("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");
 
-            showReadyOverlay(script);  // wait for user tap before starting
+            document.body.appendChild(script);
         }
 
 
