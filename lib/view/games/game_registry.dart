@@ -1,9 +1,6 @@
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_portfolio/view/bounce_game/bouncing_game.dart';
 import 'package:flutter_portfolio/view/snake/main.dart';
-
-import '../../view model/controller.dart';
 
 class GameDefinition {
   final String id;
@@ -18,20 +15,16 @@ class GameDefinition {
 }
 
 class GameRegistry {
-  static void _goHome() {
-    controller.animateToPage(
-      routeToPageIndex['/'] ?? 0,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeIn,
-    );
-    SystemNavigator.routeInformationUpdated(uri: Uri(path: '/'));
-  }
-
   static final List<GameDefinition> games = [
+    GameDefinition(
+      id: 'tuoitho',
+      label: 'Tuoi Tho (FBNeo)',
+      builder: (_) => const SizedBox.shrink(),
+    ),
     GameDefinition(
       id: 'snake',
       label: 'Snake',
-      builder: (_) => SnakeGame(),
+      builder: (_) => const SnakeGame(),
     ),
     GameDefinition(
       id: 'bounce',

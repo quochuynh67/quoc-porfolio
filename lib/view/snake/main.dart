@@ -94,7 +94,7 @@ class SnakeHomeState extends State<SnakeHome>
           children: <Widget>[
             ListTile(
               leading: Icon(Icons.settings_applications),
-              title: Text('Color Options'),
+              title: Text('Tùy chọn màu sắc'),
             ),
             Divider(
               color: Colors.black,
@@ -103,7 +103,7 @@ class SnakeHomeState extends State<SnakeHome>
             Card(
               child: ListTile(
                 leading: colorOptionLeading(gameState.appBkColor, 30.0),
-                title: Text('background color'),
+                title: Text('Màu nền'),
                 onTap: () {
                   Navigator.pop(context);
                   gameState.optionsAppBkColor(context);
@@ -113,7 +113,7 @@ class SnakeHomeState extends State<SnakeHome>
             Card(
               child: ListTile(
                 leading: colorOptionLeading(gameState.leftPlayerColor, 30.0),
-                title: Text('left player color'),
+                title: Text('Màu người chơi bên trái'),
                 onTap: () {
                   Navigator.pop(context);
                   gameState.optionsLeftColor(context);
@@ -123,7 +123,7 @@ class SnakeHomeState extends State<SnakeHome>
             Card(
               child: ListTile(
                 leading: colorOptionLeading(gameState.rightPlayerColor, 30.0),
-                title: Text('right player color'),
+                title: Text('Màu người chơi bên phải'),
                 onTap: () {
                   Navigator.pop(context);
                   gameState.optionsRightColor(context);
@@ -134,7 +134,7 @@ class SnakeHomeState extends State<SnakeHome>
               child: ListTile(
                 leading:
                 colorOptionLeading(gameState.brickOnePlayerColor, 30.0),
-                title: Text('snake color(1 player)'),
+                title: Text('Màu rắn (1 người chơi)'),
                 onTap: () {
                   Navigator.pop(context);
                   gameState.optionsOnePlayerColor(context);
@@ -144,7 +144,7 @@ class SnakeHomeState extends State<SnakeHome>
             Card(
               child: ListTile(
                 leading: colorOptionLeading(gameState.scoreBoardColor, 30.0),
-                title: Text('score board color(1 player)'),
+                title: Text('Màu bảng điểm (1 người chơi)'),
                 onTap: () {
                   Navigator.pop(context);
                   gameState.optionsScoreBoardColor(context);
@@ -154,7 +154,7 @@ class SnakeHomeState extends State<SnakeHome>
             Card(
               child: ListTile(
                 leading: colorOptionLeading(gameState.foodColor, 30.0),
-                title: Text('food color'),
+                title: Text('Màu thức ăn'),
                 onTap: () {
                   Navigator.pop(context);
                   gameState.optionsFoodColor(context);
@@ -167,7 +167,7 @@ class SnakeHomeState extends State<SnakeHome>
                   Icons.save,
                   size: 30,
                 ),
-                title: Text('save color plan'),
+                title: Text('Lưu bảng màu'),
                 onTap: () {
                   Navigator.pop(context);
                   gameState.saveColorPlan(context);
@@ -180,7 +180,7 @@ class SnakeHomeState extends State<SnakeHome>
                   Icons.restore,
                   size: 30,
                 ),
-                title: Text('reset color plan'),
+                title: Text('Khôi phục bảng màu'),
                 onTap: () {
                   Navigator.pop(context);
                   gameState.resetColorPlan(context);
@@ -217,7 +217,7 @@ class SnakeHomeState extends State<SnakeHome>
             //     left: 0.0, top: 0.0, child: Icon(Icons.fiber_new)),
             Center(
                 child: Text(
-                    'high score: ${gameState.highScore}\nScore: ${gameState.score}')),
+                    'Điểm cao nhất: ${gameState.highScore}\nĐiểm: ${gameState.score}')),
           ],
         ),
       );
@@ -263,7 +263,7 @@ class SnakeHomeState extends State<SnakeHome>
         onClose: () {
           gameState.menuClose();
         },
-        tooltip: 'SpeedDialInitial',
+        tooltip: 'Menu khởi tạo',
         heroTag: 'speed-dial-hero-tag',
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -273,7 +273,7 @@ class SnakeHomeState extends State<SnakeHome>
           SpeedDialChild(
             child: Icon(Icons.settings),
             backgroundColor: Colors.yellow,
-            label: 'Options',
+            label: 'Tùy chọn',
             labelStyle: TextStyle(fontSize: 20.0),
             onTap: () {
               gameState.setMenuFlag(false);
@@ -283,7 +283,7 @@ class SnakeHomeState extends State<SnakeHome>
           SpeedDialChild(
             child: Icon(Icons.exit_to_app),
             backgroundColor: Colors.red,
-            label: 'Exit Game',
+            label: 'Thoát trò chơi',
             labelStyle: TextStyle(fontSize: 20.0),
             onTap: () {
               gameState.menuExit(context);
@@ -310,7 +310,7 @@ class SnakeHomeState extends State<SnakeHome>
         onClose: () {
           gameState.playGame(context);
         },
-        tooltip: 'Speed Dial',
+        tooltip: 'Menu trò chơi',
         heroTag: 'speed-dial-hero-tag',
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -320,7 +320,7 @@ class SnakeHomeState extends State<SnakeHome>
           SpeedDialChild(
             child: Icon(Icons.settings),
             backgroundColor: Colors.yellow,
-            label: 'Options',
+            label: 'Tùy chọn',
             labelStyle: TextStyle(fontSize: 20.0),
             onTap: () {
               gameState.setPlayFlag(false);
@@ -330,7 +330,7 @@ class SnakeHomeState extends State<SnakeHome>
           SpeedDialChild(
               child: Icon(Icons.redo),
               backgroundColor: Colors.green,
-              label: 'Quick Restart',
+              label: 'Chơi lại nhanh',
               labelStyle: TextStyle(fontSize: 20.0),
               onTap: () {
                 gameState.menuQuickRestart(context);
@@ -338,7 +338,7 @@ class SnakeHomeState extends State<SnakeHome>
           SpeedDialChild(
             child: Icon(Icons.refresh),
             backgroundColor: Colors.blue,
-            label: 'Restart',
+            label: 'Chơi lại',
             labelStyle: TextStyle(fontSize: 20.0),
             onTap: () {
               gameState.menuRestart(context);
@@ -347,7 +347,7 @@ class SnakeHomeState extends State<SnakeHome>
           SpeedDialChild(
             child: Icon(Icons.exit_to_app),
             backgroundColor: Colors.red,
-            label: 'Exit Game',
+            label: 'Thoát trò chơi',
             labelStyle: TextStyle(fontSize: 20.0),
             onTap: () {
               gameState.menuExit(context);

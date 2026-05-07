@@ -59,24 +59,24 @@ class GameState with ChangeNotifier {
     'RIGHT': [0, 1]
   };
 
-  var _modeTitle = 'Vui lòng chọn chế độ chơi';
+  var _modeTitle = 'Please choose game mode';
   var _modeOptions = {
-    '♂️ Cổ điển (1 người chơi)': 1,
-    '⚣ Đối kháng (2 người chơi)': 2,
+    '♂️traditional(1 player)': 1,
+    '⚣battle(2 player)': 2,
   };
 
-  var _sizeTitle = 'Vui lòng chọn kích thước bản đồ';
+  var _sizeTitle = 'Please choose map size';
   var _sizeOptions = {
-    '⛩️ Nhỏ': 30,
-    '🗻 Vừa': 40,
-    '🗾 Lớn': 50,
+    '⛩️small': 30,
+    'medium': 40,
+    'large': 50,
   };
 
-  var _speedTitle = 'Vui lòng chọn độ khó';
+  var _speedTitle = 'Please choose game difficulty';
   var _speedOptions = {
-    '😄 Dễ': 250,
-    '🙂 Bình thường': 200,
-    '🙃 Khó': 120,
+    'Easy': 250,
+    'Normal': 200,
+    'Hard': 120,
   };
 
   int get playerNum => _playerNum;
@@ -121,8 +121,8 @@ class GameState with ChangeNotifier {
 
   void saveColorPlan(BuildContext context) async {
     _timer.cancel();
-    var saveTitle = 'Bạn có muốn lưu bảng màu hiện tại không?';
-    var saveOptions = {'Không ❌': 0, 'Có ✔️': 1};
+    var saveTitle = 'Do you want to save your color plan?';
+    var saveOptions = {'NO❌': 0, 'YES✔️': 1};
     var confirm = await showDialog(
         context: context,
         barrierDismissible: false,
@@ -144,7 +144,7 @@ class GameState with ChangeNotifier {
             context: context,
             builder: (context) {
               return configDialog(
-                  context, 'Lưu bảng màu thành công! 😆', {'Xác nhận ✔️': 1});
+                  context, 'succeed in saving color plan!', {'Confirm✔️': 1});
             });
       }
     }
@@ -159,8 +159,8 @@ class GameState with ChangeNotifier {
 
   void resetColorPlan(BuildContext context) async {
     _timer.cancel();
-    var saveTitle = 'Bạn có chắc muốn khôi phục bảng màu mặc định không?';
-    var saveOptions = {'Không ❌': 0, 'Có ✔️': 1};
+    var saveTitle = 'Are you sure to reset color plan to default?';
+    var saveOptions = {'NO❌': 0, 'YES✔️': 1};
     var confirm = await showDialog(
         context: context,
         barrierDismissible: false,
@@ -182,8 +182,8 @@ class GameState with ChangeNotifier {
         await showDialog(
             context: context,
             builder: (context) {
-              return configDialog(context, 'Khôi phục bảng màu thành công! 😆',
-                  {'Xác nhận ✔️': 1});
+              return configDialog(context, 'succeed in resetting color plan!',
+                  {'Confirm✔️': 1});
             });
       }
     }
@@ -382,20 +382,20 @@ class GameState with ChangeNotifier {
   void _gameOverTwoPlayer(BuildContext context, String winner) {
     switch (winner) {
       case 'draw':
-        _gameOver(context, 'Hòa! ⚖️');
+        _gameOver(context, 'draw! ⚖️');
         break;
       case 'left':
-        _gameOver(context, 'Người chơi bên trái thắng! 🎉');
+        _gameOver(context, 'left player wins!');
         break;
       case 'right':
-        _gameOver(context, 'Người chơi bên phải thắng! 🎉');
+        _gameOver(context, 'right player wins!');
         break;
       default:
     }
   }
 
   void _gameOver(BuildContext context, String title) async {
-    var overOptions = {'Quay lại': 0, 'Chơi lại': 1, 'Chơi lại nhanh': 2};
+    var overOptions = {'Return': 0, 'Restart': 1, 'Quick Restart': 2};
     var option = await showDialog(
         context: context,
         barrierDismissible: false,
@@ -403,16 +403,16 @@ class GameState with ChangeNotifier {
           return configDialog(context, title, overOptions);
         });
     switch (option) {
-      case 'Quay lại':
+      case 'Return':
         //_initGame();
         //notifyListeners();
         break;
-      case 'Chơi lại':
+      case 'Restart':
         if (context.mounted) {
           setConfig(context);
         }
         break;
-      case 'Chơi lại nhanh':
+      case 'Quick Restart':
         if (context.mounted) {
           _startGame(context);
         }
@@ -463,10 +463,10 @@ class GameState with ChangeNotifier {
               SharedPreferences prefs = await SharedPreferences.getInstance();
               prefs.setInt('highScore', _highScore);
               if (context.mounted) {
-                _gameOver(context, 'KỶ LỤC MỚI! 🎉\n 🆕Điểm cao nhất: $_highScore');
+                _gameOver(context, 'NEW RECORD!\n high score: $_highScore');
               }
             } else {
-              _gameOver(context, 'THUA RỒI 😂');
+              _gameOver(context, 'GAME OVER ');
             }
 
             return;
@@ -704,13 +704,13 @@ class GameState with ChangeNotifier {
       ),
       actions: <Widget>[
         TextButton(
-          child: const Text('Hủy ❌'),
+          child: const Text('Cancel❌'),
           onPressed: () {
             Navigator.of(context).pop(-1);
           },
         ),
         TextButton(
-          child: const Text('Xác nhận ✔️'),
+          child: const Text('Confirm✔️'),
           onPressed: () {
             Navigator.of(context).pop(tmpColor);
           },
@@ -855,15 +855,15 @@ class GameState with ChangeNotifier {
           return configDialog(context, _speedTitle, _speedOptions);
         });
     debugPrint("game speed：$_speed");
-    var confirmTitle = '''Bắt đầu trò chơi với các lựa chọn sau?
+    var confirmTitle = '''Play the game under the following options?
 
-    Chế độ chơi: $gameMode
-    Kích thước bản đồ: $mapSize
-    Độ khó: $difficulty
+    Game Mode: $gameMode
+    Map Size: $mapSize
+    Difficulty: $difficulty
     ''';
     var confirmOptions = {
-      'Hủy': false,
-      'BẮT ĐẦU! 🎬': true,
+      'Cancel': false,
+      'START!': true,
     };
     var startFlag = await showDialog(
         context: context,
