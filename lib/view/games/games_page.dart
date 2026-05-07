@@ -40,7 +40,7 @@ class _GamesPageState extends State<GamesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedGameId = Uri.base.queryParameters['game'] ?? 'bounce';
+    final selectedGameId = Uri.base.queryParameters['game'] ?? 'tuoitho';
 
     if (selectedGameId == 'tuoitho') {
       if (kIsWeb) {

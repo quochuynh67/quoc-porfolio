@@ -13,7 +13,7 @@ class NavigationButtonList extends StatelessWidget {
     final newPath = routeToPageIndex.entries.firstWhere((e) => e.value == index).key;
     // Updates the URL without reload
     final uri = index == 6
-        ? Uri(path: newPath, queryParameters: const {'game': 'bounce'})
+        ? Uri(path: newPath, queryParameters: const {'game': 'tuoitho'})
         : Uri(path: newPath);
     html.window.history.pushState(null, '', uri.toString());
   }
