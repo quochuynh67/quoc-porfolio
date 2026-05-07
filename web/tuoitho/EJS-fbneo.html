@@ -97,422 +97,590 @@
             height: 130px;
             filter: drop-shadow(0 0 8px white);
         }
+        /* ── Touch-to-Play Overlay ──────────────────────────────────────── */
+        #tap-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: radial-gradient(ellipse at center, #0d0d2b 0%, #000 70%);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: default;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        #tap-overlay.visible { display: flex; }
+        #tap-overlay.ready   { cursor: pointer; }
+
+        /* Scanline */
+        #tap-overlay::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent, transparent 3px,
+                rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        #tap-overlay-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 22px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        /* ── Game title ── */
+        #tap-game-title {
+            font-family: monospace;
+            font-size: clamp(18px, 4vw, 32px);
+            font-weight: bold;
+            color: #fff;
+            text-transform: uppercase;
+            text-shadow: 0 0 12px #00e5ff, 0 0 30px #00e5ff88;
+            letter-spacing: 3px;
+            animation: titlePulse 2s ease-in-out infinite;
+        }
+        @keyframes titlePulse {
+            0%, 100% { text-shadow: 0 0 10px #00e5ff, 0 0 25px #00e5ff88; }
+            50%       { text-shadow: 0 0 20px #00e5ff, 0 0 50px #00e5ffcc, 0 0 80px #00e5ff44; }
+        }
+
+        /* ── Loading spinner (shown while decompressing) ── */
+        #tap-loading-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+        .tap-spinner {
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            border: 5px solid #1a1a3a;
+            border-top-color: #00e5ff;
+            border-right-color: #ff3cac;
+            animation: spinRing 0.9s linear infinite;
+            box-shadow: 0 0 16px #00e5ff66;
+        }
+        @keyframes spinRing { to { transform: rotate(360deg); } }
+
+        .tap-loading-dots::after {
+            content: '';
+            animation: loadDots 1.4s steps(4, end) infinite;
+        }
+        @keyframes loadDots {
+            0%   { content: '';    }
+            25%  { content: '.';   }
+            50%  { content: '..';  }
+            75%  { content: '...'; }
+        }
+        #tap-loading-label {
+            font-family: monospace;
+            font-size: 15px;
+            color: #aaa;
+            letter-spacing: 2px;
+        }
+
+        /* ── Ready state (shown after decompression done) ── */
+        #tap-ready-wrap { display: none; flex-direction: column; align-items: center; gap: 16px; }
+        #tap-overlay.ready #tap-loading-wrap { display: none; }
+        #tap-overlay.ready #tap-ready-wrap   { display: flex; }
+
+        .tap-coin-ring {
+            width: 90px; height: 90px;
+            border-radius: 50%;
+            border: 4px solid #ffd700;
+            box-shadow: 0 0 18px #ffd700, 0 0 40px #ffd70088, inset 0 0 18px #ffd70033;
+            animation: ringPulse 1.2s ease-in-out infinite;
+            display: flex; align-items: center; justify-content: center;
+        }
+        @keyframes ringPulse {
+            0%, 100% { transform: scale(1);    box-shadow: 0 0 18px #ffd700, 0 0 40px #ffd70088; }
+            50%       { transform: scale(1.12); box-shadow: 0 0 30px #ffd700, 0 0 70px #ffd700bb; }
+        }
+        .tap-coin-inner { font-size: 38px; }
+
+        #tap-cta {
+            font-family: monospace;
+            font-size: clamp(16px, 3.5vw, 26px);
+            font-weight: bold;
+            color: #ffd700;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            animation: blinkCTA 0.9s step-start infinite;
+        }
+        @keyframes blinkCTA {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0; }
+        }
+
+        #tap-sub { font-family: monospace; font-size: 13px; color: #aaa; letter-spacing: 1px; }
+
+        /* ── Floating stars ── */
+        .tap-star {
+            position: absolute;
+            border-radius: 50%;
+            background: #fff;
+            opacity: 0;
+            animation: starFloat linear infinite;
+        }
+        @keyframes starFloat {
+            0%   { transform: translateY(0)   scale(0); opacity: 0; }
+            20%  { opacity: 1; }
+            80%  { opacity: 0.7; }
+            100% { transform: translateY(-110vh) scale(1.5); opacity: 0; }
+        }
+
 
         #top {
             margin: 5px;
         }
-    
-            #game-select {
-                margin: auto;
-                padding: 10px;
-                font-size: 16px;
-                background: #555;
-                color: #fff;
-                border: 1px solid #777;
-                border-radius: 5px;
-            }
-</style>
+
+        #game-select {
+            margin: auto;
+            padding: 10px;
+            font-size: 16px;
+            background: #555;
+            color: #fff;
+            border: 1px solid #777;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 
 <body>
 
-    <div id="box">
-            <select id="game-select" onchange="if(this.value) run(false, this.value)">
-                <option value="">Select game...</option>
-                <option value="fb_neo_rom/1942.zip">1942</option>
-                <option value="fb_neo_rom/1943.zip">1943</option>
-                <option value="fb_neo_rom/1943kai.zip">1943 Kai</option>
-                <option value="fb_neo_rom/64street.zip">64th Street</option>
-                <option value="fb_neo_rom/aburner2.zip">After Burner II</option>
-                <option value="fb_neo_rom/actfancr.zip">Act Fancer</option>
-                <option value="fb_neo_rom/aerofgt.zip">Aero Fighters</option>
-                <option value="fb_neo_rom/agallet.zip">Air Gallet</option>
-                <option value="fb_neo_rom/airwolf.zip">Air Wolf</option>
-                <option value="fb_neo_rom/ajax.zip">Ajax</option>
-                <option value="fb_neo_rom/aliens.zip">Aliens</option>
-                <option value="fb_neo_rom/aliensyn.zip">Alien Syndrome</option>
-                <option value="fb_neo_rom/aligator.zip">Alligator Hunt</option>
-                <option value="fb_neo_rom/altbeast.zip">Altered Beast</option>
-                <option value="fb_neo_rom/amidar.zip">Amidar</option>
-                <option value="fb_neo_rom/aquajack.zip">Aqua Jack</option>
-                <option value="fb_neo_rom/arkanoid.zip">Arkanoid</option>
-                <option value="fb_neo_rom/arknoid2.zip">Arkanoid 2</option>
-                <option value="fb_neo_rom/armorcar.zip">Armor Car</option>
-                <option value="fb_neo_rom/armwrest.zip">Arm Wrestling</option>
-                <option value="fb_neo_rom/astdelux.zip">Asteroids Deluxe</option>
-                <option value="fb_neo_rom/asterix.zip">Asterix</option>
-                <option value="fb_neo_rom/asteroid.zip">Asteroids</option>
-                <option value="fb_neo_rom/astorm.zip">Alien Storm</option>
-                <option value="fb_neo_rom/atetris.zip">Atari Tetris</option>
-                <option value="fb_neo_rom/aurail.zip">Aurail</option>
-                <option value="fb_neo_rom/avengers.zip">Avengers</option>
-                <option value="fb_neo_rom/avspirit.zip">Avenger Spirit</option>
-                <option value="fb_neo_rom/baddudes.zip">Bad Dudes</option>
-                <option value="fb_neo_rom/badlands.zip">Bad Lands</option>
-                <option value="fb_neo_rom/bankp.zip">Bank Panic</option>
-                <option value="fb_neo_rom/batman.zip">Batman</option>
-                <option value="fb_neo_rom/batrider.zip">Battle Garegga DX</option>
-                <option value="fb_neo_rom/bbros.zip">Bubble Bobble Part 2</option>
-                <option value="fb_neo_rom/berzerk.zip">Berzerk</option>
-                <option value="fb_neo_rom/bgaregga.zip">Battle Garegga</option>
-                <option value="fb_neo_rom/biomtoy.zip">Biomechanical Toy</option>
-                <option value="fb_neo_rom/bionicc.zip">Bionic Commando</option>
-                <option value="fb_neo_rom/blktiger.zip">Black Tiger</option>
-                <option value="fb_neo_rom/bloodbro.zip">Blood Bros</option>
-                <option value="fb_neo_rom/blstroid.zip">Blasteroids</option>
-                <option value="fb_neo_rom/blswhstl.zip">Bells and Whistles</option>
-                <option value="fb_neo_rom/bnj.zip">Bump N Jump</option>
-                <option value="fb_neo_rom/bogeyman.zip">Bogeyman</option>
-                <option value="fb_neo_rom/bombjack.zip">Bomb Jack</option>
-                <option value="fb_neo_rom/bongo.zip">Bongo</option>
-                <option value="fb_neo_rom/boogwing.zip">Boogie Wings</option>
-                <option value="fb_neo_rom/brkthru.zip">Breakthrough</option>
-                <option value="fb_neo_rom/btime.zip">Burger Time</option>
-                <option value="fb_neo_rom/btoads.zip">Battletoads</option>
-                <option value="fb_neo_rom/bubbles.zip">Bubbles</option>
-                <option value="fb_neo_rom/bublbob2.zip">Bubble Bobble 2</option>
-                <option value="fb_neo_rom/bublbobl.zip">Bubble Bobble</option>
-                <option value="fb_neo_rom/buckrog.zip">Buck Rogers</option>
-                <option value="fb_neo_rom/bucky.zip">Bucky OHare</option>
-                <option value="fb_neo_rom/bwidow.zip">Black Widow</option>
-                <option value="fb_neo_rom/bzone.zip">Battle Zone</option>
-                <option value="fb_neo_rom/cabal.zip">Cabal</option>
-                <option value="fb_neo_rom/captaven.zip">Captain America</option>
-                <option value="fb_neo_rom/carnival.zip">Carnival</option>
-                <option value="fb_neo_rom/ccastles.zip">Crystal Castles</option>
-                <option value="fb_neo_rom/cclimber.zip">Crazy Climber</option>
-                <option value="fb_neo_rom/centiped.zip">Centipede</option>
-                <option value="fb_neo_rom/chaknpop.zip">Chack'n Pop</option>
-                <option value="fb_neo_rom/chasehq.zip">Chase HQ</option>
-                <option value="fb_neo_rom/chinagat.zip">China Gate</option>
-                <option value="fb_neo_rom/choplift.zip">Chop Lifter</option>
-                <option value="fb_neo_rom/circusc.zip">Circus Charlie</option>
-                <option value="fb_neo_rom/citycon.zip">City Connection</option>
-                <option value="fb_neo_rom/ckong.zip">Crazy Kong</option>
-                <option value="fb_neo_rom/ckongpt2.zip">Crazy Kong Part 2</option>
-                <option value="fb_neo_rom/cleopatr.zip">Cleopatra Fortune</option>
-                <option value="fb_neo_rom/columns.zip">Columns</option>
-                <option value="fb_neo_rom/commando.zip">Commando</option>
-                <option value="fb_neo_rom/congo.zip">Congo</option>
-                <option value="fb_neo_rom/contra.zip">Contra</option>
-                <option value="fb_neo_rom/cotton.zip">Cotton</option>
-                <option value="fb_neo_rom/crimfght.zip">Crime Fighters</option>
-                <option value="fb_neo_rom/ctribe.zip">Captain Commando</option>
-                <option value="fb_neo_rom/cyvern.zip">Cyvern Dragon Weapons</option>
-                <option value="fb_neo_rom/darkseal.zip">Dark Seal</option>
-                <option value="fb_neo_rom/dassault.zip">D. Darius</option>
-                <option value="fb_neo_rom/dbreed.zip">Dragon Breed</option>
-                <option value="fb_neo_rom/dbz.zip">Dragon Ball Z</option>
-                <option value="fb_neo_rom/dbz2.zip">Dragon Ball Z 2</option>
-                <option value="fb_neo_rom/ddcrew2.zip">D.D. Crew</option>
-                <option value="fb_neo_rom/ddragon.zip">Double Dragon</option>
-                <option value="fb_neo_rom/ddragon2.zip">Double Dragon II</option>
-                <option value="fb_neo_rom/ddragon3.zip">Double Dragon 3</option>
-                <option value="fb_neo_rom/ddux.zip">Detana Twinbee</option>
-                <option value="fb_neo_rom/deadconx.zip">Dead Connection</option>
-                <option value="fb_neo_rom/defender.zip">Defender</option>
-                <option value="fb_neo_rom/digdug.zip">Dig Dug</option>
-                <option value="fb_neo_rom/digdug2.zip">Dig Dug 2</option>
-                <option value="fb_neo_rom/dkong.zip">Donkey Kong</option>
-                <option value="fb_neo_rom/dkong3.zip">Donkey Kong 3</option>
-                <option value="fb_neo_rom/dkongjr.zip">Donkey Kong Jr</option>
-                <option value="fb_neo_rom/dmnfrnt.zip">Demon Front</option>
-                <option value="fb_neo_rom/docastle.zip">Do! Run Run</option>
-                <option value="fb_neo_rom/dondokod.zip">Don Doko Don</option>
-                <option value="fb_neo_rom/drgnbstr.zip">Dragon Buster</option>
-                <option value="fb_neo_rom/drtoppel.zip">Dr. Toppel</option>
-                <option value="fb_neo_rom/dsaber.zip">Dark Saber</option>
-                <option value="fb_neo_rom/dsoccr94.zip">Dream Soccer 94</option>
-                <option value="fb_neo_rom/dynagear.zip">Dyna Gear</option>
-                <option value="fb_neo_rom/edrandy.zip">Ed Randy</option>
-                <option value="fb_neo_rom/elevator.zip">Elevator Action</option>
-                <option value="fb_neo_rom/elvactr.zip">Elevator Action Returns</option>
-                <option value="fb_neo_rom/enduror.zip">Enduro Racer</option>
-                <option value="fb_neo_rom/eprom.zip">Escape from Planet Robot</option>
-                <option value="fb_neo_rom/eswat.zip">E-SWAT</option>
-                <option value="fb_neo_rom/exedexes.zip">Exed Exes</option>
-                <option value="fb_neo_rom/fantzn2.zip">Fantasy Zone II</option>
-                <option value="fb_neo_rom/fantzone.zip">Fantasy Zone</option>
-                <option value="fb_neo_rom/fastlane.zip">Fast Lane</option>
-                <option value="fb_neo_rom/flicky.zip">Flicky</option>
-                <option value="fb_neo_rom/foodf.zip">Food Fight</option>
-                <option value="fb_neo_rom/frogger.zip">Frogger</option>
-                <option value="fb_neo_rom/funkyjet.zip">Funky Jet</option>
-                <option value="fb_neo_rom/ga2.zip">Guardian Heroes</option>
-                <option value="fb_neo_rom/gaia.zip">Gaia Crusaders</option>
-                <option value="fb_neo_rom/gaiden.zip">Ninja Gaiden</option>
-                <option value="fb_neo_rom/galaga.zip">Galaga</option>
-                <option value="fb_neo_rom/galaga88.zip">Galaga 88</option>
-                <option value="fb_neo_rom/galaxian.zip">Galaxian</option>
-                <option value="fb_neo_rom/galivan.zip">Galivan</option>
-                <option value="fb_neo_rom/galmedes.zip">Galmedes</option>
-                <option value="fb_neo_rom/gangwars.zip">Gang Wars</option>
-                <option value="fb_neo_rom/gaplus.zip">Gaplus</option>
-                <option value="fb_neo_rom/gaunt22p.zip">Gauntlet 2</option>
-                <option value="fb_neo_rom/gauntlet2p.zip">Gauntlet</option>
-                <option value="fb_neo_rom/gblchmp.zip">Great Bubble Champ</option>
-                <option value="fb_neo_rom/geebeeg.zip">Gee Bee</option>
-                <option value="fb_neo_rom/gground.zip">Gain Ground</option>
-                <option value="fb_neo_rom/ghostb.zip">Ghostbusters</option>
-                <option value="fb_neo_rom/gijoe.zip">G.I. Joe</option>
-                <option value="fb_neo_rom/gnbarich.zip">Grand National Basho Rich</option>
-                <option value="fb_neo_rom/gng.zip">Ghosts n Goblins</option>
-                <option value="fb_neo_rom/godzilla.zip">Godzilla</option>
-                <option value="fb_neo_rom/gogomile.zip">Gogo Miles</option>
-                <option value="fb_neo_rom/goldnaxe.zip">Golden Axe</option>
-                <option value="fb_neo_rom/gradius3.zip">Gradius III</option>
-                <option value="fb_neo_rom/grdians.zip">Guardians</option>
-                <option value="fb_neo_rom/growl.zip">Growl</option>
-                <option value="fb_neo_rom/gstream.zip">Giga Wing 2</option>
-                <option value="fb_neo_rom/gtmr2.zip">GT Racing</option>
-                <option value="fb_neo_rom/gunbird2.zip">Gunbird 2</option>
-                <option value="fb_neo_rom/gunforce.zip">Gunforce</option>
-                <option value="fb_neo_rom/gunlock.zip">Gunlock</option>
-                <option value="fb_neo_rom/gunnail.zip">Gungnail</option>
-                <option value="fb_neo_rom/gunsmoke.zip">Gun Smoke</option>
-                <option value="fb_neo_rom/gyruss.zip">Gyruss</option>
-                <option value="fb_neo_rom/hangon.zip">Hang-On</option>
-                <option value="fb_neo_rom/hbarrel.zip">Heavy Barrel</option>
-                <option value="fb_neo_rom/hcastle.zip">Haunted Castle</option>
-                <option value="fb_neo_rom/heatbrl.zip">Heat Buster</option>
-                <option value="fb_neo_rom/hharry.zip">Hammerin Harry</option>
-                <option value="fb_neo_rom/hitice.zip">Hit the Ice</option>
-                <option value="fb_neo_rom/hook.zip">Hook</option>
-                <option value="fb_neo_rom/hopmappy.zip">Hop Mappy</option>
-                <option value="fb_neo_rom/horekid.zip">Horekid</option>
-                <option value="fb_neo_rom/horizon.zip">Horizon</option>
-                <option value="fb_neo_rom/hvysmsh.zip">Heavy Smash</option>
-                <option value="fb_neo_rom/ikari.zip">Ikari Warriors</option>
-                <option value="fb_neo_rom/ikari3.zip">Ikari III</option>
-                <option value="fb_neo_rom/imgfight.zip">Image Fight</option>
-                <option value="fb_neo_rom/inthunt.zip">In the Hunt</option>
-                <option value="fb_neo_rom/invaders.zip">Space Invaders</option>
-                <option value="fb_neo_rom/jackal.zip">Jackal</option>
-                <option value="fb_neo_rom/jailbrek.zip">Jail Break</option>
-                <option value="fb_neo_rom/jedi.zip">Return of the Jedi</option>
-                <option value="fb_neo_rom/journey.zip">Journey</option>
-                <option value="fb_neo_rom/joust.zip">Joust</option>
-                <option value="fb_neo_rom/junglek.zip">Jungle King</option>
-                <option value="fb_neo_rom/junofrst.zip">Juno First</option>
-                <option value="fb_neo_rom/kangaroo.zip">Kangaroo</option>
-                <option value="fb_neo_rom/karnov.zip">Karnov</option>
-                <option value="fb_neo_rom/kchamp.zip">Karate Champ</option>
-                <option value="fb_neo_rom/kick.zip">Kick</option>
-                <option value="fb_neo_rom/kicker.zip">Kicker</option>
-                <option value="fb_neo_rom/kingball.zip">King Ball</option>
-                <option value="fb_neo_rom/klax.zip">Klax</option>
-                <option value="fb_neo_rom/kof95h.zip">King of Fighters 95</option>
-                <option value="fb_neo_rom/krull.zip">Krull</option>
-                <option value="fb_neo_rom/kungfum.zip">Kung Fu Master</option>
-                <option value="fb_neo_rom/landmakr.zip">Land Maker</option>
-                <option value="fb_neo_rom/ldrun.zip">Lode Runner</option>
-                <option value="fb_neo_rom/ldrun2.zip">Lode Runner 2</option>
-                <option value="fb_neo_rom/ldrun3.zip">Lode Runner 3</option>
-                <option value="fb_neo_rom/ldrun4.zip">Lode Runner 4</option>
-                <option value="fb_neo_rom/lethalth.zip">Lethal Thunder</option>
-                <option value="fb_neo_rom/liblrabl.zip">Libble Rabble</option>
-                <option value="fb_neo_rom/lightbr.zip">Lightbringer</option>
-                <option value="fb_neo_rom/liquidk.zip">Liquid Kids</option>
-                <option value="fb_neo_rom/lizwiz.zip">Liz Wiz</option>
-                <option value="fb_neo_rom/lkage.zip">Lkage</option>
-                <option value="fb_neo_rom/llander.zip">Lunar Lander</option>
-                <option value="fb_neo_rom/locomotn.zip">Locomotion</option>
-                <option value="fb_neo_rom/loderndf.zip">Lode Runner New Formation</option>
-                <option value="fb_neo_rom/loht.zip">Legend of Hero Tonma</option>
-                <option value="fb_neo_rom/lwings.zip">Legendary Wings</option>
-                <option value="fb_neo_rom/macross.zip">Macross</option>
-                <option value="fb_neo_rom/macross2.zip">Macross 2</option>
-                <option value="fb_neo_rom/macrossp.zip">Macross Plus</option>
-                <option value="fb_neo_rom/mainevt2p.zip">Main Event</option>
-                <option value="fb_neo_rom/mario.zip">Mario Bros</option>
-                <option value="fb_neo_rom/mazinger.zip">Mazinger Z</option>
-                <option value="fb_neo_rom/metamrph.zip">Metamorphic Force</option>
-                <option value="fb_neo_rom/metmqstr.zip">Metal Morph</option>
-                <option value="fb_neo_rom/mgcrystl.zip">Magic Crystal</option>
-                <option value="fb_neo_rom/mhavoc.zip">Major Havoc</option>
-                <option value="fb_neo_rom/mikie.zip">Mikie</option>
-                <option value="fb_neo_rom/milliped.zip">Millipede</option>
-                <option value="fb_neo_rom/missile.zip">Missile Command</option>
-                <option value="fb_neo_rom/mk.zip">Mortal Kombat</option>
-                <option value="fb_neo_rom/mk2.zip">Mortal Kombat II</option>
-                <option value="fb_neo_rom/moomesa.zip">Comix Zone</option>
-                <option value="fb_neo_rom/mpatrol.zip">Moon Patrol</option>
-                <option value="fb_neo_rom/mrdo.zip">Mr Do!</option>
-                <option value="fb_neo_rom/mrgoemon.zip">Mr Goemon</option>
-                <option value="fb_neo_rom/mspacman.zip">Ms Pac-Man</option>
-                <option value="fb_neo_rom/mwalk.zip">Michael Jackson's Moonwalker</option>
-                <option value="fb_neo_rom/mystwarr.zip">Mystic Warriors</option>
-                <option value="fb_neo_rom/narc.zip">Narc</option>
-                <option value="fb_neo_rom/nbajamte.zip">NBA Jam TE</option>
-                <option value="fb_neo_rom/nbbatman.zip">Batman Returns</option>
-                <option value="fb_neo_rom/nemesis.zip">Nemesis</option>
-                <option value="fb_neo_rom/nibbler.zip">Nibbler</option>
-                <option value="fb_neo_rom/ninjak.zip">Ninja Combat</option>
-                <option value="fb_neo_rom/ninjakd2.zip">Ninja Kid 2</option>
-                <option value="fb_neo_rom/ninjakun.zip">Ninja Kun</option>
-                <option value="fb_neo_rom/nitedrvr.zip">Night Driver</option>
-                <option value="fb_neo_rom/nitrobal.zip">Nitro Ball</option>
-                <option value="fb_neo_rom/nob.zip">Nova 2001</option>
-                <option value="fb_neo_rom/nrallyx.zip">New Rally X</option>
-                <option value="fb_neo_rom/nslashers.zip">Night Slashers</option>
-                <option value="fb_neo_rom/nspirit.zip">Ninja Spirit</option>
-                <option value="fb_neo_rom/osman.zip">Osman</option>
-                <option value="fb_neo_rom/outfxies.zip">The Outfoxies</option>
-                <option value="fb_neo_rom/outrun.zip">Out Run</option>
-                <option value="fb_neo_rom/pacland.zip">Pac-Land</option>
-                <option value="fb_neo_rom/pacman.zip">Pac-Man</option>
-                <option value="fb_neo_rom/parodius.zip">Parodius</option>
-                <option value="fb_neo_rom/pbobble3.zip">Puzzle Bobble 3</option>
-                <option value="fb_neo_rom/penbros.zip">Penguin Brothers</option>
-                <option value="fb_neo_rom/pengo.zip">Pengo</option>
-                <option value="fb_neo_rom/phoenix.zip">Phoenix</option>
-                <option value="fb_neo_rom/pipedrm.zip">Pipe Dream</option>
-                <option value="fb_neo_rom/pitfight.zip">Pit Fighter</option>
-                <option value="fb_neo_rom/pleiads.zip">Pleiads</option>
-                <option value="fb_neo_rom/pooyan.zip">Pooyan</option>
-                <option value="fb_neo_rom/popeye.zip">Popeye</option>
-                <option value="fb_neo_rom/pow.zip">P.O.W.</option>
-                <option value="fb_neo_rom/punchout.zip">Punch Out</option>
-                <option value="fb_neo_rom/punkshot2.zip">Punk Shot</option>
-                <option value="fb_neo_rom/puyo.zip">Puyo Puyo</option>
-                <option value="fb_neo_rom/puyopuy2.zip">Puyo Puyo 2</option>
-                <option value="fb_neo_rom/puzzloop.zip">Puzz Loop</option>
-                <option value="fb_neo_rom/qbert.zip">Q*Bert</option>
-                <option value="fb_neo_rom/qix.zip">Qix</option>
-                <option value="fb_neo_rom/quartet2.zip">Quartet 2</option>
-                <option value="fb_neo_rom/radm.zip">Rad Mobile</option>
-                <option value="fb_neo_rom/raiden2.zip">Raiden II</option>
-                <option value="fb_neo_rom/rallyx.zip">Rally X</option>
-                <option value="fb_neo_rom/rambo3.zip">Rambo 3</option>
-                <option value="fb_neo_rom/rampage.zip">Rampage</option>
-                <option value="fb_neo_rom/rampart2p.zip">Rampart</option>
-                <option value="fb_neo_rom/rastan.zip">Rastan</option>
-                <option value="fb_neo_rom/rbisland.zip">Rainbow Island</option>
-                <option value="fb_neo_rom/renegade.zip">Renegade</option>
-                <option value="fb_neo_rom/ringking.zip">Ring King</option>
-                <option value="fb_neo_rom/riotcity.zip">Riot City</option>
-                <option value="fb_neo_rom/robocop.zip">RoboCop</option>
-                <option value="fb_neo_rom/robocop2.zip">RoboCop 2</option>
-                <option value="fb_neo_rom/robotron.zip">Robotron 2084</option>
-                <option value="fb_neo_rom/rocnrope.zip">Roc n Rope</option>
-                <option value="fb_neo_rom/rohga.zip">Rohga Armor Force</option>
-                <option value="fb_neo_rom/rthun2.zip">Raiden Fighters 2</option>
-                <option value="fb_neo_rom/rthunder.zip">Rolling Thunder</option>
-                <option value="fb_neo_rom/rtype.zip">R-Type</option>
-                <option value="fb_neo_rom/rtype2.zip">R-Type 2</option>
-                <option value="fb_neo_rom/rtypeleo.zip">R-Type Leo</option>
-                <option value="fb_neo_rom/rushatck.zip">Rush and Attack</option>
-                <option value="fb_neo_rom/rygar.zip">Rygar</option>
-                <option value="fb_neo_rom/s1945.zip">Strikers 1945</option>
-                <option value="fb_neo_rom/s1945ii.zip">Strikers 1945 II</option>
-                <option value="fb_neo_rom/s1945iii.zip">Strikers 1945 III</option>
-                <option value="fb_neo_rom/sabotenb.zip">Sabotenboy</option>
-                <option value="fb_neo_rom/sailormn.zip">Sailor Moon</option>
-                <option value="fb_neo_rom/salamand.zip">Salamander</option>
-                <option value="fb_neo_rom/scobra.zip">Super Cobra</option>
-                <option value="fb_neo_rom/scontra.zip">Super Contra</option>
-                <option value="fb_neo_rom/scramble.zip">Scramble</option>
-                <option value="fb_neo_rom/seawolft.zip">Sea Wolf</option>
-                <option value="fb_neo_rom/seganinj.zip">Sega Ninja</option>
-                <option value="fb_neo_rom/seicross.zip">Seicross</option>
-                <option value="fb_neo_rom/sf.zip">Street Fighter</option>
-                <option value="fb_neo_rom/shadfrce.zip">Shadow Force</option>
-                <option value="fb_neo_rom/shangon.zip">Super Hang-On</option>
-                <option value="fb_neo_rom/sharrier.zip">Space Harrier</option>
-                <option value="fb_neo_rom/shdancer.zip">Shadow Dancer</option>
-                <option value="fb_neo_rom/shinobi.zip">Shinobi</option>
-                <option value="fb_neo_rom/shollow.zip">Sgt Hollow</option>
-                <option value="fb_neo_rom/sidearms.zip">Side Arms</option>
-                <option value="fb_neo_rom/simpsons2p.zip">The Simpsons</option>
-                <option value="fb_neo_rom/sinistar.zip">Sinistar</option>
-                <option value="fb_neo_rom/skykid.zip">Sky Kid</option>
-                <option value="fb_neo_rom/slapshot.zip">Slap Shot</option>
-                <option value="fb_neo_rom/slyspy.zip">Sly Spy</option>
-                <option value="fb_neo_rom/smashtv.zip">Smash TV</option>
-                <option value="fb_neo_rom/snowbros.zip">Snow Bros</option>
-                <option value="fb_neo_rom/solomon.zip">Solomon's Key</option>
-                <option value="fb_neo_rom/solrwarr.zip">Solar Warrior</option>
-                <option value="fb_neo_rom/sonic.zip">Sonic Championship</option>
-                <option value="fb_neo_rom/sonicfgt.zip">Sonic the Fighters</option>
-                <option value="fb_neo_rom/sonson.zip">Son Son</option>
-                <option value="fb_neo_rom/spacedx.zip">Space Duel</option>
-                <option value="fb_neo_rom/spcinv95.zip">Space Invaders 95</option>
-                <option value="fb_neo_rom/spidman.zip">Spider Man</option>
-                <option value="fb_neo_rom/splatter.zip">Splatter House</option>
-                <option value="fb_neo_rom/spnchout.zip">Super Punch Out</option>
-                <option value="fb_neo_rom/spyhunt.zip">Spy Hunter</option>
-                <option value="fb_neo_rom/spyhunt2.zip">Spy Hunter 2</option>
-                <option value="fb_neo_rom/srumbler.zip">Section Z</option>
-                <option value="fb_neo_rom/ssridersubc.zip">Sunset Riders</option>
-                <option value="fb_neo_rom/starwars.zip">Star Wars</option>
-                <option value="fb_neo_rom/stdragon.zip">Street Dragon</option>
-                <option value="fb_neo_rom/stmblade.zip">Steam Blade</option>
-                <option value="fb_neo_rom/superman.zip">Superman</option>
-                <option value="fb_neo_rom/superpac.zip">Super Pac-Man</option>
-                <option value="fb_neo_rom/sxevious.zip">Super Xevious</option>
-                <option value="fb_neo_rom/szaxxon.zip">Super Zaxxon</option>
-                <option value="fb_neo_rom/tankfrce.zip">Tank Force</option>
-                <option value="fb_neo_rom/tapper.zip">Tapper</option>
-                <option value="fb_neo_rom/tempest.zip">Tempest</option>
-                <option value="fb_neo_rom/tengai.zip">Far East of Eden</option>
-                <option value="fb_neo_rom/tetrisp2.zip">Tetris Plus 2</option>
-                <option value="fb_neo_rom/tgm2p.zip">Tetris Grand Master 2</option>
-                <option value="fb_neo_rom/thndrbld.zip">Thunderblade</option>
-                <option value="fb_neo_rom/thundfox.zip">Thunder Fox</option>
-                <option value="fb_neo_rom/tigeroad.zip">Tiger Road</option>
-                <option value="fb_neo_rom/timeplt.zip">Time Pilot</option>
-                <option value="fb_neo_rom/tmnt22pu.zip">TMNT 2</option>
-                <option value="fb_neo_rom/tmnt2pj.zip">TMNT</option>
-                <option value="fb_neo_rom/tnzs.zip">The New Zealand Story</option>
-                <option value="fb_neo_rom/todruaga.zip">Tower of Druaga</option>
-                <option value="fb_neo_rom/toki.zip">Toki</option>
-                <option value="fb_neo_rom/toobin.zip">Toobin</option>
-                <option value="fb_neo_rom/totcarn.zip">Total Carnage</option>
-                <option value="fb_neo_rom/trackfld.zip">Track and Field</option>
-                <option value="fb_neo_rom/trojan.zip">Trojan</option>
-                <option value="fb_neo_rom/tron.zip">Tron</option>
-                <option value="fb_neo_rom/tumblep.zip">Tumble Pop</option>
-                <option value="fb_neo_rom/twocrude.zip">Two Crude Dudes</option>
-                <option value="fb_neo_rom/uccops.zip">U.N. Squadron</option>
-                <option value="fb_neo_rom/umk3.zip">Ultimate Mortal Kombat 3</option>
-                <option value="fb_neo_rom/upndown.zip">Up n Down</option>
-                <option value="fb_neo_rom/valkyrie.zip">Valkyrie no Densetsu</option>
-                <option value="fb_neo_rom/vball.zip">V-Ball</option>
-                <option value="fb_neo_rom/vendetta2pu.zip">Vendetta</option>
-                <option value="fb_neo_rom/viostorm.zip">Violent Storm</option>
-                <option value="fb_neo_rom/volfied.zip">Volfied</option>
-                <option value="fb_neo_rom/vulcan.zip">Vulcan Venture</option>
-                <option value="fb_neo_rom/wb3.zip">Wonder Boy 3</option>
-                <option value="fb_neo_rom/wbml.zip">Wonder Boy in Monster Land</option>
-                <option value="fb_neo_rom/wboy.zip">Wonder Boy</option>
-                <option value="fb_neo_rom/wildfang.zip">Wild Fang</option>
-                <option value="fb_neo_rom/wizdfire.zip">Wizard Fire</option>
-                <option value="fb_neo_rom/wof.zip">Warriors of Fate</option>
-                <option value="fb_neo_rom/wwfsstar.zip">WWF Superstars</option>
-                <option value="fb_neo_rom/wwfwfest.zip">WWF Wrestle Fest</option>
-                <option value="fb_neo_rom/xexex.zip">Xexex</option>
-                <option value="fb_neo_rom/xmen2pa.zip">X-Men</option>
-                <option value="fb_neo_rom/xmultipl.zip">X Multiply</option>
-                <option value="fb_neo_rom/xybots.zip">Xybots</option>
-                <option value="fb_neo_rom/yiear.zip">Yie Ar Kung-Fu</option>
-                <option value="fb_neo_rom/zookeep.zip">Zoo Keeper</option>
-            </select>
+    <!-- Touch-to-Play overlay (loading → ready states) -->
+    <div id="tap-overlay">
+        <div id="tap-overlay-content">
+            <div id="tap-game-title">&nbsp;</div>
+
+            <!-- Loading state -->
+            <div id="tap-loading-wrap">
+                <div class="tap-spinner"></div>
+                <div id="tap-loading-label">LOADING<span class="tap-loading-dots"></span></div>
+            </div>
+
+            <!-- Ready state -->
+            <div id="tap-ready-wrap">
+                <div class="tap-coin-ring"><span class="tap-coin-inner">&#x1F579;</span></div>
+                <div id="tap-cta">TAP TO PLAY</div>
+                <div id="tap-sub">Touch anywhere to start</div>
+            </div>
         </div>
+    </div>
+
+    <div id="box">
+        <select id="game-select" onchange="if(this.value) selectGame(this.value)">
+            <option value="">Select game...</option>
+            <option value="fb_neo_rom/1942.zip">1942</option>
+            <option value="fb_neo_rom/1943.zip">1943</option>
+            <option value="fb_neo_rom/1943kai.zip">1943 Kai</option>
+            <option value="fb_neo_rom/64street.zip">64th Street</option>
+            <option value="fb_neo_rom/aburner2.zip">After Burner II</option>
+            <option value="fb_neo_rom/actfancr.zip">Act Fancer</option>
+            <option value="fb_neo_rom/aerofgt.zip">Aero Fighters</option>
+            <option value="fb_neo_rom/agallet.zip">Air Gallet</option>
+            <option value="fb_neo_rom/airwolf.zip">Air Wolf</option>
+            <option value="fb_neo_rom/ajax.zip">Ajax</option>
+            <option value="fb_neo_rom/aliens.zip">Aliens</option>
+            <option value="fb_neo_rom/aliensyn.zip">Alien Syndrome</option>
+            <option value="fb_neo_rom/aligator.zip">Alligator Hunt</option>
+            <option value="fb_neo_rom/altbeast.zip">Altered Beast</option>
+            <option value="fb_neo_rom/amidar.zip">Amidar</option>
+            <option value="fb_neo_rom/aquajack.zip">Aqua Jack</option>
+            <option value="fb_neo_rom/arkanoid.zip">Arkanoid</option>
+            <option value="fb_neo_rom/arknoid2.zip">Arkanoid 2</option>
+            <option value="fb_neo_rom/armorcar.zip">Armor Car</option>
+            <option value="fb_neo_rom/armwrest.zip">Arm Wrestling</option>
+            <option value="fb_neo_rom/astdelux.zip">Asteroids Deluxe</option>
+            <option value="fb_neo_rom/asterix.zip">Asterix</option>
+            <option value="fb_neo_rom/asteroid.zip">Asteroids</option>
+            <option value="fb_neo_rom/astorm.zip">Alien Storm</option>
+            <option value="fb_neo_rom/atetris.zip">Atari Tetris</option>
+            <option value="fb_neo_rom/aurail.zip">Aurail</option>
+            <option value="fb_neo_rom/avengers.zip">Avengers</option>
+            <option value="fb_neo_rom/avspirit.zip">Avenger Spirit</option>
+            <option value="fb_neo_rom/baddudes.zip">Bad Dudes</option>
+            <option value="fb_neo_rom/badlands.zip">Bad Lands</option>
+            <option value="fb_neo_rom/bankp.zip">Bank Panic</option>
+            <option value="fb_neo_rom/batman.zip">Batman</option>
+            <option value="fb_neo_rom/batrider.zip">Battle Garegga DX</option>
+            <option value="fb_neo_rom/bbros.zip">Bubble Bobble Part 2</option>
+            <option value="fb_neo_rom/berzerk.zip">Berzerk</option>
+            <option value="fb_neo_rom/bgaregga.zip">Battle Garegga</option>
+            <option value="fb_neo_rom/biomtoy.zip">Biomechanical Toy</option>
+            <option value="fb_neo_rom/bionicc.zip">Bionic Commando</option>
+            <option value="fb_neo_rom/blktiger.zip">Black Tiger</option>
+            <option value="fb_neo_rom/bloodbro.zip">Blood Bros</option>
+            <option value="fb_neo_rom/blstroid.zip">Blasteroids</option>
+            <option value="fb_neo_rom/blswhstl.zip">Bells and Whistles</option>
+            <option value="fb_neo_rom/bnj.zip">Bump N Jump</option>
+            <option value="fb_neo_rom/bogeyman.zip">Bogeyman</option>
+            <option value="fb_neo_rom/bombjack.zip">Bomb Jack</option>
+            <option value="fb_neo_rom/bongo.zip">Bongo</option>
+            <option value="fb_neo_rom/boogwing.zip">Boogie Wings</option>
+            <option value="fb_neo_rom/brkthru.zip">Breakthrough</option>
+            <option value="fb_neo_rom/btime.zip">Burger Time</option>
+            <option value="fb_neo_rom/btoads.zip">Battletoads</option>
+            <option value="fb_neo_rom/bubbles.zip">Bubbles</option>
+            <option value="fb_neo_rom/bublbob2.zip">Bubble Bobble 2</option>
+            <option value="fb_neo_rom/bublbobl.zip">Bubble Bobble</option>
+            <option value="fb_neo_rom/buckrog.zip">Buck Rogers</option>
+            <option value="fb_neo_rom/bucky.zip">Bucky OHare</option>
+            <option value="fb_neo_rom/bwidow.zip">Black Widow</option>
+            <option value="fb_neo_rom/bzone.zip">Battle Zone</option>
+            <option value="fb_neo_rom/cabal.zip">Cabal</option>
+            <option value="fb_neo_rom/captaven.zip">Captain America</option>
+            <option value="fb_neo_rom/carnival.zip">Carnival</option>
+            <option value="fb_neo_rom/ccastles.zip">Crystal Castles</option>
+            <option value="fb_neo_rom/cclimber.zip">Crazy Climber</option>
+            <option value="fb_neo_rom/centiped.zip">Centipede</option>
+            <option value="fb_neo_rom/chaknpop.zip">Chack'n Pop</option>
+            <option value="fb_neo_rom/chasehq.zip">Chase HQ</option>
+            <option value="fb_neo_rom/chinagat.zip">China Gate</option>
+            <option value="fb_neo_rom/choplift.zip">Chop Lifter</option>
+            <option value="fb_neo_rom/circusc.zip">Circus Charlie</option>
+            <option value="fb_neo_rom/citycon.zip">City Connection</option>
+            <option value="fb_neo_rom/ckong.zip">Crazy Kong</option>
+            <option value="fb_neo_rom/ckongpt2.zip">Crazy Kong Part 2</option>
+            <option value="fb_neo_rom/cleopatr.zip">Cleopatra Fortune</option>
+            <option value="fb_neo_rom/columns.zip">Columns</option>
+            <option value="fb_neo_rom/commando.zip">Commando</option>
+            <option value="fb_neo_rom/congo.zip">Congo</option>
+            <option value="fb_neo_rom/contra.zip">Contra</option>
+            <option value="fb_neo_rom/cotton.zip">Cotton</option>
+            <option value="fb_neo_rom/crimfght.zip">Crime Fighters</option>
+            <option value="fb_neo_rom/ctribe.zip">Captain Commando</option>
+            <option value="fb_neo_rom/cyvern.zip">Cyvern Dragon Weapons</option>
+            <option value="fb_neo_rom/darkseal.zip">Dark Seal</option>
+            <option value="fb_neo_rom/dassault.zip">D. Darius</option>
+            <option value="fb_neo_rom/dbreed.zip">Dragon Breed</option>
+            <option value="fb_neo_rom/dbz.zip">Dragon Ball Z</option>
+            <option value="fb_neo_rom/dbz2.zip">Dragon Ball Z 2</option>
+            <option value="fb_neo_rom/ddcrew2.zip">D.D. Crew</option>
+            <option value="fb_neo_rom/ddragon.zip">Double Dragon</option>
+            <option value="fb_neo_rom/ddragon2.zip">Double Dragon II</option>
+            <option value="fb_neo_rom/ddragon3.zip">Double Dragon 3</option>
+            <option value="fb_neo_rom/ddux.zip">Detana Twinbee</option>
+            <option value="fb_neo_rom/deadconx.zip">Dead Connection</option>
+            <option value="fb_neo_rom/defender.zip">Defender</option>
+            <option value="fb_neo_rom/digdug.zip">Dig Dug</option>
+            <option value="fb_neo_rom/digdug2.zip">Dig Dug 2</option>
+            <option value="fb_neo_rom/dkong.zip">Donkey Kong</option>
+            <option value="fb_neo_rom/dkong3.zip">Donkey Kong 3</option>
+            <option value="fb_neo_rom/dkongjr.zip">Donkey Kong Jr</option>
+            <option value="fb_neo_rom/dmnfrnt.zip">Demon Front</option>
+            <option value="fb_neo_rom/docastle.zip">Do! Run Run</option>
+            <option value="fb_neo_rom/dondokod.zip">Don Doko Don</option>
+            <option value="fb_neo_rom/drgnbstr.zip">Dragon Buster</option>
+            <option value="fb_neo_rom/drtoppel.zip">Dr. Toppel</option>
+            <option value="fb_neo_rom/dsaber.zip">Dark Saber</option>
+            <option value="fb_neo_rom/dsoccr94.zip">Dream Soccer 94</option>
+            <option value="fb_neo_rom/dynagear.zip">Dyna Gear</option>
+            <option value="fb_neo_rom/edrandy.zip">Ed Randy</option>
+            <option value="fb_neo_rom/elevator.zip">Elevator Action</option>
+            <option value="fb_neo_rom/elvactr.zip">Elevator Action Returns</option>
+            <option value="fb_neo_rom/enduror.zip">Enduro Racer</option>
+            <option value="fb_neo_rom/eprom.zip">Escape from Planet Robot</option>
+            <option value="fb_neo_rom/eswat.zip">E-SWAT</option>
+            <option value="fb_neo_rom/exedexes.zip">Exed Exes</option>
+            <option value="fb_neo_rom/fantzn2.zip">Fantasy Zone II</option>
+            <option value="fb_neo_rom/fantzone.zip">Fantasy Zone</option>
+            <option value="fb_neo_rom/fastlane.zip">Fast Lane</option>
+            <option value="fb_neo_rom/flicky.zip">Flicky</option>
+            <option value="fb_neo_rom/foodf.zip">Food Fight</option>
+            <option value="fb_neo_rom/frogger.zip">Frogger</option>
+            <option value="fb_neo_rom/funkyjet.zip">Funky Jet</option>
+            <option value="fb_neo_rom/ga2.zip">Guardian Heroes</option>
+            <option value="fb_neo_rom/gaia.zip">Gaia Crusaders</option>
+            <option value="fb_neo_rom/gaiden.zip">Ninja Gaiden</option>
+            <option value="fb_neo_rom/galaga.zip">Galaga</option>
+            <option value="fb_neo_rom/galaga88.zip">Galaga 88</option>
+            <option value="fb_neo_rom/galaxian.zip">Galaxian</option>
+            <option value="fb_neo_rom/galivan.zip">Galivan</option>
+            <option value="fb_neo_rom/galmedes.zip">Galmedes</option>
+            <option value="fb_neo_rom/gangwars.zip">Gang Wars</option>
+            <option value="fb_neo_rom/gaplus.zip">Gaplus</option>
+            <option value="fb_neo_rom/gaunt22p.zip">Gauntlet 2</option>
+            <option value="fb_neo_rom/gauntlet2p.zip">Gauntlet</option>
+            <option value="fb_neo_rom/gblchmp.zip">Great Bubble Champ</option>
+            <option value="fb_neo_rom/geebeeg.zip">Gee Bee</option>
+            <option value="fb_neo_rom/gground.zip">Gain Ground</option>
+            <option value="fb_neo_rom/ghostb.zip">Ghostbusters</option>
+            <option value="fb_neo_rom/gijoe.zip">G.I. Joe</option>
+            <option value="fb_neo_rom/gnbarich.zip">Grand National Basho Rich</option>
+            <option value="fb_neo_rom/gng.zip">Ghosts n Goblins</option>
+            <option value="fb_neo_rom/godzilla.zip">Godzilla</option>
+            <option value="fb_neo_rom/gogomile.zip">Gogo Miles</option>
+            <option value="fb_neo_rom/goldnaxe.zip">Golden Axe</option>
+            <option value="fb_neo_rom/gradius3.zip">Gradius III</option>
+            <option value="fb_neo_rom/grdians.zip">Guardians</option>
+            <option value="fb_neo_rom/growl.zip">Growl</option>
+            <option value="fb_neo_rom/gstream.zip">Giga Wing 2</option>
+            <option value="fb_neo_rom/gtmr2.zip">GT Racing</option>
+            <option value="fb_neo_rom/gunbird2.zip">Gunbird 2</option>
+            <option value="fb_neo_rom/gunforce.zip">Gunforce</option>
+            <option value="fb_neo_rom/gunlock.zip">Gunlock</option>
+            <option value="fb_neo_rom/gunnail.zip">Gungnail</option>
+            <option value="fb_neo_rom/gunsmoke.zip">Gun Smoke</option>
+            <option value="fb_neo_rom/gyruss.zip">Gyruss</option>
+            <option value="fb_neo_rom/hangon.zip">Hang-On</option>
+            <option value="fb_neo_rom/hbarrel.zip">Heavy Barrel</option>
+            <option value="fb_neo_rom/hcastle.zip">Haunted Castle</option>
+            <option value="fb_neo_rom/heatbrl.zip">Heat Buster</option>
+            <option value="fb_neo_rom/hharry.zip">Hammerin Harry</option>
+            <option value="fb_neo_rom/hitice.zip">Hit the Ice</option>
+            <option value="fb_neo_rom/hook.zip">Hook</option>
+            <option value="fb_neo_rom/hopmappy.zip">Hop Mappy</option>
+            <option value="fb_neo_rom/horekid.zip">Horekid</option>
+            <option value="fb_neo_rom/horizon.zip">Horizon</option>
+            <option value="fb_neo_rom/hvysmsh.zip">Heavy Smash</option>
+            <option value="fb_neo_rom/ikari.zip">Ikari Warriors</option>
+            <option value="fb_neo_rom/ikari3.zip">Ikari III</option>
+            <option value="fb_neo_rom/imgfight.zip">Image Fight</option>
+            <option value="fb_neo_rom/inthunt.zip">In the Hunt</option>
+            <option value="fb_neo_rom/invaders.zip">Space Invaders</option>
+            <option value="fb_neo_rom/jackal.zip">Jackal</option>
+            <option value="fb_neo_rom/jailbrek.zip">Jail Break</option>
+            <option value="fb_neo_rom/jedi.zip">Return of the Jedi</option>
+            <option value="fb_neo_rom/journey.zip">Journey</option>
+            <option value="fb_neo_rom/joust.zip">Joust</option>
+            <option value="fb_neo_rom/junglek.zip">Jungle King</option>
+            <option value="fb_neo_rom/junofrst.zip">Juno First</option>
+            <option value="fb_neo_rom/kangaroo.zip">Kangaroo</option>
+            <option value="fb_neo_rom/karnov.zip">Karnov</option>
+            <option value="fb_neo_rom/kchamp.zip">Karate Champ</option>
+            <option value="fb_neo_rom/kick.zip">Kick</option>
+            <option value="fb_neo_rom/kicker.zip">Kicker</option>
+            <option value="fb_neo_rom/kingball.zip">King Ball</option>
+            <option value="fb_neo_rom/klax.zip">Klax</option>
+            <option value="fb_neo_rom/kof95h.zip">King of Fighters 95</option>
+            <option value="fb_neo_rom/krull.zip">Krull</option>
+            <option value="fb_neo_rom/kungfum.zip">Kung Fu Master</option>
+            <option value="fb_neo_rom/landmakr.zip">Land Maker</option>
+            <option value="fb_neo_rom/ldrun.zip">Lode Runner</option>
+            <option value="fb_neo_rom/ldrun2.zip">Lode Runner 2</option>
+            <option value="fb_neo_rom/ldrun3.zip">Lode Runner 3</option>
+            <option value="fb_neo_rom/ldrun4.zip">Lode Runner 4</option>
+            <option value="fb_neo_rom/lethalth.zip">Lethal Thunder</option>
+            <option value="fb_neo_rom/liblrabl.zip">Libble Rabble</option>
+            <option value="fb_neo_rom/lightbr.zip">Lightbringer</option>
+            <option value="fb_neo_rom/liquidk.zip">Liquid Kids</option>
+            <option value="fb_neo_rom/lizwiz.zip">Liz Wiz</option>
+            <option value="fb_neo_rom/lkage.zip">Lkage</option>
+            <option value="fb_neo_rom/llander.zip">Lunar Lander</option>
+            <option value="fb_neo_rom/locomotn.zip">Locomotion</option>
+            <option value="fb_neo_rom/loderndf.zip">Lode Runner New Formation</option>
+            <option value="fb_neo_rom/loht.zip">Legend of Hero Tonma</option>
+            <option value="fb_neo_rom/lwings.zip">Legendary Wings</option>
+            <option value="fb_neo_rom/macross.zip">Macross</option>
+            <option value="fb_neo_rom/macross2.zip">Macross 2</option>
+            <option value="fb_neo_rom/macrossp.zip">Macross Plus</option>
+            <option value="fb_neo_rom/mainevt2p.zip">Main Event</option>
+            <option value="fb_neo_rom/mario.zip">Mario Bros</option>
+            <option value="fb_neo_rom/mazinger.zip">Mazinger Z</option>
+            <option value="fb_neo_rom/metamrph.zip">Metamorphic Force</option>
+            <option value="fb_neo_rom/metmqstr.zip">Metal Morph</option>
+            <option value="fb_neo_rom/mgcrystl.zip">Magic Crystal</option>
+            <option value="fb_neo_rom/mhavoc.zip">Major Havoc</option>
+            <option value="fb_neo_rom/mikie.zip">Mikie</option>
+            <option value="fb_neo_rom/milliped.zip">Millipede</option>
+            <option value="fb_neo_rom/missile.zip">Missile Command</option>
+            <option value="fb_neo_rom/mk.zip">Mortal Kombat</option>
+            <option value="fb_neo_rom/mk2.zip">Mortal Kombat II</option>
+            <option value="fb_neo_rom/moomesa.zip">Comix Zone</option>
+            <option value="fb_neo_rom/mpatrol.zip">Moon Patrol</option>
+            <option value="fb_neo_rom/mrdo.zip">Mr Do!</option>
+            <option value="fb_neo_rom/mrgoemon.zip">Mr Goemon</option>
+            <option value="fb_neo_rom/mspacman.zip">Ms Pac-Man</option>
+            <option value="fb_neo_rom/mwalk.zip">Michael Jackson's Moonwalker</option>
+            <option value="fb_neo_rom/mystwarr.zip">Mystic Warriors</option>
+            <option value="fb_neo_rom/narc.zip">Narc</option>
+            <option value="fb_neo_rom/nbajamte.zip">NBA Jam TE</option>
+            <option value="fb_neo_rom/nbbatman.zip">Batman Returns</option>
+            <option value="fb_neo_rom/nemesis.zip">Nemesis</option>
+            <option value="fb_neo_rom/nibbler.zip">Nibbler</option>
+            <option value="fb_neo_rom/ninjak.zip">Ninja Combat</option>
+            <option value="fb_neo_rom/ninjakd2.zip">Ninja Kid 2</option>
+            <option value="fb_neo_rom/ninjakun.zip">Ninja Kun</option>
+            <option value="fb_neo_rom/nitedrvr.zip">Night Driver</option>
+            <option value="fb_neo_rom/nitrobal.zip">Nitro Ball</option>
+            <option value="fb_neo_rom/nob.zip">Nova 2001</option>
+            <option value="fb_neo_rom/nrallyx.zip">New Rally X</option>
+            <option value="fb_neo_rom/nslashers.zip">Night Slashers</option>
+            <option value="fb_neo_rom/nspirit.zip">Ninja Spirit</option>
+            <option value="fb_neo_rom/osman.zip">Osman</option>
+            <option value="fb_neo_rom/outfxies.zip">The Outfoxies</option>
+            <option value="fb_neo_rom/outrun.zip">Out Run</option>
+            <option value="fb_neo_rom/pacland.zip">Pac-Land</option>
+            <option value="fb_neo_rom/pacman.zip">Pac-Man</option>
+            <option value="fb_neo_rom/parodius.zip">Parodius</option>
+            <option value="fb_neo_rom/pbobble3.zip">Puzzle Bobble 3</option>
+            <option value="fb_neo_rom/penbros.zip">Penguin Brothers</option>
+            <option value="fb_neo_rom/pengo.zip">Pengo</option>
+            <option value="fb_neo_rom/phoenix.zip">Phoenix</option>
+            <option value="fb_neo_rom/pipedrm.zip">Pipe Dream</option>
+            <option value="fb_neo_rom/pitfight.zip">Pit Fighter</option>
+            <option value="fb_neo_rom/pleiads.zip">Pleiads</option>
+            <option value="fb_neo_rom/pooyan.zip">Pooyan</option>
+            <option value="fb_neo_rom/popeye.zip">Popeye</option>
+            <option value="fb_neo_rom/pow.zip">P.O.W.</option>
+            <option value="fb_neo_rom/punchout.zip">Punch Out</option>
+            <option value="fb_neo_rom/punkshot2.zip">Punk Shot</option>
+            <option value="fb_neo_rom/puyo.zip">Puyo Puyo</option>
+            <option value="fb_neo_rom/puyopuy2.zip">Puyo Puyo 2</option>
+            <option value="fb_neo_rom/puzzloop.zip">Puzz Loop</option>
+            <option value="fb_neo_rom/qbert.zip">Q*Bert</option>
+            <option value="fb_neo_rom/qix.zip">Qix</option>
+            <option value="fb_neo_rom/quartet2.zip">Quartet 2</option>
+            <option value="fb_neo_rom/radm.zip">Rad Mobile</option>
+            <option value="fb_neo_rom/raiden2.zip">Raiden II</option>
+            <option value="fb_neo_rom/rallyx.zip">Rally X</option>
+            <option value="fb_neo_rom/rambo3.zip">Rambo 3</option>
+            <option value="fb_neo_rom/rampage.zip">Rampage</option>
+            <option value="fb_neo_rom/rampart2p.zip">Rampart</option>
+            <option value="fb_neo_rom/rastan.zip">Rastan</option>
+            <option value="fb_neo_rom/rbisland.zip">Rainbow Island</option>
+            <option value="fb_neo_rom/renegade.zip">Renegade</option>
+            <option value="fb_neo_rom/ringking.zip">Ring King</option>
+            <option value="fb_neo_rom/riotcity.zip">Riot City</option>
+            <option value="fb_neo_rom/robocop.zip">RoboCop</option>
+            <option value="fb_neo_rom/robocop2.zip">RoboCop 2</option>
+            <option value="fb_neo_rom/robotron.zip">Robotron 2084</option>
+            <option value="fb_neo_rom/rocnrope.zip">Roc n Rope</option>
+            <option value="fb_neo_rom/rohga.zip">Rohga Armor Force</option>
+            <option value="fb_neo_rom/rthun2.zip">Raiden Fighters 2</option>
+            <option value="fb_neo_rom/rthunder.zip">Rolling Thunder</option>
+            <option value="fb_neo_rom/rtype.zip">R-Type</option>
+            <option value="fb_neo_rom/rtype2.zip">R-Type 2</option>
+            <option value="fb_neo_rom/rtypeleo.zip">R-Type Leo</option>
+            <option value="fb_neo_rom/rushatck.zip">Rush and Attack</option>
+            <option value="fb_neo_rom/rygar.zip">Rygar</option>
+            <option value="fb_neo_rom/s1945.zip">Strikers 1945</option>
+            <option value="fb_neo_rom/s1945ii.zip">Strikers 1945 II</option>
+            <option value="fb_neo_rom/s1945iii.zip">Strikers 1945 III</option>
+            <option value="fb_neo_rom/sabotenb.zip">Sabotenboy</option>
+            <option value="fb_neo_rom/sailormn.zip">Sailor Moon</option>
+            <option value="fb_neo_rom/salamand.zip">Salamander</option>
+            <option value="fb_neo_rom/scobra.zip">Super Cobra</option>
+            <option value="fb_neo_rom/scontra.zip">Super Contra</option>
+            <option value="fb_neo_rom/scramble.zip">Scramble</option>
+            <option value="fb_neo_rom/seawolft.zip">Sea Wolf</option>
+            <option value="fb_neo_rom/seganinj.zip">Sega Ninja</option>
+            <option value="fb_neo_rom/seicross.zip">Seicross</option>
+            <option value="fb_neo_rom/sf.zip">Street Fighter</option>
+            <option value="fb_neo_rom/shadfrce.zip">Shadow Force</option>
+            <option value="fb_neo_rom/shangon.zip">Super Hang-On</option>
+            <option value="fb_neo_rom/sharrier.zip">Space Harrier</option>
+            <option value="fb_neo_rom/shdancer.zip">Shadow Dancer</option>
+            <option value="fb_neo_rom/shinobi.zip">Shinobi</option>
+            <option value="fb_neo_rom/shollow.zip">Sgt Hollow</option>
+            <option value="fb_neo_rom/sidearms.zip">Side Arms</option>
+            <option value="fb_neo_rom/simpsons2p.zip">The Simpsons</option>
+            <option value="fb_neo_rom/sinistar.zip">Sinistar</option>
+            <option value="fb_neo_rom/skykid.zip">Sky Kid</option>
+            <option value="fb_neo_rom/slapshot.zip">Slap Shot</option>
+            <option value="fb_neo_rom/slyspy.zip">Sly Spy</option>
+            <option value="fb_neo_rom/smashtv.zip">Smash TV</option>
+            <option value="fb_neo_rom/snowbros.zip">Snow Bros</option>
+            <option value="fb_neo_rom/solomon.zip">Solomon's Key</option>
+            <option value="fb_neo_rom/solrwarr.zip">Solar Warrior</option>
+            <option value="fb_neo_rom/sonic.zip">Sonic Championship</option>
+            <option value="fb_neo_rom/sonicfgt.zip">Sonic the Fighters</option>
+            <option value="fb_neo_rom/sonson.zip">Son Son</option>
+            <option value="fb_neo_rom/spacedx.zip">Space Duel</option>
+            <option value="fb_neo_rom/spcinv95.zip">Space Invaders 95</option>
+            <option value="fb_neo_rom/spidman.zip">Spider Man</option>
+            <option value="fb_neo_rom/splatter.zip">Splatter House</option>
+            <option value="fb_neo_rom/spnchout.zip">Super Punch Out</option>
+            <option value="fb_neo_rom/spyhunt.zip">Spy Hunter</option>
+            <option value="fb_neo_rom/spyhunt2.zip">Spy Hunter 2</option>
+            <option value="fb_neo_rom/srumbler.zip">Section Z</option>
+            <option value="fb_neo_rom/ssridersubc.zip">Sunset Riders</option>
+            <option value="fb_neo_rom/starwars.zip">Star Wars</option>
+            <option value="fb_neo_rom/stdragon.zip">Street Dragon</option>
+            <option value="fb_neo_rom/stmblade.zip">Steam Blade</option>
+            <option value="fb_neo_rom/superman.zip">Superman</option>
+            <option value="fb_neo_rom/superpac.zip">Super Pac-Man</option>
+            <option value="fb_neo_rom/sxevious.zip">Super Xevious</option>
+            <option value="fb_neo_rom/szaxxon.zip">Super Zaxxon</option>
+            <option value="fb_neo_rom/tankfrce.zip">Tank Force</option>
+            <option value="fb_neo_rom/tapper.zip">Tapper</option>
+            <option value="fb_neo_rom/tempest.zip">Tempest</option>
+            <option value="fb_neo_rom/tengai.zip">Far East of Eden</option>
+            <option value="fb_neo_rom/tetrisp2.zip">Tetris Plus 2</option>
+            <option value="fb_neo_rom/tgm2p.zip">Tetris Grand Master 2</option>
+            <option value="fb_neo_rom/thndrbld.zip">Thunderblade</option>
+            <option value="fb_neo_rom/thundfox.zip">Thunder Fox</option>
+            <option value="fb_neo_rom/tigeroad.zip">Tiger Road</option>
+            <option value="fb_neo_rom/timeplt.zip">Time Pilot</option>
+            <option value="fb_neo_rom/tmnt22pu.zip">TMNT 2</option>
+            <option value="fb_neo_rom/tmnt2pj.zip">TMNT</option>
+            <option value="fb_neo_rom/tnzs.zip">The New Zealand Story</option>
+            <option value="fb_neo_rom/todruaga.zip">Tower of Druaga</option>
+            <option value="fb_neo_rom/toki.zip">Toki</option>
+            <option value="fb_neo_rom/toobin.zip">Toobin</option>
+            <option value="fb_neo_rom/totcarn.zip">Total Carnage</option>
+            <option value="fb_neo_rom/trackfld.zip">Track and Field</option>
+            <option value="fb_neo_rom/trojan.zip">Trojan</option>
+            <option value="fb_neo_rom/tron.zip">Tron</option>
+            <option value="fb_neo_rom/tumblep.zip">Tumble Pop</option>
+            <option value="fb_neo_rom/twocrude.zip">Two Crude Dudes</option>
+            <option value="fb_neo_rom/uccops.zip">U.N. Squadron</option>
+            <option value="fb_neo_rom/umk3.zip">Ultimate Mortal Kombat 3</option>
+            <option value="fb_neo_rom/upndown.zip">Up n Down</option>
+            <option value="fb_neo_rom/valkyrie.zip">Valkyrie no Densetsu</option>
+            <option value="fb_neo_rom/vball.zip">V-Ball</option>
+            <option value="fb_neo_rom/vendetta2pu.zip">Vendetta</option>
+            <option value="fb_neo_rom/viostorm.zip">Violent Storm</option>
+            <option value="fb_neo_rom/volfied.zip">Volfied</option>
+            <option value="fb_neo_rom/vulcan.zip">Vulcan Venture</option>
+            <option value="fb_neo_rom/wb3.zip">Wonder Boy 3</option>
+            <option value="fb_neo_rom/wbml.zip">Wonder Boy in Monster Land</option>
+            <option value="fb_neo_rom/wboy.zip">Wonder Boy</option>
+            <option value="fb_neo_rom/wildfang.zip">Wild Fang</option>
+            <option value="fb_neo_rom/wizdfire.zip">Wizard Fire</option>
+            <option value="fb_neo_rom/wof.zip">Warriors of Fate</option>
+            <option value="fb_neo_rom/wwfsstar.zip">WWF Superstars</option>
+            <option value="fb_neo_rom/wwfwfest.zip">WWF Wrestle Fest</option>
+            <option value="fb_neo_rom/xexex.zip">Xexex</option>
+            <option value="fb_neo_rom/xmen2pa.zip">X-Men</option>
+            <option value="fb_neo_rom/xmultipl.zip">X Multiply</option>
+            <option value="fb_neo_rom/xybots.zip">Xybots</option>
+            <option value="fb_neo_rom/yiear.zip">Yie Ar Kung-Fu</option>
+            <option value="fb_neo_rom/zookeep.zip">Zoo Keeper</option>
+        </select>
+    </div>
 
     <script>
+        // ── iOS detection (covers iPhone/iPad and iPadOS-as-Mac) ──────────────
+        const isIOS =
+            /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+        if (isIOS) console.log("[EJS] iOS device detected – applying stability mode");
+
         let enableDebug = false;
         let enableThreads = false;
         let browserMode;
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
-        if (parseInt(urlParams.get("debug")) === 1 || urlParams.get("debug") === "true") {
+
+        // Debug flag (always off on iOS to reduce memory pressure)
+        if (!isIOS && (parseInt(urlParams.get("debug")) === 1 || urlParams.get("debug") === "true")) {
             enableDebug = true;
             console.log("Debug is enabled");
         } else {
             console.log("Debug is disabled");
         }
 
-        if (parseInt(urlParams.get("threads")) === 1 || urlParams.get("threads") === "true") {
+        // Threads: disabled on iOS regardless of URL param or SharedArrayBuffer
+        if (!isIOS && (parseInt(urlParams.get("threads")) === 1 || urlParams.get("threads") === "true")) {
             if (window.SharedArrayBuffer) {
                 enableThreads = true;
                 console.log("Threads are enabled");
@@ -521,7 +689,8 @@
                 console.log("Threads are disabled");
             }
         } else {
-            console.log("Threads are disabled");
+            if (isIOS) console.log("Threads are force-disabled on iOS.");
+            else console.log("Threads are disabled");
         }
 
         if (urlParams.get("browserMode")) {
@@ -533,9 +702,77 @@
             run(false, urlParams.get("rom"));
         }
 
+
+        // ── Overlay logic ────────────────────────────────────────────────────
+        let _readyScript = null;   // holds the <script> element after decompression
+
+        function _spawnStars() {
+            const ov = document.getElementById('tap-overlay');
+            ov.querySelectorAll('.tap-star').forEach(function(s){ s.remove(); });
+            for (let i = 0; i < 40; i++) {
+                const s = document.createElement('div');
+                s.className = 'tap-star';
+                s.style.left = (Math.random() * 100) + 'vw';
+                s.style.bottom = '-6px';
+                s.style.animationDuration = (4 + Math.random() * 6) + 's';
+                s.style.animationDelay = (Math.random() * 8) + 's';
+                const sz = (1 + Math.random() * 3) + 'px';
+                s.style.width = sz; s.style.height = sz;
+                ov.appendChild(s);
+            }
+        }
+
+        // Called when user picks a game: show loading overlay, start decompression
+        function selectGame(value) {
+            const sel = document.getElementById('game-select');
+            let label = value.split('/').pop().replace(/\.zip$/i, '');
+            for (let i = 0; i < sel.options.length; i++) {
+                if (sel.options[i].value === value) { label = sel.options[i].textContent; break; }
+            }
+            const ov = document.getElementById('tap-overlay');
+            document.getElementById('tap-game-title').textContent = label;
+            ov.classList.remove('ready');
+            ov.classList.add('visible');
+            _readyScript = null;
+            _spawnStars();
+            // Run in next tick so the overlay paints first
+            setTimeout(function() { run(false, value); }, 50);
+        }
+
+        // Called by run() after all decompression is done
+        function showReadyOverlay(script) {
+            _readyScript = script;
+            const ov = document.getElementById('tap-overlay');
+            ov.classList.add('ready');
+        }
+
+        (function() {
+            function _initOverlay() {
+                const ov = document.getElementById('tap-overlay');
+                if (!ov) return;
+                function startGame(e) {
+                    if (!_readyScript) return;  // not ready yet
+                    e.preventDefault();
+                    const s = _readyScript;
+                    _readyScript = null;
+                    ov.classList.remove('visible');
+                    ov.classList.remove('ready');
+                    // appendChild runs emulator (AudioContext) inside user gesture
+                    document.body.appendChild(s);
+                }
+                ov.addEventListener('click',      startGame, { passive: false });
+                ov.addEventListener('touchstart', startGame, { passive: false });
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', _initOverlay);
+            } else {
+                _initOverlay();
+            }
+        })();
+
         async function run(upload, file) {
-                const url = upload ? input.files[0] : (file.startsWith("fb_neo_rom/") ? file : `roms/${file}`);
-                const parts = upload ? input.files[0].name.split(".") : file.split("/").pop().split(".");
+            const url = upload ? input.files[0] : (file.startsWith("fb_neo_rom/") ? file : `roms/${file}`);
+            const parts = upload ? input.files[0].name.split(".") : file.split("/").pop().split(".");
 
             const core = await (async (ext) => {
                 return "fbneo";
@@ -650,19 +887,49 @@
             window.EJS_DEBUG_XX = enableDebug;
             window.EJS_disableDatabases = true;
             window.EJS_threads = enableThreads;
+            window.EJS_language = 'vi-VN';
+
+            // ── iOS stability overrides ──────────────────────────────────────
+            if (isIOS) {
+                window.EJS_threads = false;
+                window.EJS_DEBUG_XX = false;
+                // Lower cache cap to reduce WebKit memory pressure
+                window.EJS_cacheConfig = {
+                    enabled: true,
+                    cacheMaxSizeMB: 256,
+                    cacheMaxAgeMins: 7200
+                };
+                // Hide non-essential controls that add DOM overhead
+                window.EJS_Buttons = {
+                    saveState: false,
+                    loadState: false,
+                    screenRecord: false,
+                    cacheManager: false,
+                    settings: true,
+                    fullscreen: true,
+                    volume: true
+                };
+            } else {
+                window.EJS_cacheConfig = {
+                    enabled: true,
+                    cacheMaxSizeMB: 2048,
+                    cacheMaxAgeMins: 7200
+                };
+            }
 
             console.log("[EJS Config]", {
-                EJS_player:          window.EJS_player,
-                EJS_gameName:        window.EJS_gameName,
-                EJS_biosUrl:         window.EJS_biosUrl,
-                EJS_gameUrl:         window.EJS_gameUrl,
-                EJS_core:            window.EJS_core,
-                EJS_pathtodata:      window.EJS_pathtodata,
-                EJS_startOnLoaded:   window.EJS_startOnLoaded,
-                EJS_DEBUG_XX:        window.EJS_DEBUG_XX,
-                EJS_disableDatabases:window.EJS_disableDatabases,
-                EJS_threads:         window.EJS_threads,
-                EJS_browserMode:     (typeof window.EJS_browserMode !== "undefined") ? window.EJS_browserMode : "(not set)",
+                EJS_player: window.EJS_player,
+                EJS_gameName: window.EJS_gameName,
+                EJS_biosUrl: window.EJS_biosUrl,
+                EJS_gameUrl: window.EJS_gameUrl,
+                EJS_core: window.EJS_core,
+                EJS_pathtodata: window.EJS_pathtodata,
+                EJS_startOnLoaded: window.EJS_startOnLoaded,
+                EJS_DEBUG_XX: window.EJS_DEBUG_XX,
+                EJS_disableDatabases: window.EJS_disableDatabases,
+                EJS_threads: window.EJS_threads,
+                isIOS: isIOS,
+                EJS_browserMode: (typeof window.EJS_browserMode !== "undefined") ? window.EJS_browserMode : "(not set)",
             });
 
             if (browserMode) {
@@ -670,17 +937,17 @@
             }
 
             console.log("[EJS Config]", {
-                EJS_player:          window.EJS_player,
-                EJS_gameName:        window.EJS_gameName,
-                EJS_biosUrl:         window.EJS_biosUrl,
-                EJS_gameUrl:         window.EJS_gameUrl,
-                EJS_core:            window.EJS_core,
-                EJS_pathtodata:      window.EJS_pathtodata,
-                EJS_startOnLoaded:   window.EJS_startOnLoaded,
-                EJS_DEBUG_XX:        window.EJS_DEBUG_XX,   // enableDebug
-                EJS_disableDatabases:window.EJS_disableDatabases,
-                EJS_threads:         window.EJS_threads,    // enableThreads
-                EJS_browserMode:     window.EJS_browserMode ?? "(not set)",
+                EJS_player: window.EJS_player,
+                EJS_gameName: window.EJS_gameName,
+                EJS_biosUrl: window.EJS_biosUrl,
+                EJS_gameUrl: window.EJS_gameUrl,
+                EJS_core: window.EJS_core,
+                EJS_pathtodata: window.EJS_pathtodata,
+                EJS_startOnLoaded: window.EJS_startOnLoaded,
+                EJS_DEBUG_XX: window.EJS_DEBUG_XX,   // enableDebug
+                EJS_disableDatabases: window.EJS_disableDatabases,
+                EJS_threads: window.EJS_threads,    // enableThreads
+                EJS_browserMode: window.EJS_browserMode ?? "(not set)",
             });
 
 
@@ -710,10 +977,10 @@
 
             script.src = await decompressToBlobURL("H4sIAAAAAAAAA9UZXXPbuPE9v2LNhys5kalr780+NRN/JHXGiTPR+XqdJHMHkSsSDghwANCOkui/dwCSIgBSsc/tTKd6sbTfWOwudtcxURuewbrhmaaCxwl8fQIAkAmuNKhM0lorWMB7CzWfCKuGES1keqOi2QDmtK4Z3qgArEqSoxxBtZCkwABakAprkgfQl6TC14STAkOVSmSfUKdUpBXlAS4TVS1RKSosxiI+Hj9xDrcWLEf5lugSFhDXRJcJLP4O5kuqmpXSkvIi/nHWQhjyQpdw2OFrRnUczaMkrUUdJx06ObbyGfau66XrTY1iDXeU5+IuPX+1/N2I0SInmsBisTAeMeqiBJ7toTpyDI5jjndw/e4yzkXWVMh1mjVSItdLqzZVMkuS1HBzUmFnFl1DfDDYlSLP1T+pLu05EtfipwuI5lHLNZ8bdwmGKRNFPBB1QvvIASZI3mqP15RhH0jmI1E3koOx+a0UFVUY7wJOohLs1iP3XQgLGA4pkWg8Z2h+xVFLEHWW9B+1cwEsxoHtfoxDoobnuKYc8wgOFtBdVO97BT/8MIK9N+f7GFzbWLpz8oD1eES7BWQKrUGGwrmaXbZ1IZ7co8q9RTCy9ip7uJhIyWwe7ZfnQbbx9H0IbiIEFtDd+B4ilFJIkzI2Gcc2GhNURZUyyWkDLdUl8hgNeSc6TgITfAt34VQiyVNS18jz05KyvItuh3mbPGn5J2Jdbxj+t0I9U+o7cc4o/xRGeaZUKpGBjcENQ1Ui6mhMU0pc/9/lwX8c4d+PSOOX74djS/E/jcVMqb2B6D/aE3Y4xvbV2x4mjl4QyjAHLWwQQ5/VjioTjxXldE0x76gXlialPGNNjiqObDWKEhMVBwGqfZTdcO0seB8IfQbRHZE8giOIrHHRx73mmSIEKyRZY6qk/osCRj+xDeiSaNAl7gxufQFEGpB1SPqB/yJgTT+DLqmCjWigJLcIP4GojffU0Qf+1xT+JRrICIdc3LWRYaR+oTWspajsD0Y0Kg0SGRKFUKLEIyi1rtXRfF5QXTarNBPV/Lyr2K+W7teOTc07MYew1GTF8AP/233KfU1ZztP+UbhRqZBFJ3Ju2oS5914YEYTngJ+1JJkGqo1njXBL23UUKcRIFDVWtS5J4BBOUJMP/KfBtlVDWWtY6+LVBmTDOeUF/MHrCqgJBvNFNh3xH0D5oMze0GZQWRKZT6l8IzQe2Wu6o4xBLcWKrNgGOLZxkbcHUKRCWAtpf2RCoprtjqlLrLyDWvzuuG5smtLnx2VYwtzuJ3quNVa1NofuQ5QLfuhHX1iq+1e9rZSjB32qsAgJsclDCgv48Rgo/Nz34l2neQz06dN91ZbcEardhqzjfU8/JvcWy30V2BFqX77hIJkaHXmQuXXrlvHEd16as/OT65e///abfWxk0zrMRXjNzyOd9DDnDAd40LlHXhtpGd/78QNUGFpXjTO+ZIKvaQEL+Lo97sFrWqRmiLqWpjFw5ogO6BGazOjmk+FJ9SjURmmsfEkmlTyiFRVqpK8Djgx7Y7J2ZJmBeqSZYPbh9fQyIT0iko/UPs9DpSR/LXIMqQwsIPuFVihDOgsMCJf0y0iegflkjBZ8qYnUJ43WgvsMIdZj/ZVK3RD2sp2Fl6hNtVG+gGka/1qs5Kt2endYW40+7a1gTXgvLcwPGFyThulTwbUUjKEMRPt4X4Uyp73il23P5TA5CMw9lnXDmMokIp/iC7EhM2X41jaui3Ce9g1rs47o4Pg78PW7Sz80SVbiJa2o9hlOd3CfvEQSXkELm3LtVduRTLq1w41S6i3RWTmZ8D1mgsWsCvbwdCiPiaOuGdmMODr4EuVtkCdG1kU+ln9x5kcpyT4VUjQ8v6iKoIQ4KFLgHrYT1sh9fAa3h+10XGACZFCPbEgvsxLDPPFQHpMuJZI8uMwO6F8+VaYTPG0C0QN8nEonmo9rqRpKyqikKrHWE9nXQYMQr3UjQ9k2105blEeOnzVKTtgL2xZ6TB7KP7Pg+rxt104urpbBwX3klLPOiCYr009PumyHnWK9FBlhy3YBOcntEvhFRcgML7Eg2ebUdJRBRQqwfgaJ540WL0TWBFwOwq/JNEfxTmhiJzy/NLsoj6mkOU6/GC7Gj4t2PwsLuFrdYKZTohQtePx1O3P5l/94fnb+bunBetZnU8Aj+LpNun2rXebZXuKS8KJVr+XGaZcGLCzggmuWnhGN5vl9IWRFdJyk3Tydd3XQ7FzNPWHfgGWm2sVm9N3CfH5RcCFxaDrHC1hGeNHYEHD2F6bznKI5sJ07P7xeRgl8+waxY7DP0sWQuVSLNZxrwhQm4VCuYTBhUum3byOvjT3X+7feNW+ujt3gYpLcTC298Gi2+zoxrTxmGdSLu38hVLdN5wRrMETsG0XqsGs16wEbDfSLTQq7rNz58SlE6Y0SPNiObUNv2XZguJL+68irPd0rZTPz1fLqTVoTqTBuG/nuzxpNQNr/KySpxs/aWwW5Abv/2l63O4ypa5tBdHAQzl05MtQYHuY+GnOQcPTpJja3mHdDCSzsenPYbcT2JhnZoJx1Yjuz3J43P2FmM2QeoLiRbGbssHu1CRXpjnogHf6HMc5l86Zu2rjrl2Je5E2pEDyOLF80G4nyxq1plYKb7ts28Y9QbF9qX7Ej8EHqL4fG9U+r33W3oQk7oQ8yYUlu8bEmqJ43NGEn9OFeMOu8RzqB3E77gNz+CRc8Tr/qWCcd4OrfJmaB/W+1zlylqh0AAA==");
 
-            document.body.appendChild(script);
+            showReadyOverlay(script);  // wait for user tap before starting
         }
 
-        
+
     </script>
 </body>
 
