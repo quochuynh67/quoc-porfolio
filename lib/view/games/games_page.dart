@@ -27,7 +27,7 @@ class _GamesPageState extends State<GamesPage> {
       // ignore: undefined_prefixed_name
       ui.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
         final iframe = html.IFrameElement()
-          ..src = Uri.base.resolve('/tuoitho/EJS-fbneo.html').toString()
+          ..src = Uri.base.resolve('/tuoitho/trochoi.html').toString()
           ..style.border = '0'
           ..style.width = '100%'
           ..style.height = '100%'
@@ -53,7 +53,7 @@ class _GamesPageState extends State<GamesPage> {
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Text(
-            'Game "tuoitho" is available on Flutter Web at /tuoitho/EJS-fbneo.html',
+            'Game "tuoitho" is available on Flutter Web at /tuoitho/trochoi.html',
             textAlign: TextAlign.center,
           ),
         ),
