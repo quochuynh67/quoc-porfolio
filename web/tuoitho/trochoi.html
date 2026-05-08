@@ -5,6 +5,8 @@
     <title>Quoc67k1 game tuoi tho</title>
     <link rel=icon href=docs/favicon.ico sizes="16x16 32x32 48x48 64x64" type=image/vnd.microsoft.icon>
     <meta name=viewport content="width = device-width, initial-scale = 1">
+    <meta charset="UTF-8">
+
     <style>
         body,
         html {
@@ -252,6 +254,87 @@
           #game .ejs_menu_bar {
     display: none !important;
   }
+
+        #tap-keyhelp {
+    margin-top: 8px;
+    width: min(92vw, 420px);
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    background: rgba(10, 18, 35, 0.72);
+    box-shadow:
+        0 0 18px rgba(0, 229, 255, 0.10),
+        inset 0 0 18px rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(6px);
+    animation: keyHelpGlow 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes keyHelpGlow {
+    from {
+        box-shadow:
+            0 0 14px rgba(0, 229, 255, 0.08),
+            inset 0 0 14px rgba(255, 255, 255, 0.02);
+    }
+    to {
+        box-shadow:
+            0 0 26px rgba(0, 229, 255, 0.18),
+            inset 0 0 18px rgba(255, 255, 255, 0.05);
+    }
+}
+
+.tap-keyhelp-title {
+    margin-bottom: 10px;
+    font-family: monospace;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: #00e5ff;
+    text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+}
+
+#tap-keyhelp-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tap-key-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-family: monospace;
+    font-size: 13px;
+}
+
+.tap-key-label {
+    color: #c7d3e0;
+    text-align: left;
+}
+
+.tap-key-value {
+    color: #ffd700;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-align: right;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.35);
+}
+
+@media (max-width: 520px) {
+    #tap-keyhelp {
+        width: min(92vw, 360px);
+        padding: 12px 12px;
+    }
+
+    .tap-key-row {
+        font-size: 12px;
+        gap: 8px;
+    }
+
+    .tap-key-value {
+        letter-spacing: 0.5px;
+    }
+}
     </style>
 </head>
 
@@ -272,7 +355,27 @@
             <div id="tap-ready-wrap">
                 <div class="tap-coin-ring"><span class="tap-coin-inner">&#x1F579;</span></div>
                 <div id="tap-cta">TAP TO PLAY</div>
-                <div id="tap-sub">Touch anywhere to start</div>
+                <div id="tap-sub">Chạm vào bất kỳ đâu để bắt đầu</div>
+
+                <div id="tap-keyhelp" aria-label="Hướng dẫn phím">
+                    <div class="tap-keyhelp-title">PHÍM ĐIỀU KHIỂN</div>
+                    <div id="tap-keyhelp-content">
+                        <div class="tap-key-row">
+                            <span class="tap-key-label">Di chuyển</span>
+                            <span class="tap-key-value">W A S D</span>
+                        </div>
+                        --------------------------------------------
+                        <div class="tap-key-row">
+                            <span class="tap-key-label">Các hành động A / B / X / Y</span>
+                            <span class="tap-key-value">Phím I / J / U / K</span>
+                        </div>
+                        --------------------------------------------
+                        <div class="tap-key-row">
+                            <span class="tap-key-label">Bắt đầu / Thêm Xu</span>
+                            <span class="tap-key-value">Phím Enter / V</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -757,6 +860,22 @@
             ov.classList.add('ready');
         }
 
+        function disableSelectionForGameUI() {
+  [
+    document.body,
+    document.getElementById('game'),
+    document.getElementById('tap-overlay'),
+    ...document.querySelectorAll('.ejs_gamepad, .ejs_gamepad *, .ejs_virtual_gamepad, .ejs_virtual_gamepad *')
+  ].forEach(function(el) {
+    if (!el) return;
+    el.setAttribute('unselectable', 'on');
+    el.setAttribute('draggable', 'false');
+    el.style.webkitUserSelect = 'none';
+    el.style.userSelect = 'none';
+    el.style.webkitTouchCallout = 'none';
+  });
+}
+
         (function() {
             function _initOverlay() {
                 const ov = document.getElementById('tap-overlay');
@@ -882,6 +1001,7 @@
             div.appendChild(sub)
             document.body.appendChild(div)
             window.EJS_onGameStart = function (e) {
+                disableSelectionForGameUI();
                 console.log('[EJS] Game started', {
                     gameName: window.EJS_gameName,
                     core: window.EJS_core,
