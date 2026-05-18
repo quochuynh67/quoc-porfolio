@@ -4,6 +4,7 @@ import 'package:flutter_portfolio/view/intro/introduction.dart';
 import 'package:flutter_portfolio/view/main/main_view.dart';
 import 'package:flutter_portfolio/view/games/games_page.dart';
 import 'package:flutter_portfolio/view/projects/project_view.dart';
+import 'package:flutter_portfolio/view/retro_game/retro_game_page.dart';
 import 'package:flutter_portfolio/view/vlog/feed_page.dart';
 
 import '../../view model/controller.dart';
@@ -61,6 +62,7 @@ class HomePage extends StatelessWidget {
         FeedPage(isPlayChillVideoAtFirst: isChillVideo()),
         const CsScreen(),
         const GamesPage(),
+        const RetroGamePage(),
       ],
     );
   }

@@ -79,6 +79,11 @@ class NavigationButtonList extends StatelessWidget {
                     goToPage(6);
                   },
                   text: 'Games'),
+              NavigationTextButton(
+                  onTap: () {
+                    goToPage(7);
+                  },
+                  text: 'Retro game'),
             ],
           ),
         );
