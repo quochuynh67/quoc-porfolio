@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'dart:js' as js;
 import 'dart:html' as html;
@@ -43,10 +44,20 @@ class VideoItem extends StatefulWidget {
     required this.video,
     required this.autoPlayNext,
     this.onVideoEnd,
+    this.onAddVideoTap,
+    this.showAddVideoButton = false,
+    this.canAddVideo = false,
+    this.isAddVideoLoading = false,
+    this.addVideoLabel = 'THÊM VIDEO',
   }) : super(key: key);
   final VideoModel video;
   final bool autoPlayNext;
   final VoidCallback? onVideoEnd;
+  final VoidCallback? onAddVideoTap;
+  final bool showAddVideoButton;
+  final bool canAddVideo;
+  final bool isAddVideoLoading;
+  final String addVideoLabel;
   @override
   State<VideoItem> createState() => _VideoItemState();
 }
@@ -78,6 +89,32 @@ class _VideoItemState extends State<VideoItem>
   bool _hasNotifiedVideoEnd = false;
 
   String get _videoKey => '${widget.video.id}-${widget.video.url}';
+
+  ButtonStyle _panelButtonStyle(Color backgroundColor,
+      {Color foregroundColor = Colors.white}) {
+    return ElevatedButton.styleFrom(
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      textStyle: const TextStyle(
+        fontWeight: FontWeight.w800,
+        letterSpacing: 0.2,
+      ),
+    );
+  }
+
+  TextStyle get _panelButtonTextStyle => const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w800,
+        shadows: [
+          Shadow(
+            color: Colors.black87,
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
+      );
 
   void _playAsActive() {
     final controller = videoController;
@@ -161,8 +198,8 @@ class _VideoItemState extends State<VideoItem>
     if (soundState) {
       _onUserTap();
     } else {
-      // Keep controls visible initially when muted so users can quickly enable sound.
-      _showButtonPanel.add(true);
+      // Keep controls visible initially when muted, then auto-hide after 7s.
+      _onUserTap();
     }
   }
 
@@ -465,17 +502,60 @@ class _VideoItemState extends State<VideoItem>
           position: _offsetAnimation,
           child: Align(
             alignment: Alignment.bottomRight,
-            child: Container(
-              margin: const EdgeInsets.only(left: 12, right: 12),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.all(12),
-              child: Column(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                child: Container(
+                  margin: const EdgeInsets.only(left: 12, right: 12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withValues(alpha: 0.18),
+                        Colors.white.withValues(alpha: 0.07),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.25),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      )
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (widget.showAddVideoButton) ...[
+                    ElevatedButton.icon(
+                      onPressed: (widget.canAddVideo && !widget.isAddVideoLoading)
+                          ? widget.onAddVideoTap
+                          : null,
+                      style: _panelButtonStyle(
+                        Colors.cyanAccent.withValues(alpha: 0.95),
+                        foregroundColor: Colors.black,
+                      ),
+                      icon: widget.isAddVideoLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.video_call),
+                      label: Text(widget.addVideoLabel,
+                          style: const TextStyle(fontWeight: FontWeight.w800)),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
                   /// Logger output
                   StreamBuilder<String>(
                     stream: _loggerStream,
@@ -488,7 +568,7 @@ class _VideoItemState extends State<VideoItem>
                                 setState(() {});
                               },
                               child: Container(
-                                color: Colors.black.withOpacity(0.5),
+                                color: Colors.black.withValues(alpha: 0.5),
                                 child: Text(
                                   log,
                                   textAlign: TextAlign.center,
@@ -512,17 +592,11 @@ class _VideoItemState extends State<VideoItem>
                         onPressed: () {
                           soundOn ? disableSound() : enableSound();
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 12, horizontal: 16),
-                        ),
+                        style: _panelButtonStyle(Colors.green),
                         icon: Icon(soundOn ? Icons.volume_up : Icons.volume_off,
                             color: Colors.white),
                         label: Text(soundOn ? 'Tắt âm thanh' : 'Mở âm thanh',
-                            style: const TextStyle(color: Colors.white)),
+                            style: _panelButtonTextStyle),
                       );
                     },
                   ),
@@ -565,13 +639,7 @@ class _VideoItemState extends State<VideoItem>
                               _isFetchingHotel.add(false);
                             });
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 12, horizontal: 16),
-                          ),
+                          style: _panelButtonStyle(Colors.green),
                           icon: isFetching
                               ? const CircularProgressIndicator()
                               : const Icon(Icons.home, color: Colors.white),
@@ -579,7 +647,7 @@ class _VideoItemState extends State<VideoItem>
                               isFetching
                                   ? 'Đang tìm kiếm '
                                   : 'Tìm chỗ ở gần video',
-                              style: const TextStyle(color: Colors.white)),
+                              style: _panelButtonTextStyle),
                         );
                       }),
                   const SizedBox(height: 8),
@@ -598,17 +666,11 @@ class _VideoItemState extends State<VideoItem>
                         builder: (_) => _buildVideoNameDescSheet(context),
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent.shade700,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 16),
-                    ),
+                    style: _panelButtonStyle(Colors.blueAccent.shade700),
                     icon: const Icon(Icons.perm_media, color: Colors.white),
-                    label: const Text(
+                    label: Text(
                       'Mô tả về video',
-                      style: TextStyle(color: Colors.white),
+                      style: _panelButtonTextStyle,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -627,17 +689,11 @@ class _VideoItemState extends State<VideoItem>
                         builder: (_) => _buildSpotSheet(context),
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber.shade700,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 16),
-                    ),
+                    style: _panelButtonStyle(Colors.amber.shade700),
                     icon: const Icon(Icons.map, color: Colors.white),
-                    label: const Text(
+                    label: Text(
                       'Hiển thị vị trí trong vlog',
-                      style: TextStyle(color: Colors.white),
+                      style: _panelButtonTextStyle,
                     ),
                   ),
 
@@ -668,17 +724,19 @@ class _VideoItemState extends State<VideoItem>
                         'data': 'Flutter iframe button pressed',
                       }, '*'); // Replace '*' with the parent origin for security
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.greenAccent,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 16),
+                    style: _panelButtonStyle(
+                      Colors.greenAccent.shade400,
+                      foregroundColor: Colors.black,
                     ),
                     icon: const Icon(Icons.quick_contacts_dialer_outlined),
-                    label: const Text('Liện hệ khi gặp lỗi'),
+                    label: Text(
+                      'Liện hệ khi gặp lỗi',
+                      style: _panelButtonTextStyle.copyWith(color: Colors.black87),
+                    ),
                   ),
                 ],
+              ),
+                ),
               ),
             ),
           ),
