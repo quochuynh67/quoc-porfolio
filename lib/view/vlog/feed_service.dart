@@ -11,9 +11,11 @@ class FeedService {
 
   static Future<FeedResponse> fetchFeedVideo(int page,
       {int pageSize = 15}) async {
-    final url = '$koreanVideoEndpoint&page=$page&pageSize=$pageSize';
-    var response = await http.get(Uri.parse(url));
-    return FeedResponse.fromJson(jsonDecode(response.body));
+    // final url = '$koreanVideoEndpoint&page=$page&pageSize=$pageSize';
+    // var response = await http.get(Uri.parse(url));
+    // return FeedResponse.fromJson(jsonDecode(response.body));
+    // return empty response for now to avoid hitting the API during development
+    return FeedResponse();
   }
 
   static Future<List<HotelResponse>?> fetchHotelByVideoId(int videoId) async {

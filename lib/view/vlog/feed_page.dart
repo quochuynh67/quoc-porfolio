@@ -23,8 +23,18 @@ class _FeedPageState extends State<FeedPage> {
   Pagination? pagination;
   final storageService = StorageService();
   List<VideoModel> supaBaseVideos = [];
-  bool isOnlyChillVideo = false;
+  bool isOnlyChillVideo = true;
   bool autoPlayNext = false;
+
+  void _preloadUpcomingVideos(List<VideoModel> videos, int fromIndex,
+      {int count = 2}) {
+    if (videos.isEmpty) return;
+    final start = fromIndex.clamp(0, videos.length - 1);
+    final endExclusive = (start + count).clamp(start, videos.length);
+    for (int i = start; i < endExclusive; i++) {
+      VideoItem.preloadVideoOnWeb(videos[i].url);
+    }
+  }
 
   @override
   void initState() {
@@ -32,6 +42,7 @@ class _FeedPageState extends State<FeedPage> {
     if (isOnlyChillVideo) {
       _fetchSupaBaseVideo().whenComplete(() {
         videoStream.add(supaBaseVideos);
+        _preloadUpcomingVideos(supaBaseVideos, 0, count: 3);
       });
     } else {
       _fetchSupaBaseVideo().whenComplete(() {
@@ -53,6 +64,7 @@ class _FeedPageState extends State<FeedPage> {
               [];
           videoStream.add(_insertEach5SupaBaseVideo(
               supaBaseVideos, data));
+          _preloadUpcomingVideos(videoStream.valueOrNull ?? [], 0, count: 3);
           pagination = value.pagination;
         });
       });
@@ -80,6 +92,7 @@ class _FeedPageState extends State<FeedPage> {
           id: DateTime.now().millisecondsSinceEpoch,
         );
       }).toList();
+      supaBaseVideos.shuffle();
     } catch (e) {
       print('Error fetching public URLs: $e');
     }
@@ -137,6 +150,8 @@ class _FeedPageState extends State<FeedPage> {
                     [];
                 videoStream
                     .add(_insertEach5SupaBaseVideo(supaBaseVideos, data));
+                _preloadUpcomingVideos(videoStream.valueOrNull ?? [], 0,
+                    count: 3);
                 pagination = value.pagination;
               });
             },
@@ -149,8 +164,10 @@ class _FeedPageState extends State<FeedPage> {
                     return PageView.builder(
                       controller: pageController,
                       scrollDirection: Axis.vertical,
+                      allowImplicitScrolling: true,
                       itemCount: data.length,
                       onPageChanged: (index) {
+                        _preloadUpcomingVideos(data, index + 1);
                         if (index == data.length - 1) {
                           bool canLoadMore = (pagination?.page ?? 0) <
                               (pagination?.pageCount ?? 0);
@@ -176,17 +193,24 @@ class _FeedPageState extends State<FeedPage> {
                                 [];
                             current.addAll(newData);
                             videoStream.add(_insertEach5SupaBaseVideo(
-                                supaBaseVideos, data));
+                                supaBaseVideos, current));
+                            _preloadUpcomingVideos(
+                                videoStream.valueOrNull ?? [], index + 1,
+                                count: 3);
                             pagination = value.pagination;
                           });
                         }
                       },
                       itemBuilder: (_, index) =>
-                          VideoItem(video: data.elementAt(index), onVideoEnd: (){
+                          VideoItem(video: data.elementAt(index), autoPlayNext: autoPlayNext, onVideoEnd: (){
                             if (autoPlayNext) {
-                              int nextPage = (pageController.page?.toInt() ?? 0) + 1;
+                              int nextPage = index + 1;
                               if (nextPage < data.length) {
-                                pageController.jumpToPage(nextPage);
+                                pageController.animateToPage(
+                                  nextPage,
+                                  duration: const Duration(milliseconds: 280),
+                                  curve: Curves.easeOut,
+                                );
                               }
                             }
                           }),
@@ -220,6 +244,7 @@ class _FeedPageState extends State<FeedPage> {
                           if (isOnlyChillVideo) {
                             supaBaseVideos.shuffle();
                             videoStream.add(supaBaseVideos);
+                            _preloadUpcomingVideos(supaBaseVideos, 0, count: 3);
                             pageController.jumpToPage(
                                 (pageController.page?.toInt() ?? 0) + 1);
                           } else {
@@ -242,6 +267,9 @@ class _FeedPageState extends State<FeedPage> {
                                     [];
                                 videoStream.add(_insertEach5SupaBaseVideo(
                                     supaBaseVideos, data));
+                                _preloadUpcomingVideos(
+                                    videoStream.valueOrNull ?? [], 0,
+                                    count: 3);
                                 pagination = value.pagination;
                               });
                             });

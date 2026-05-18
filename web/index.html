@@ -16,6 +16,8 @@
     -->
 
     <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta content="IE=Edge" http-equiv="X-UA-Compatible">
     <meta name="description" content="A new Flutter project.">
     <link rel="icon" type="image/png" href="favicon.png"/>
@@ -61,22 +63,18 @@
     {{flutter_bootstrap_js}}
 </script>
 <script>
-    window.addEventListener('load', function(ev) {
-          var loading = document.querySelector('#loader');
-      loading.style.visibility = 'visible';
+    window.addEventListener('load', function() {
+      var loading = document.querySelector('#loader');
+      if (loading) {
+        loading.style.visibility = 'visible';
+      }
+    });
 
-      _flutter.loader.load({
-        serviceWorkerSettings: {
-          serviceWorkerVersion: {{flutter_service_worker_version}},
-        },
-        onEntrypointLoaded: function(engineInitializer) {
-          engineInitializer.initializeEngine().then(function(appRunner) {
-            appRunner.runApp().then(function(){
-               loading.style.visibility = 'hidden';
-            });
-          });
-        }
-      });
+    window.addEventListener('flutter-first-frame', function() {
+      var loading = document.querySelector('#loader');
+      if (loading) {
+        loading.style.visibility = 'hidden';
+      }
     });
 </script>
 <script>
@@ -105,6 +103,11 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest" type="application/javascript"></script>
 <style>
+    html, body {
+      overscroll-behavior: none;
+      touch-action: manipulation;
+    }
+
     div[style*="text-align: right;position: fixed;z-index:9999999;bottom: 0;width: auto;right: 1%;cursor: pointer;line-height: 0;display:block !important;"] {
        display: none !important;
     }

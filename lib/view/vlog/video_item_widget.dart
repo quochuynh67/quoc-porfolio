@@ -8,7 +8,6 @@ import 'package:flutter_portfolio/view/vlog/feed_service.dart';
 import 'package:flutter_portfolio/view/vlog/hotel_response.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:video_player/video_player.dart';
-import 'package:video_player_web/video_player_web.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import 'feed_page.dart';
@@ -16,12 +15,37 @@ import 'feed_response.dart';
 import 'video_model.dart';
 
 class VideoItem extends StatefulWidget {
+  static final Map<String, html.VideoElement> _webPreloadPool = {};
+  static const int _maxPreloadedVideos = 8;
+
+  /// Lightweight preload for web iframe/mobile: fetches video metadata and keeps
+  /// a small rolling pool so next swipe starts faster.
+  static void preloadVideoOnWeb(String? url) {
+    if (url == null || url.isEmpty || _webPreloadPool.containsKey(url)) return;
+    final video = html.VideoElement()
+      ..src = url
+      ..preload = 'metadata'
+      ..muted = true;
+    video.setAttribute('playsinline', 'true');
+    video.load();
+    _webPreloadPool[url] = video;
+
+    if (_webPreloadPool.length > _maxPreloadedVideos) {
+      final firstKey = _webPreloadPool.keys.first;
+      final oldVideo = _webPreloadPool.remove(firstKey);
+      oldVideo?.removeAttribute('src');
+      oldVideo?.load();
+    }
+  }
+
   const VideoItem({
     Key? key,
     required this.video,
+    required this.autoPlayNext,
     this.onVideoEnd,
   }) : super(key: key);
   final VideoModel video;
+  final bool autoPlayNext;
   final VoidCallback? onVideoEnd;
   @override
   State<VideoItem> createState() => _VideoItemState();
@@ -29,6 +53,9 @@ class VideoItem extends StatefulWidget {
 
 class _VideoItemState extends State<VideoItem>
     with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
+  static VideoPlayerController? _activeController;
+  static String? _activeVideoKey;
+
   VideoPlayerController? videoController;
   bool disposed = false;
   bool videoInitialized = false;
@@ -47,6 +74,29 @@ class _VideoItemState extends State<VideoItem>
   final BehaviorSubject<List<HotelResponse>> _hotelResponse = BehaviorSubject();
   final BehaviorSubject<bool> _isFetchingHotel = BehaviorSubject();
   final ScrollController scrollController = ScrollController();
+  bool _isVisibleEnoughToPlay = true;
+  bool _hasNotifiedVideoEnd = false;
+
+  String get _videoKey => '${widget.video.id}-${widget.video.url}';
+
+  void _playAsActive() {
+    final controller = videoController;
+    if (controller == null) return;
+
+    if (_activeController != null &&
+        !identical(_activeController, controller) &&
+        _activeController!.value.isPlaying) {
+      try {
+        _activeController?.pause();
+      } catch (_) {
+        // Ignore pause failures from disposed/invalid previous controllers.
+      }
+    }
+
+    _activeController = controller;
+    _activeVideoKey = _videoKey;
+    controller.play();
+  }
 
   @override
   bool get wantKeepAlive => false;
@@ -61,6 +111,7 @@ class _VideoItemState extends State<VideoItem>
   void initState() {
     super.initState();
     _spots = List.from(widget.video.spots);
+    VideoItem.preloadVideoOnWeb(widget.video.url);
     _initVideoController();
     _timer = Timer.periodic(const Duration(seconds: 6), (timer) {
       if (videoInitialized == false ||
@@ -107,19 +158,36 @@ class _VideoItemState extends State<VideoItem>
       }
     });
 
-    _onUserTap();
+    if (soundState) {
+      _onUserTap();
+    } else {
+      // Keep controls visible initially when muted so users can quickly enable sound.
+      _showButtonPanel.add(true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant VideoItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.autoPlayNext != widget.autoPlayNext) {
+      videoController?.setLooping(!widget.autoPlayNext);
+    }
   }
 
   void _initVideoController() {
-    videoController =
-        VideoPlayerController.networkUrl(Uri.parse(widget.video.url))
+    videoController = VideoPlayerController.networkUrl(
+            Uri.parse(widget.video.url),
+            videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true))
           ..initialize().then((_) {
+            if (!mounted || disposed) return;
             setState(() {});
-            videoController?.setLooping(true);
+            videoController?.setLooping(!widget.autoPlayNext);
             videoInitialized = true;
             videoController?.addListener(_listenVideoValue);
             setState(() {});
-            videoController?.play();
+            if (_isVisibleEnoughToPlay) {
+              _playAsActive();
+            }
           }).onError((error, stackTrace) {
             js.context.callMethod('logger', [
               'VideoPlayerController.onError ===> Playing ${widget.video.url}, e $error, stackTrace $stackTrace'
@@ -137,6 +205,10 @@ class _VideoItemState extends State<VideoItem>
 
   @override
   void dispose() {
+    if (identical(_activeController, videoController) || _activeVideoKey == _videoKey) {
+      _activeController = null;
+      _activeVideoKey = null;
+    }
     videoController?.removeListener(_listenVideoValue);
     videoController?.dispose();
     _currentSpot.close();
@@ -160,11 +232,18 @@ class _VideoItemState extends State<VideoItem>
           'VideoPlayerController.listener ===> Playing ${widget.video.url}, e ${videoController?.value.errorDescription}');
     }
     final videoPosition = videoController?.value.position ?? Duration.zero;
+    final duration = videoController?.value.duration ?? Duration.zero;
     final spot = findClosestSpot(_spots, videoPosition.inSeconds.toDouble());
     _currentSpot.add(spot);
+
     if (videoController?.value.isInitialized == true &&
-        videoController?.value.position == videoController?.value.duration) {
+        duration > Duration.zero &&
+        videoPosition >= duration - const Duration(milliseconds: 250)) {
+      if (_hasNotifiedVideoEnd) return;
+      _hasNotifiedVideoEnd = true;
       widget.onVideoEnd?.call();
+    } else {
+      _hasNotifiedVideoEnd = false;
     }
   }
 
@@ -208,7 +287,7 @@ class _VideoItemState extends State<VideoItem>
     if (videoController!.value.isPlaying) {
       videoController?.pause();
     } else {
-      videoController?.play();
+      _playAsActive();
     }
   }
 
@@ -228,12 +307,6 @@ class _VideoItemState extends State<VideoItem>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    _setLogger(
-        'VideoDetailWidget.build ===> Playing ${widget.video.url} ---- videoController.value.isInitialized ${videoController?.value.isInitialized}');
-
-    js.context.callMethod('logger', [
-      'VideoDetailWidget.build ===> Playing ${widget.video.url} ---- videoController.value.isInitialized ${videoController?.value.isInitialized}'
-    ]);
 
     User? user = widget.video.user;
     return Stack(
@@ -257,14 +330,18 @@ class _VideoItemState extends State<VideoItem>
             alignment: Alignment.center,
             child: videoController != null && videoInitialized
                 ? VisibilityDetector(
-                    key: Key(DateTime.now().millisecondsSinceEpoch.toString()),
+                    key: Key('video-${widget.video.id}-${widget.video.url}'),
                     onVisibilityChanged: (VisibilityInfo info) {
                       if (disposed) return;
-                      var visiblePercentage = info.visibleFraction * 100;
-                      if (visiblePercentage < 1) {
+                      final visibleFraction = info.visibleFraction;
+
+                      // Hysteresis avoids rapid pause/play toggles while swiping.
+                      if (visibleFraction < 0.35) {
+                        _isVisibleEnoughToPlay = false;
                         videoController?.pause();
-                      } else {
-                        videoController?.play();
+                      } else if (visibleFraction > 0.7) {
+                        _isVisibleEnoughToPlay = true;
+                        _playAsActive();
                       }
                     },
                     child: Align(
