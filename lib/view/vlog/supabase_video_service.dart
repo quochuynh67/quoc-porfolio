@@ -2,6 +2,16 @@ import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+class StorageVideoEntry {
+  const StorageVideoEntry({
+    required this.publicUrl,
+    required this.uploaderName,
+  });
+
+  final String publicUrl;
+  final String uploaderName;
+}
+
 class StorageService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
@@ -49,14 +59,47 @@ class StorageService {
     }
   }
 
+  Future<List<StorageVideoEntry>> listBucketVideoEntries({
+    required String bucketName,
+    String path = '',
+    int limit = 100,
+    int offset = 0,
+  }) async {
+    try {
+      final response = await _supabase.storage.from(bucketName).list(
+            path: path,
+            searchOptions: SearchOptions(limit: limit, offset: offset),
+          );
+
+      return response
+          .where((file) => file.name.contains('.'))
+          .map((file) {
+            final uploader = _extractUploaderName(file.name);
+            return StorageVideoEntry(
+              publicUrl: _supabase.storage.from(bucketName).getPublicUrl(file.name),
+              uploaderName: uploader,
+            );
+          })
+          .toList();
+    } on StorageException catch (e) {
+      print('Error retrieving storage entries: ${e.message}');
+      return [];
+    }
+  }
+
   Future<String> uploadVideoBytes({
     required String bucketName,
     required Uint8List bytes,
     required String originalFileName,
+    required String uploaderName,
+    required String uploaderUserId,
     String path = '',
   }) async {
     final ext = _fileExtension(originalFileName);
-    final fileName = 'video_${DateTime.now().millisecondsSinceEpoch}.${ext.isEmpty ? 'mp4' : ext}';
+    final encodedUploader = Uri.encodeComponent(uploaderName.trim());
+    final encodedUid = Uri.encodeComponent(uploaderUserId.trim());
+    final fileName =
+        '${encodedUploader}__${encodedUid}__video_${DateTime.now().millisecondsSinceEpoch}.${ext.isEmpty ? 'mp4' : ext}';
     final targetPath = path.isEmpty ? fileName : '$path/$fileName';
 
     await _supabase.storage.from(bucketName).uploadBinary(
@@ -69,6 +112,17 @@ class StorageService {
         );
 
     return _supabase.storage.from(bucketName).getPublicUrl(targetPath);
+  }
+
+  String _extractUploaderName(String fileName) {
+    final parts = fileName.split('__');
+    if (parts.isEmpty) return 'Người dùng ẩn danh';
+    try {
+      final decoded = Uri.decodeComponent(parts.first);
+      return decoded.isEmpty ? 'Người dùng ẩn danh' : decoded;
+    } catch (_) {
+      return 'Người dùng ẩn danh';
+    }
   }
 
   String _fileExtension(String name) {

@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_portfolio/view/customer_service/src/pages/auth.dart';
 import 'package:flutter_portfolio/view/vlog/supabase_video_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 
 import 'feed_response.dart';
 import 'feed_service.dart';
@@ -44,6 +46,7 @@ class _FeedPageState extends State<FeedPage> {
   bool _hasMoreSupaBaseVideo = true;
   int _supaBaseOffset = 0;
   static const int _supaBasePageSize = 50;
+  StreamSubscription<supa.AuthState>? _authSub;
 
   void _preloadUpcomingVideos(List<VideoModel> videos, int fromIndex,
       {int count = 2}) {
@@ -57,6 +60,7 @@ class _FeedPageState extends State<FeedPage> {
 
   @override
   void initState() {
+    _bindAuthState();
     _initializeUploadGuard();
     isOnlyChillVideo = widget.isPlayChillVideoAtFirst;
     if (isOnlyChillVideo) {
@@ -92,6 +96,13 @@ class _FeedPageState extends State<FeedPage> {
     super.initState();
   }
 
+  void _bindAuthState() {
+    _authSub = supa.Supabase.instance.client.auth.onAuthStateChange.listen((_) {
+      if (!mounted) return;
+      _refreshUploadPermission();
+    });
+  }
+
   Future<void> _initializeUploadGuard() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getInt(_uploadCooldownStorageKey);
@@ -100,6 +111,10 @@ class _FeedPageState extends State<FeedPage> {
       _startUploadCooldownTickerIfNeeded();
     }
 
+    _refreshUploadPermission();
+  }
+
+  void _refreshUploadPermission() {
     final hasOwnerConfig =
         _ownerSupabaseUserId.isNotEmpty || _ownerSupabaseEmail.isNotEmpty;
     final allowed = hasOwnerConfig
@@ -108,11 +123,8 @@ class _FeedPageState extends State<FeedPage> {
             ownerEmail: _ownerSupabaseEmail,
           )
         : (storageService.currentUserId != null);
-
-    if (!mounted) return;
     setState(() {
-      // force user to be able to upload if owner info is not configured, but still check cooldown if they do upload
-      canCurrentUserUpload = true;
+      canCurrentUserUpload = allowed;
     });
   }
 
@@ -155,13 +167,13 @@ class _FeedPageState extends State<FeedPage> {
     _startUploadCooldownTickerIfNeeded();
   }
 
-  VideoModel _toSupabaseVideo(String url) {
+  VideoModel _toSupabaseVideo(String url, {String uploaderName = 'Quốc 67k1'}) {
     return VideoModel(
       url,
       null,
       [],
       user: User(
-          id: DateTime.now().millisecondsSinceEpoch, nickname: 'Quốc 67k1'),
+          id: DateTime.now().millisecondsSinceEpoch, nickname: uploaderName),
       name: 'Video của Quốc 67K1 chèn test quảng cáo',
       description: 'video quảng cáo chèn vào của quốc',
       like: 9999,
@@ -181,23 +193,26 @@ class _FeedPageState extends State<FeedPage> {
 
     _isLoadingSupaBasePage = true;
     try {
-      final publicUrls = await storageService.listBucketUrls(
+      final entries = await storageService.listBucketVideoEntries(
         bucketName: 'videos',
         limit: _supaBasePageSize,
         offset: _supaBaseOffset,
       );
 
-      if (publicUrls.isEmpty) {
+      if (entries.isEmpty) {
         _hasMoreSupaBaseVideo = false;
         return;
       }
 
-      _supaBaseOffset += publicUrls.length;
-      if (publicUrls.length < _supaBasePageSize) {
+      _supaBaseOffset += entries.length;
+      if (entries.length < _supaBasePageSize) {
         _hasMoreSupaBaseVideo = false;
       }
 
-      final newVideos = publicUrls.map(_toSupabaseVideo).toList()..shuffle();
+      final newVideos = entries
+        .map((e) => _toSupabaseVideo(e.publicUrl, uploaderName: e.uploaderName))
+        .toList()
+        ..shuffle();
       supaBaseVideos.addAll(newVideos);
     } catch (e) {
       print('Error fetching public URLs: $e');
@@ -224,6 +239,23 @@ class _FeedPageState extends State<FeedPage> {
 
   Future<void> _pickAndUploadVideo() async {
     if (isUploadingVideo) return;
+
+    final currentUser = supa.Supabase.instance.client.auth.currentUser;
+    if (currentUser == null) {
+      if (!mounted) return;
+      await showDialog(
+          context: context,
+          builder: (_) {
+            return const AlertDialog(
+              backgroundColor: Colors.transparent,
+              content: AuthScreen(),
+              contentPadding: EdgeInsets.all(0),
+            );
+          });
+      _refreshUploadPermission();
+      return;
+    }
+
     if (!canCurrentUserUpload) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -261,12 +293,15 @@ class _FeedPageState extends State<FeedPage> {
 
     setState(() => isUploadingVideo = true);
     try {
+      final uploaderName = _currentUploaderName(currentUser);
       final publicUrl = await storageService.uploadVideoBytes(
         bucketName: 'videos',
         bytes: bytes,
         originalFileName: file.name,
+        uploaderName: uploaderName,
+        uploaderUserId: currentUser.id,
       );
-      final uploadedVideo = _toSupabaseVideo(publicUrl);
+      final uploadedVideo = _toSupabaseVideo(publicUrl, uploaderName: uploaderName);
       supaBaseVideos.insert(0, uploadedVideo);
 
       final current = videoStream.valueOrNull ?? [];
@@ -291,6 +326,20 @@ class _FeedPageState extends State<FeedPage> {
         setState(() => isUploadingVideo = false);
       }
     }
+  }
+
+  String _currentUploaderName(supa.User user) {
+    final metadata = user.userMetadata;
+    final first = (metadata?['first_name'] as String?)?.trim() ?? '';
+    final last = (metadata?['last_name'] as String?)?.trim() ?? '';
+    final full = '$first $last'.trim();
+    if (full.isNotEmpty) return full;
+
+    final email = user.email ?? '';
+    if (email.contains('@')) {
+      return email.split('@').first;
+    }
+    return 'Người dùng';
   }
 
   Widget _buildControlPanel(BuildContext context) {
@@ -460,6 +509,7 @@ class _FeedPageState extends State<FeedPage> {
 
   @override
   void dispose() {
+    _authSub?.cancel();
     _uploadCooldownTimer?.cancel();
     videoStream.close();
     super.dispose();
