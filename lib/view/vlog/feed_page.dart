@@ -9,7 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 
 import 'feed_response.dart';
-import 'feed_service.dart';
 import 'video_item_widget.dart';
 import 'video_model.dart';
 
@@ -33,7 +32,6 @@ class _FeedPageState extends State<FeedPage> {
 
   final PageController pageController = PageController();
   final BehaviorSubject<List<VideoModel>> videoStream = BehaviorSubject();
-  Pagination? pagination;
   final storageService = StorageService();
   List<VideoModel> supaBaseVideos = [];
   bool isOnlyChillVideo = true;
@@ -46,6 +44,7 @@ class _FeedPageState extends State<FeedPage> {
   bool _hasMoreSupaBaseVideo = true;
   int _supaBaseOffset = 0;
   static const int _supaBasePageSize = 50;
+  int _currentPageIndex = 0;
   StreamSubscription<supa.AuthState>? _authSub;
 
   void _preloadUpcomingVideos(List<VideoModel> videos, int fromIndex,
@@ -63,36 +62,10 @@ class _FeedPageState extends State<FeedPage> {
     _bindAuthState();
     _initializeUploadGuard();
     isOnlyChillVideo = widget.isPlayChillVideoAtFirst;
-    if (isOnlyChillVideo) {
-      _fetchSupaBaseVideo(reset: true).whenComplete(() {
-        videoStream.add(supaBaseVideos);
-        _preloadUpcomingVideos(supaBaseVideos, 0, count: 3);
-      });
-    } else {
-      _fetchSupaBaseVideo(reset: true).whenComplete(() {
-        FeedService.fetchFeedVideo(1).then((value) {
-          final data = value.results?.map((e) {
-            final thumbnail = e.thumbnails?.first.url;
-            return VideoModel(
-              e.source!.url!,
-              thumbnail,
-              e.spots ?? [],
-              user: e.user,
-              name: e.name,
-              description: e.description,
-              like: e.likeCount,
-              view: e.viewCount,
-              id: e.id!,
-            );
-          }).toList() ??
-              [];
-          videoStream.add(_insertEach5SupaBaseVideo(
-              supaBaseVideos, data));
-          _preloadUpcomingVideos(videoStream.valueOrNull ?? [], 0, count: 3);
-          pagination = value.pagination;
-        });
-      });
-    }
+    _fetchSupaBaseVideo(reset: true).whenComplete(() {
+      videoStream.add(List<VideoModel>.from(supaBaseVideos));
+      _preloadUpcomingVideos(supaBaseVideos, 0, count: 3);
+    });
     super.initState();
   }
 
@@ -208,6 +181,9 @@ class _FeedPageState extends State<FeedPage> {
       if (entries.length < _supaBasePageSize) {
         _hasMoreSupaBaseVideo = false;
       }
+      final loadedPage = ((_supaBaseOffset - 1) ~/ _supaBasePageSize) + 1;
+      debugPrint(
+          '[VLOG][SUPABASE] page=$loadedPage loaded=${entries.length} pageSize=$_supaBasePageSize hasMore=$_hasMoreSupaBaseVideo totalLoaded=$_supaBaseOffset');
 
       final newVideos = entries
         .map((e) => _toSupabaseVideo(e.publicUrl, uploaderName: e.uploaderName))
@@ -222,7 +198,6 @@ class _FeedPageState extends State<FeedPage> {
   }
 
   Future<void> _loadMoreSupabaseForChillModeIfNeeded(int index) async {
-    if (!isOnlyChillVideo) return;
     final current = videoStream.valueOrNull ?? [];
     if (current.isEmpty) return;
 
@@ -486,27 +461,6 @@ class _FeedPageState extends State<FeedPage> {
     // );
   }
 
-  List<VideoModel> _insertEach5SupaBaseVideo(
-      List<VideoModel> supaBaseVideos, List<VideoModel> currentVideos) {
-    // if one video in current, add 5 supabase videos before it
-    if (currentVideos.isEmpty) return supaBaseVideos;
-    List<VideoModel> result = [];
-    int supaBaseIndex = 0;
-    for (int i = 0; i < currentVideos.length; i++) {
-      if (i > 0 && i % 5 == 0 && supaBaseIndex < supaBaseVideos.length) {
-        result.add(supaBaseVideos[supaBaseIndex]);
-        supaBaseIndex++;
-      }
-      result.add(currentVideos[i]);
-    }
-    // Add remaining supabase videos if any
-    while (supaBaseIndex < supaBaseVideos.length) {
-      result.add(supaBaseVideos[supaBaseIndex]);
-      supaBaseIndex++;
-    }
-    return result;
-  }
-
   @override
   void dispose() {
     _authSub?.cancel();
@@ -522,36 +476,10 @@ class _FeedPageState extends State<FeedPage> {
         children: [
           RefreshIndicator(
             onRefresh: () async {
-              if (isOnlyChillVideo) {
-                await _fetchSupaBaseVideo(reset: true);
-                videoStream.add(List<VideoModel>.from(supaBaseVideos));
-                _preloadUpcomingVideos(videoStream.valueOrNull ?? [], 0,
-                    count: 3);
-                return;
-              }
-
-              FeedService.fetchFeedVideo(1).then((value) {
-                final data = value.results?.map((e) {
-                      final thumbnail = e.thumbnails?.first.url;
-                      return VideoModel(
-                        e.source!.url!,
-                        thumbnail,
-                        e.spots ?? [],
-                        user: e.user,
-                        name: e.name,
-                        description: e.description,
-                        like: e.likeCount,
-                        view: e.viewCount,
-                        id: e.id!,
-                      );
-                    }).toList() ??
-                    [];
-                videoStream
-                    .add(_insertEach5SupaBaseVideo(supaBaseVideos, data));
-                _preloadUpcomingVideos(videoStream.valueOrNull ?? [], 0,
-                    count: 3);
-                pagination = value.pagination;
-              });
+              await _fetchSupaBaseVideo(reset: true);
+              videoStream.add(List<VideoModel>.from(supaBaseVideos));
+              _preloadUpcomingVideos(videoStream.valueOrNull ?? [], 0,
+                  count: 3);
             },
             child: SizedBox(
               height: MediaQuery.of(context).size.height,
@@ -565,40 +493,11 @@ class _FeedPageState extends State<FeedPage> {
                       allowImplicitScrolling: true,
                       itemCount: data.length,
                       onPageChanged: (index) {
+                        setState(() {
+                          _currentPageIndex = index;
+                        });
                         _preloadUpcomingVideos(data, index + 1);
                         _loadMoreSupabaseForChillModeIfNeeded(index);
-                        if (index == data.length - 1) {
-                          bool canLoadMore = (pagination?.page ?? 0) <
-                              (pagination?.pageCount ?? 0);
-                          int? currentPage = pagination?.page;
-                          if (!canLoadMore || currentPage == null) return;
-                          int nextPage = currentPage + 1;
-                          FeedService.fetchFeedVideo(nextPage).then((value) {
-                            final current = videoStream.valueOrNull ?? [];
-                            final newData = value.results?.map((e) {
-                                  final thumbnail = e.thumbnails?.first.url;
-                                  return VideoModel(
-                                    e.source!.url!,
-                                    thumbnail,
-                                    e.spots ?? [],
-                                    user: e.user,
-                                    name: e.name,
-                                    description: e.description,
-                                    like: e.likeCount,
-                                    view: e.viewCount,
-                                    id: e.id!,
-                                  );
-                                }).toList() ??
-                                [];
-                            current.addAll(newData);
-                            videoStream.add(_insertEach5SupaBaseVideo(
-                                supaBaseVideos, current));
-                            _preloadUpcomingVideos(
-                                videoStream.valueOrNull ?? [], index + 1,
-                                count: 3);
-                            pagination = value.pagination;
-                          });
-                        }
                       },
                       itemBuilder: (_, index) {
                         final canAddVideoNow = !isUploadingVideo;
@@ -611,6 +510,7 @@ class _FeedPageState extends State<FeedPage> {
                         return VideoItem(
                           video: data.elementAt(index),
                           autoPlayNext: autoPlayNext,
+                          isCurrentPage: index == _currentPageIndex,
                           showAddVideoButton: true,
                           canAddVideo: canAddVideoNow,
                           isAddVideoLoading: isUploadingVideo,
@@ -640,3 +540,6 @@ class _FeedPageState extends State<FeedPage> {
     );
   }
 }
+
+
+

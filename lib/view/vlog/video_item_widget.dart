@@ -43,6 +43,7 @@ class VideoItem extends StatefulWidget {
     Key? key,
     required this.video,
     required this.autoPlayNext,
+    required this.isCurrentPage,
     this.onVideoEnd,
     this.onAddVideoTap,
     this.showAddVideoButton = false,
@@ -52,6 +53,7 @@ class VideoItem extends StatefulWidget {
   }) : super(key: key);
   final VideoModel video;
   final bool autoPlayNext;
+  final bool isCurrentPage;
   final VoidCallback? onVideoEnd;
   final VoidCallback? onAddVideoTap;
   final bool showAddVideoButton;
@@ -63,7 +65,7 @@ class VideoItem extends StatefulWidget {
 }
 
 class _VideoItemState extends State<VideoItem>
-    with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
+    with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin, WidgetsBindingObserver {
   static VideoPlayerController? _activeController;
   static String? _activeVideoKey;
 
@@ -87,6 +89,7 @@ class _VideoItemState extends State<VideoItem>
   final ScrollController scrollController = ScrollController();
   bool _isVisibleEnoughToPlay = true;
   bool _hasNotifiedVideoEnd = false;
+  bool _isAppInForeground = true;
 
   String get _videoKey => '${widget.video.id}-${widget.video.url}';
 
@@ -135,8 +138,21 @@ class _VideoItemState extends State<VideoItem>
     controller.play();
   }
 
+  void _safePlayAsActive() {
+    final controller = videoController;
+    if (controller == null) return;
+    _playAsActive();
+    controller.play().catchError((_) async {
+      // Mobile browsers may block autoplay with sound; fallback to muted play.
+      await controller.setVolume(0.0);
+      soundState = false;
+      _volumeStream.add(false);
+      await controller.play();
+    });
+  }
+
   @override
-  bool get wantKeepAlive => false;
+  bool get wantKeepAlive => true;
 
   void _setLogger(String message) {
     String current = _loggerStream.valueOrNull ?? '';
@@ -147,6 +163,7 @@ class _VideoItemState extends State<VideoItem>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _spots = List.from(widget.video.spots);
     VideoItem.preloadVideoOnWeb(widget.video.url);
     _initVideoController();
@@ -161,6 +178,7 @@ class _VideoItemState extends State<VideoItem>
           disableSound();
         }
         _pauseOrPlay();
+        // Retry once for slow mobile networks, then stop to avoid duplicate inits.
         timer.cancel();
       }
     });
@@ -209,6 +227,25 @@ class _VideoItemState extends State<VideoItem>
     if (oldWidget.autoPlayNext != widget.autoPlayNext) {
       videoController?.setLooping(!widget.autoPlayNext);
     }
+    if (oldWidget.isCurrentPage != widget.isCurrentPage) {
+      _syncPlaybackState();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _isAppInForeground = state == AppLifecycleState.resumed;
+    _syncPlaybackState();
+  }
+
+  void _syncPlaybackState() {
+    final controller = videoController;
+    if (controller == null || !videoInitialized) return;
+    if (!_isAppInForeground || !_isVisibleEnoughToPlay || !widget.isCurrentPage) {
+      controller.pause();
+      return;
+    }
+    _safePlayAsActive();
   }
 
   void _initVideoController() {
@@ -222,9 +259,7 @@ class _VideoItemState extends State<VideoItem>
             videoInitialized = true;
             videoController?.addListener(_listenVideoValue);
             setState(() {});
-            if (_isVisibleEnoughToPlay) {
-              _playAsActive();
-            }
+            _syncPlaybackState();
           }).onError((error, stackTrace) {
             js.context.callMethod('logger', [
               'VideoPlayerController.onError ===> Playing ${widget.video.url}, e $error, stackTrace $stackTrace'
@@ -242,6 +277,7 @@ class _VideoItemState extends State<VideoItem>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     if (identical(_activeController, videoController) || _activeVideoKey == _videoKey) {
       _activeController = null;
       _activeVideoKey = null;
@@ -375,10 +411,10 @@ class _VideoItemState extends State<VideoItem>
                       // Hysteresis avoids rapid pause/play toggles while swiping.
                       if (visibleFraction < 0.35) {
                         _isVisibleEnoughToPlay = false;
-                        videoController?.pause();
+                        _syncPlaybackState();
                       } else if (visibleFraction > 0.7) {
                         _isVisibleEnoughToPlay = true;
-                        _playAsActive();
+                        _syncPlaybackState();
                       }
                     },
                     child: Align(
