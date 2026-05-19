@@ -8,6 +8,11 @@ import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
+import 'dart:ui' as ui;
+
 import 'feed_response.dart';
 import 'video_item_widget.dart';
 import 'video_model.dart';
@@ -23,6 +28,10 @@ class FeedPage extends StatefulWidget {
 }
 
 class _FeedPageState extends State<FeedPage> {
+  static const String _viewType = 'reactjs-vlog-iframe';
+  static bool _isFactoryRegistered = false;
+  bool _useReactVlog = true; // Default to loading the ReactJS version
+
   static const String _ownerSupabaseUserId =
       String.fromEnvironment('OWNER_SUPABASE_USER_ID', defaultValue: '');
   static const String _ownerSupabaseEmail =
@@ -59,6 +68,20 @@ class _FeedPageState extends State<FeedPage> {
 
   @override
   void initState() {
+    super.initState();
+    if (kIsWeb && !_isFactoryRegistered) {
+      _isFactoryRegistered = true;
+      // ignore: undefined_prefixed_name
+      ui.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
+        final iframe = html.IFrameElement()
+          ..src = 'https://quoc-research-retrogame.web.app/?feature=vlog'
+          ..style.border = '0'
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..allow = 'autoplay; fullscreen; gamepad';
+        return iframe;
+      });
+    }
     _bindAuthState();
     _initializeUploadGuard();
     isOnlyChillVideo = widget.isPlayChillVideoAtFirst;
@@ -66,7 +89,6 @@ class _FeedPageState extends State<FeedPage> {
       videoStream.add(List<VideoModel>.from(supaBaseVideos));
       _preloadUpcomingVideos(supaBaseVideos, 0, count: 3);
     });
-    super.initState();
   }
 
   void _bindAuthState() {
@@ -469,74 +491,161 @@ class _FeedPageState extends State<FeedPage> {
     super.dispose();
   }
 
+  Widget _buildVersionSelector() {
+    return Positioned(
+      top: 16,
+      left: 16,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.65),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildSelectorTab(
+              title: '⚡ ReactJS (Mượt mà)',
+              isActive: _useReactVlog,
+              onTap: () {
+                setState(() {
+                  _useReactVlog = true;
+                });
+              },
+            ),
+            _buildSelectorTab(
+              title: '💙 Canvaskit (Native)',
+              isActive: !_useReactVlog,
+              onTap: () {
+                setState(() {
+                  _useReactVlog = false;
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectorTab({required String title, required bool isActive, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? Colors.white.withValues(alpha: 0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive ? Colors.white.withValues(alpha: 0.25) : Colors.transparent,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            color: isActive ? Colors.white : Colors.white60,
+            fontSize: 12,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          RefreshIndicator(
-            onRefresh: () async {
-              await _fetchSupaBaseVideo(reset: true);
-              videoStream.add(List<VideoModel>.from(supaBaseVideos));
-              _preloadUpcomingVideos(videoStream.valueOrNull ?? [], 0,
-                  count: 3);
-            },
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height,
-              child: StreamBuilder<List<VideoModel>>(
-                  stream: videoStream,
-                  builder: (context, snapshot) {
-                    final data = snapshot.data ?? [];
-                    return PageView.builder(
-                      controller: pageController,
-                      scrollDirection: Axis.vertical,
-                      allowImplicitScrolling: true,
-                      itemCount: data.length,
-                      onPageChanged: (index) {
-                        setState(() {
-                          _currentPageIndex = index;
-                        });
-                        _preloadUpcomingVideos(data, index + 1);
-                        _loadMoreSupabaseForChillModeIfNeeded(index);
-                      },
-                      itemBuilder: (_, index) {
-                        final canAddVideoNow = !isUploadingVideo;
-                        final addVideoLabel = isUploadingVideo
-                            ? 'ĐANG THÊM...'
-                            : _isCooldownActive
-                                ? 'THÊM VIDEO ($_cooldownText)'
-                                : 'THÊM VIDEO';
+    Widget content;
+    
+    if (_useReactVlog && kIsWeb) {
+      content = const SizedBox.expand(
+        child: HtmlElementView(viewType: _viewType),
+      );
+    } else {
+      content = Scaffold(
+        body: Stack(
+          children: [
+            RefreshIndicator(
+              onRefresh: () async {
+                await _fetchSupaBaseVideo(reset: true);
+                videoStream.add(List<VideoModel>.from(supaBaseVideos));
+                _preloadUpcomingVideos(videoStream.valueOrNull ?? [], 0,
+                    count: 3);
+              },
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height,
+                child: StreamBuilder<List<VideoModel>>(
+                    stream: videoStream,
+                    builder: (context, snapshot) {
+                      final data = snapshot.data ?? [];
+                      return PageView.builder(
+                        controller: pageController,
+                        scrollDirection: Axis.vertical,
+                        allowImplicitScrolling: true,
+                        itemCount: data.length,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentPageIndex = index;
+                          });
+                          _preloadUpcomingVideos(data, index + 1);
+                          _loadMoreSupabaseForChillModeIfNeeded(index);
+                        },
+                        itemBuilder: (_, index) {
+                          final canAddVideoNow = !isUploadingVideo;
+                          final addVideoLabel = isUploadingVideo
+                              ? 'ĐANG THÊM...'
+                              : _isCooldownActive
+                                  ? 'THÊM VIDEO ($_cooldownText)'
+                                  : 'THÊM VIDEO';
 
-                        return VideoItem(
-                          video: data.elementAt(index),
-                          autoPlayNext: autoPlayNext,
-                          isCurrentPage: index == _currentPageIndex,
-                          showAddVideoButton: true,
-                          canAddVideo: canAddVideoNow,
-                          isAddVideoLoading: isUploadingVideo,
-                          addVideoLabel: addVideoLabel,
-                          onAddVideoTap: _pickAndUploadVideo,
-                          onVideoEnd: () {
-                            if (autoPlayNext) {
-                              int nextPage = index + 1;
-                              if (nextPage < data.length) {
-                                pageController.animateToPage(
-                                  nextPage,
-                                  duration: const Duration(milliseconds: 280),
-                                  curve: Curves.easeOut,
-                                );
+                          return VideoItem(
+                            video: data.elementAt(index),
+                            autoPlayNext: autoPlayNext,
+                            isCurrentPage: index == _currentPageIndex,
+                            showAddVideoButton: true,
+                            canAddVideo: canAddVideoNow,
+                            isAddVideoLoading: isUploadingVideo,
+                            addVideoLabel: addVideoLabel,
+                            onAddVideoTap: _pickAndUploadVideo,
+                            onVideoEnd: () {
+                              if (autoPlayNext) {
+                                int nextPage = index + 1;
+                                if (nextPage < data.length) {
+                                  pageController.animateToPage(
+                                    nextPage,
+                                    duration: const Duration(milliseconds: 280),
+                                    curve: Curves.easeOut,
+                                  );
+                                }
                               }
-                            }
-                          },
-                        );
-                      },
-                    );
-                  }),
+                            },
+                          );
+                        },
+                      );
+                    }),
+              ),
             ),
-          ),
-          _buildControlPanel(context)
-        ],
-      ),
+            _buildControlPanel(context)
+          ],
+        ),
+      );
+    }
+
+    return Stack(
+      children: [
+        content,
+        _buildVersionSelector(),
+      ],
     );
   }
 }
