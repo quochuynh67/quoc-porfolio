@@ -9,6 +9,6 @@ class SupabaseOptions {
 }
 
 final SupabaseOptions supabaseOptions = SupabaseOptions(
-  url: 'https://meddohfaywowscwmefxn.supabase.co',
-  anonKey: 'sb_publishable_aQ3IuBvqzVXqKNEGb5QT0A_f2Kjok0y',
+  url: const String.fromEnvironment('SUPABASE_URL'),
+  anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY'),
 );
