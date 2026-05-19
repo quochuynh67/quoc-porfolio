@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter_portfolio/view/customer_service/supabase_options.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StorageVideoEntry {
@@ -13,11 +14,18 @@ class StorageVideoEntry {
 }
 
 class StorageService {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  SupabaseClient? get _supabase {
+    if (!isSupabaseConfigured) return null;
+    try {
+      return Supabase.instance.client;
+    } catch (_) {
+      return null;
+    }
+  }
 
-  String? get currentUserId => _supabase.auth.currentUser?.id;
+  String? get currentUserId => _supabase?.auth.currentUser?.id;
 
-  String? get currentUserEmail => _supabase.auth.currentUser?.email;
+  String? get currentUserEmail => _supabase?.auth.currentUser?.email;
 
   bool isCurrentUserOwner({
     required String ownerUserId,
@@ -39,8 +47,10 @@ class StorageService {
       int limit = 100,
       int offset = 0}) async {
     try {
+      final supabase = _supabase;
+      if (supabase == null) return [];
       // List files in the bucket
-      final response = await _supabase.storage
+      final response = await supabase.storage
           .from(bucketName)
           .list(
             path: path,
@@ -49,7 +59,7 @@ class StorageService {
 
       // Transform file list to public URLs
       final urls = response.map((file) {
-        return _supabase.storage.from(bucketName).getPublicUrl(file.name);
+        return supabase.storage.from(bucketName).getPublicUrl(file.name);
       }).toList();
 
       return urls;
@@ -66,7 +76,10 @@ class StorageService {
     int offset = 0,
   }) async {
     try {
-      final response = await _supabase.storage.from(bucketName).list(
+      final supabase = _supabase;
+      if (supabase == null) return [];
+
+      final response = await supabase.storage.from(bucketName).list(
             path: path,
             searchOptions: SearchOptions(limit: limit, offset: offset),
           );
@@ -76,7 +89,7 @@ class StorageService {
           .map((file) {
             final uploader = _extractUploaderName(file.name);
             return StorageVideoEntry(
-              publicUrl: _supabase.storage.from(bucketName).getPublicUrl(file.name),
+              publicUrl: supabase.storage.from(bucketName).getPublicUrl(file.name),
               uploaderName: uploader,
             );
           })
@@ -95,6 +108,11 @@ class StorageService {
     required String uploaderUserId,
     String path = '',
   }) async {
+    final supabase = _supabase;
+    if (supabase == null) {
+      throw StateError('Supabase is not initialized.');
+    }
+
     final ext = _fileExtension(originalFileName);
     final encodedUploader = Uri.encodeComponent(uploaderName.trim());
     final encodedUid = Uri.encodeComponent(uploaderUserId.trim());
@@ -102,7 +120,7 @@ class StorageService {
         '${encodedUploader}__${encodedUid}__video_${DateTime.now().millisecondsSinceEpoch}.${ext.isEmpty ? 'mp4' : ext}';
     final targetPath = path.isEmpty ? fileName : '$path/$fileName';
 
-    await _supabase.storage.from(bucketName).uploadBinary(
+    await supabase.storage.from(bucketName).uploadBinary(
           targetPath,
           bytes,
           fileOptions: FileOptions(
@@ -111,7 +129,7 @@ class StorageService {
           ),
         );
 
-    return _supabase.storage.from(bucketName).getPublicUrl(targetPath);
+    return supabase.storage.from(bucketName).getPublicUrl(targetPath);
   }
 
   String _extractUploaderName(String fileName) {
@@ -151,12 +169,15 @@ class StorageService {
         int limit = 100,
         Duration expiresIn = const Duration(hours: 1)}) async {
     try {
-      final response = await _supabase.storage
+      final supabase = _supabase;
+      if (supabase == null) return [];
+
+      final response = await supabase.storage
           .from(bucketName)
           .list(path: path, searchOptions: SearchOptions(limit: limit));
 
       final signedUrls = await Future.wait(response.map((file) async {
-        return await _supabase.storage
+        return await supabase.storage
             .from(bucketName)
             .createSignedUrl(file.name, expiresIn.inSeconds);
       }));

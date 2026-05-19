@@ -18,20 +18,21 @@ Future<void> main() async {
     VideoPlayerPlugin.registerWith(Registrar());
   }
 
-  if (supabaseOptions.url.isEmpty || supabaseOptions.anonKey.isEmpty) {
-    throw FlutterError(
-      '\n[ERROR] Supabase keys are not configured!\n\n'
-      'To fix this, please follow these steps:\n'
-      '1. Make sure "supabase_keys.json" exists in the root directory.\n'
-      '2. Run/Build your app using the following command:\n'
-      '   flutter run --dart-define-from-file=supabase_keys.json\n'
+  if (isSupabaseConfigured) {
+    try {
+      await Supabase.initialize(
+        url: supabaseOptions.url,
+        anonKey: supabaseOptions.anonKey,
+      );
+    } catch (e) {
+      debugPrint('[WARN] Supabase init failed: $e');
+    }
+  } else {
+    debugPrint(
+      '[WARN] Supabase keys are not configured. '
+      'Run/build with --dart-define-from-file=supabase_keys.json to enable Supabase features.',
     );
   }
-
-  await Supabase.initialize(
-    url: supabaseOptions.url,
-    anonKey: supabaseOptions.anonKey,
-  );
 
   runApp(const MyApp());
 }

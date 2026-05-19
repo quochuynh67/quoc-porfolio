@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_portfolio/view/customer_service/supabase_options.dart';
 import 'package:flutter_portfolio/view/customer_service/src/pages/auth.dart';
 import 'package:flutter_portfolio/view/vlog/supabase_video_service.dart';
 import 'package:file_picker/file_picker.dart';
@@ -92,6 +93,7 @@ class _FeedPageState extends State<FeedPage> {
   }
 
   void _bindAuthState() {
+    if (!isSupabaseConfigured) return;
     _authSub = supa.Supabase.instance.client.auth.onAuthStateChange.listen((_) {
       if (!mounted) return;
       _refreshUploadPermission();
@@ -110,6 +112,14 @@ class _FeedPageState extends State<FeedPage> {
   }
 
   void _refreshUploadPermission() {
+    if (!isSupabaseConfigured) {
+      if (!mounted) return;
+      setState(() {
+        canCurrentUserUpload = false;
+      });
+      return;
+    }
+
     final hasOwnerConfig =
         _ownerSupabaseUserId.isNotEmpty || _ownerSupabaseEmail.isNotEmpty;
     final allowed = hasOwnerConfig
@@ -236,6 +246,19 @@ class _FeedPageState extends State<FeedPage> {
 
   Future<void> _pickAndUploadVideo() async {
     if (isUploadingVideo) return;
+
+    if (!isSupabaseConfigured) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Supabase chưa cấu hình. Chạy app với --dart-define-from-file=supabase_keys.json',
+            ),
+          ),
+        );
+      }
+      return;
+    }
 
     final currentUser = supa.Supabase.instance.client.auth.currentUser;
     if (currentUser == null) {
