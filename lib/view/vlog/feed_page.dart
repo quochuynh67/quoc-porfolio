@@ -491,24 +491,16 @@ class _FeedPageState extends State<FeedPage> {
     super.dispose();
   }
 
-  Widget _buildVersionSelector() {
-    return Positioned(
-      top: 16,
-      left: 16,
+  Widget _buildVersionSelectorRow() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.65),
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.all(2),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -641,10 +633,17 @@ class _FeedPageState extends State<FeedPage> {
       );
     }
 
-    return Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        content,
-        _buildVersionSelector(),
+        // Premium top header bar for the version selector to prevent iframe click swallowing
+        Container(
+          height: 60,
+          color: const Color(0xFF0F0F1A), // Matches the dark modern background theme
+          alignment: Alignment.centerLeft,
+          child: _buildVersionSelectorRow(),
+        ),
+        Expanded(child: content),
       ],
     );
   }
