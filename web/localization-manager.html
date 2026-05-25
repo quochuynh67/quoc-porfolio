@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Localization Key Manager for Flutter project</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1600px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .title {
+            color: white;
+            font-size: 2em;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(17, 153, 142, 0.6);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(235, 51, 73, 0.4);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(235, 51, 73, 0.6);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tab:hover {
+            color: white;
+        }
+
+        .tab.active {
+            color: white;
+            border-bottom-color: #38ef7d;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .comparison-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            color: white;
+        }
+
+        .glass-card h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .key-list {
+            max-height: 400px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .key-item {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid #38ef7d;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .key-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
+
+        .key-item.missing {
+            border-left-color: #f45c43;
+        }
+
+        .key-item.extra {
+            border-left-color: #ffa502;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #38ef7d;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .add-key-form {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: white;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 10px rgba(56, 239, 125, 0.3);
+        }
+
+        .translations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .translation-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+        }
+
+        .translation-card label {
+            display: block;
+            color: white;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .translation-card textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            min-height: 80px;
+            resize: vertical;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .translation-card textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .translation-card textarea:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 10px rgba(56, 239, 125, 0.3);
+        }
+
+        .translation-tree-panel {
+            margin: 18px 0 24px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+        }
+
+        .translation-tree-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            color: white;
+        }
+
+        .translation-tree-header label {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .translation-tree-header span {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.65);
+        }
+
+        .translation-tree-empty {
+            color: rgba(255, 255, 255, 0.65);
+            font-size: 13px;
+            text-align: center;
+            padding: 18px;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .translation-tree {
+            max-height: 480px;
+            overflow: auto;
+            padding-right: 6px;
+        }
+
+        .translation-tree-list {
+            list-style: none;
+            margin: 0;
+            padding-left: 18px;
+            border-left: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .translation-tree-item {
+            margin: 8px 0;
+            color: white;
+        }
+
+        .translation-tree-summary {
+            cursor: pointer;
+            user-select: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.05);
+            width: fit-content;
+        }
+
+        .translation-tree-summary:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .translation-tree-badge {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 999px;
+            background: rgba(56, 239, 125, 0.16);
+            color: #9cf4c0;
+        }
+
+        .translation-tree-body {
+            margin-top: 10px;
+            margin-left: 18px;
+            padding-left: 16px;
+            border-left: 1px dashed rgba(255, 255, 255, 0.18);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .translation-tree-keyline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: rgba(56, 239, 125, 0.08);
+            border-left: 3px solid #38ef7d;
+        }
+
+        .translation-tree-keyline code {
+            color: #9cf4c0;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 2px 6px;
+            border-radius: 6px;
+            word-break: break-word;
+        }
+
+        .translation-tree-input-row {
+            display: grid;
+            grid-template-columns: minmax(120px, 180px) 1fr auto;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .translation-tree-input-row label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.75);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .translation-tree-input-row input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .translation-tree-input-row input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .translation-tree-input-row input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 10px rgba(56, 239, 125, 0.3);
+        }
+
+        .translation-tree-ai-btn {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .translation-tree-ai-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .key-tree-panel {
+            margin: 18px 0 24px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+        }
+
+        .key-tree-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            color: white;
+        }
+
+        .key-tree-header label {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .key-tree-header span {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.65);
+        }
+
+        .key-tree-empty {
+            color: rgba(255, 255, 255, 0.65);
+            font-size: 13px;
+            text-align: center;
+            padding: 18px;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .key-tree {
+            max-height: 420px;
+            overflow: auto;
+            padding-right: 6px;
+        }
+
+        .tree-list {
+            list-style: none;
+            margin: 0;
+            padding-left: 18px;
+            border-left: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .tree-item {
+            margin: 6px 0;
+            color: white;
+        }
+
+        .tree-summary {
+            cursor: pointer;
+            user-select: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .tree-summary:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .tree-node-count {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 999px;
+            background: rgba(56, 239, 125, 0.16);
+            color: #9cf4c0;
+        }
+
+        .tree-leaf {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 7px 10px;
+            border-radius: 8px;
+            background: rgba(56, 239, 125, 0.08);
+            border-left: 3px solid #38ef7d;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 13px;
+        }
+
+        .tree-leaf:hover {
+            background: rgba(56, 239, 125, 0.16);
+            transform: translateX(3px);
+        }
+
+        .tree-leaf small {
+            color: rgba(255, 255, 255, 0.65);
+            word-break: break-all;
+            text-align: right;
+        }
+
+        .compare-editor-panel {
+            margin-top: 24px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+        }
+
+        .compare-editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            color: white;
+            flex-wrap: wrap;
+        }
+
+        .compare-editor-header h3 {
+            margin: 0;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .compare-editor-header p {
+            margin: 0;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .compare-editor-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .compare-empty-counter {
+            padding: 8px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .compare-editor-wrap {
+            overflow: auto;
+            max-height: 650px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .compare-editor-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 920px;
+            color: white;
+        }
+
+        .compare-editor-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: rgba(24, 28, 47, 0.96);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 12px 10px;
+            text-align: left;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .compare-editor-table tbody td {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 10px;
+            vertical-align: top;
+        }
+
+        .compare-editor-key {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .compare-editor-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            margin-top: 6px;
+            width: fit-content;
+        }
+
+        .compare-editor-badge.missing {
+            background: rgba(244, 92, 67, 0.18);
+            color: #ffb7aa;
+        }
+
+        .compare-editor-badge.extra {
+            background: rgba(255, 165, 2, 0.18);
+            color: #ffd08a;
+        }
+
+        .compare-editor-cell {
+            min-width: 220px;
+        }
+
+        .compare-editor-cell textarea {
+            width: 100%;
+            min-height: 74px;
+            resize: vertical;
+            border-radius: 10px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            font-size: 13px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .compare-editor-cell textarea::placeholder {
+            color: rgba(255, 255, 255, 0.45);
+        }
+
+        .compare-editor-cell textarea:focus {
+            outline: none;
+            border-color: rgba(56, 239, 125, 0.6);
+            box-shadow: 0 0 10px rgba(56, 239, 125, 0.25);
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .compare-editor-cell.missing textarea {
+            border-color: rgba(244, 92, 67, 0.45);
+            background: rgba(244, 92, 67, 0.08);
+        }
+
+        .compare-editor-cell.empty textarea {
+            border-color: rgba(244, 92, 67, 0.75);
+            background: rgba(244, 92, 67, 0.16);
+        }
+
+        .compare-editor-cell.empty-focus textarea {
+            border-color: #ff6f5c;
+            box-shadow: 0 0 0 2px rgba(255, 111, 92, 0.2), 0 0 14px rgba(255, 111, 92, 0.45);
+        }
+
+        .compare-editor-cell.extra textarea {
+            border-color: rgba(255, 165, 2, 0.45);
+            background: rgba(255, 165, 2, 0.08);
+        }
+
+        .compare-editor-cell .cell-meta {
+            margin-top: 6px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .compare-editor-empty {
+            padding: 22px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.65);
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .ai-generate-btn {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ai-generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .ai-generate-btn.loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: rgba(235, 51, 73, 0.2);
+            border-left: 3px solid #f45c43;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            background: rgba(17, 153, 142, 0.2);
+            border-left: 3px solid #38ef7d;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .language-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .language-option {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .language-option:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .language-option.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #38ef7d;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-label {
+            display: block;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-label:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1024px) {
+            .comparison-section {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            .title {
+                font-size: 1.5em;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .actions {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .tabs {
+                overflow-x: auto;
+            }
+
+            .translations-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .scroll-hint {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .export-import-section {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .language-flag {
+            margin-right: 5px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .drag-drop-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.4);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .drag-drop-zone:hover {
+            border-color: rgba(56, 239, 125, 0.6);
+            background: rgba(56, 239, 125, 0.1);
+        }
+
+        .drag-drop-zone.dragover {
+            border-color: rgba(56, 239, 125, 0.8);
+            background: rgba(56, 239, 125, 0.2);
+            transform: scale(1.02);
+        }
+
+        .drag-drop-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .drag-drop-text {
+            color: white;
+            font-weight: 600;
+        }
+
+        .drag-drop-hint {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 5px;
+        }
+
+        .file-list {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            display: none;
+        }
+
+        .file-list.visible {
+            display: block;
+        }
+
+        .file-item {
+            padding: 8px;
+            background: rgba(56, 239, 125, 0.1);
+            border-left: 3px solid #38ef7d;
+            margin: 5px 0;
+            border-radius: 5px;
+            color: white;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-item-status {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">🌍 Localization Manager</h1>
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="toggleFilePicker()">📂 Load ARB Files</button>
+                <button class="btn btn-primary" onclick="exportData()">💾 Export JSON</button>
+                <button class="btn btn-success" onclick="exportAndOverwriteArbFiles()">📝 Overwrite ARB Files</button>
+                <button class="btn btn-primary" onclick="toggleApiKey()">🔑 Set API Key</button>
+            </div>
+        </div>
+
+        <!-- File Input (Hidden) -->
+        <input type="file" id="fileInput" multiple accept=".arb" />
+
+        <!-- Drag and Drop Zone -->
+        <div id="dragDropZone" class="drag-drop-zone" style="display: none;">
+            <div class="drag-drop-icon">📁</div>
+            <div class="drag-drop-text">Drag & Drop ARB files here</div>
+            <div class="drag-drop-hint">or click to browse from your computer</div>
+            <div class="file-list" id="fileList"></div>
+        </div>
+
+        <div id="error-message" class="error-message"></div>
+        <div id="success-message" class="success-message"></div>
+
+        <div id="api-key-section" style="display: none; margin-bottom: 20px;">
+            <div class="glass-card">
+                <h3>🔐 API Key Configuration</h3>
+                <div class="form-group">
+                    <label>OpenAI API Key (for AI Generation)</label>
+                    <input type="password" id="apiKey" placeholder="sk-..." />
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" onclick="saveApiKey()">Save API Key</button>
+                    <button class="btn btn-secondary" onclick="toggleApiKey()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('compare')">📊 Compare Keys</button>
+            <button class="tab" onclick="switchTab('add')">➕ Add Key</button>
+            <button class="tab" onclick="switchTab('review')">✏️ Review & Edit</button>
+        </div>
+
+        <!-- Compare Keys Tab -->
+        <div id="compare" class="tab-content active">
+            <div class="stats" id="stats-container"></div>
+
+            <div class="language-selector">
+                <label style="grid-column: 1 / -1; color: white; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Select Languages to Compare:</label>
+                <div id="language-selector" style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px;"></div>
+            </div>
+
+            <button class="btn btn-primary" onclick="compareKeys()" style="margin-bottom: 20px;">🔍 Compare Selected</button>
+
+            <div class="comparison-section">
+                <div>
+                    <div class="glass-card">
+                        <h3>❌ Missing Keys</h3>
+                        <div class="key-list" id="missing-keys"></div>
+                        <div class="scroll-hint">Scroll to see all keys</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="glass-card">
+                        <h3>⚠️ Extra Keys</h3>
+                        <div class="key-list" id="extra-keys"></div>
+                        <div class="scroll-hint">Scroll to see all keys</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="compare-editor-panel">
+                <div class="compare-editor-header">
+                    <div>
+                        <h3>✏️ Compare & Edit Matrix</h3>
+                        <p>Chỉnh sửa trực tiếp translation theo từng language, thay đổi sẽ được lưu ngay vào ARB dữ liệu.</p>
+                    </div>
+                    <div class="compare-editor-actions">
+                        <span id="compare-empty-counter" class="compare-empty-counter">Empty: 0</span>
+                        <button class="btn btn-secondary" type="button" onclick="focusPreviousEmptyComparisonCell()">⬆ Previous Empty</button>
+                        <button class="btn btn-secondary" type="button" onclick="focusNextEmptyComparisonCell()">⬇ Next Empty</button>
+                        <button class="btn btn-secondary" type="button" onclick="renderComparisonEditorFromCurrentSelection()">↻ Refresh Matrix</button>
+                    </div>
+                </div>
+                <div id="compare-editor-container"></div>
+            </div>
+        </div>
+
+        <!-- Add Key Tab -->
+        <div id="add" class="tab-content">
+            <form class="add-key-form" onsubmit="addNewKey(event)">
+                <div class="form-group">
+                    <label>Key Name *</label>
+                    <input type="text" id="newKeyName" placeholder="e.g., buttonSubmit" required />
+                </div>
+
+                <div class="translation-tree-panel">
+                    <div class="translation-tree-header">
+                        <label>Language Tree</label>
+                        <span>Nhập translation cho key hiện tại theo từng ngôn ngữ</span>
+                    </div>
+                    <div id="translations-form" class="translation-tree"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Description (Optional)</label>
+                    <textarea id="newKeyDescription" placeholder="Describe what this key is used for..."></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-success">✅ Add Key & Translations</button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">Clear Form</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Review & Edit Tab -->
+        <div id="review" class="tab-content">
+            <div class="form-group">
+                <label>Search Keys</label>
+                <input type="text" id="searchInput" placeholder="Search by key name..." onkeyup="filterKeys()" />
+            </div>
+
+            <div class="translations-grid" id="review-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let arbFiles = {};
+        let languages = [];
+        let selectedLanguages = [];
+        let apiKey = localStorage.getItem('openai_api_key') || '';
+        let currentEmptyCellIndex = -1;
+
+        // Language names
+        const languageNames = {
+            'en': '🇬🇧 English',
+            'vi': '🇻🇳 Vietnamese',
+            'ar': '🇸🇦 Arabic',
+            'bn': '🇧🇩 Bengali',
+            'es': '🇪🇸 Spanish',
+            'km': '🇰🇭 Khmer',
+            'ms': '🇲🇾 Malay',
+            'my': '🇲🇲 Myanmar',
+            'ne': '🇳🇵 Nepali',
+            'si': '🇱🇰 Sinhala',
+            'ta': '🇮🇳 Tamil',
+            'th': '🇹🇭 Thai',
+            'zh': '🇨🇳 Chinese',
+            'zh_TW': '🇹🇼 Chinese (Traditional)'
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeLanguageSelector();
+            setupFileHandling();
+            // Try to load previously loaded files
+            loadFromLocalStorage();
+        });
+
+        function toggleFilePicker() {
+            const zone = document.getElementById('dragDropZone');
+            zone.style.display = zone.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function setupFileHandling() {
+            const fileInput = document.getElementById('fileInput');
+            const zone = document.getElementById('dragDropZone');
+
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+
+            // Click to open file picker
+            zone.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // Drag and drop
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.add('dragover');
+            });
+
+            zone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.remove('dragover');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.remove('dragover');
+                handleFiles(e.dataTransfer.files);
+            });
+        }
+
+        async function handleFiles(files) {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            fileList.classList.add('visible');
+
+            const arbFilesArray = Array.from(files).filter(f => f.name.match(/^intl_\w+\.arb$/));
+
+            if (arbFilesArray.length === 0) {
+                showError('❌ No valid ARB files found. Files must match pattern: intl_*.arb');
+                return;
+            }
+
+            let loaded = 0;
+            const results = [];
+            const tempFiles = { ...arbFiles };
+
+            for (const file of arbFilesArray) {
+                try {
+                    const text = await file.text();
+                    const data = JSON.parse(text);
+                    const langCode = file.name.replace(/^intl_|\.arb$/g, '');
+
+                    tempFiles[langCode] = data;
+                    loaded++;
+
+                    const keyCount = Object.keys(data).filter(k => !k.startsWith('@@')).length;
+                    results.push(`
+                        <div class="file-item">
+                            <span>✅ ${file.name}</span>
+                            <span class="file-item-status">${keyCount} keys</span>
+                        </div>
+                    `);
+
+                    showSuccess(`✅ Loaded ${file.name}`);
+                } catch (error) {
+                    results.push(`
+                        <div class="file-item" style="border-left-color: #f45c43; background: rgba(244, 92, 67, 0.1);">
+                            <span>❌ ${file.name}</span>
+                            <span class="file-item-status">Invalid JSON</span>
+                        </div>
+                    `);
+                    showError(`❌ Failed to parse ${file.name}`);
+                }
+            }
+
+            fileList.innerHTML = results.join('');
+
+            if (loaded > 0) {
+                arbFiles = tempFiles;
+                localStorage.setItem('arbFiles', JSON.stringify(arbFiles));
+
+                // Update language list
+                languages = Object.keys(arbFiles).sort();
+                initializeLanguageSelector();
+                renderTranslationCards();
+                renderComparisonEditorFromCurrentSelection();
+
+                populateReviewTab();
+                showSuccess(`✅ Successfully loaded ${loaded} file(s) with ${loaded} language(s)!`);
+                setTimeout(() => {
+                    document.getElementById('dragDropZone').style.display = 'none';
+                }, 2500);
+            }
+        }
+
+        function toggleApiKey() {
+            const section = document.getElementById('api-key-section');
+            section.style.display = section.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('apiKey').value;
+            if (key.trim()) {
+                localStorage.setItem('openai_api_key', key);
+                apiKey = key;
+                showSuccess('API Key saved successfully!');
+                document.getElementById('api-key-section').style.display = 'none';
+            } else {
+                showError('Please enter a valid API key');
+            }
+        }
+
+        function initializeLanguageSelector() {
+            const arbFileNames = [
+                'intl_en', 'intl_vi', 'intl_ar', 'intl_bn', 'intl_es',
+                'intl_km', 'intl_ms', 'intl_my', 'intl_ne', 'intl_si',
+                'intl_ta', 'intl_th', 'intl_zh', 'intl_zh_TW'
+            ];
+
+            languages = arbFileNames.map(f => f.replace('intl_', ''));
+            selectedLanguages = languages.slice(0, 2); // Default: first 2 languages
+
+            renderLanguageSelector();
+        }
+
+        function getTreeSourceLanguage() {
+            if (arbFiles.en) return 'en';
+            return languages.length > 0 ? languages[0] : '';
+        }
+
+        function splitKeyIntoTreeParts(key) {
+            return key
+                .split(/[./\\]/g)
+                .flatMap(part => part.match(/[A-Z]?[a-z0-9]+|[A-Z]+(?![a-z])|[0-9]+/g) || [part])
+                .filter(Boolean);
+        }
+
+        function buildKeyTree(keys) {
+            const root = {};
+
+            keys.sort().forEach(key => {
+                const parts = splitKeyIntoTreeParts(key);
+                let current = root;
+
+                parts.forEach((part, index) => {
+                    if (!current[part]) {
+                        current[part] = {
+                            label: part,
+                            fullKey: key,
+                            children: {},
+                            isLeaf: index === parts.length - 1,
+                        };
+                    }
+
+                    current[part].fullKey = key;
+                    current[part].isLeaf = index === parts.length - 1;
+                    current = current[part].children;
+                });
+            });
+
+            return root;
+        }
+
+        function renderKeyTreeNode(nodes) {
+            const entries = Object.values(nodes);
+            if (!entries.length) return '';
+
+            return `<ul class="tree-list">${entries.map(node => {
+                const childCount = Object.keys(node.children || {}).length;
+                if (childCount > 0) {
+                    return `
+                        <li class="tree-item">
+                            <details>
+                                <summary class="tree-summary">
+                                    <span>${node.label}</span>
+                                    <span class="tree-node-count">${childCount}</span>
+                                </summary>
+                                ${renderKeyTreeNode(node.children)}
+                            </details>
+                        </li>
+                    `;
+                }
+
+                return `
+                    <li class="tree-item tree-leaf" onclick="selectTreeKey('${node.fullKey.replace(/'/g, "\\'")}')">
+                        <span>${node.label}</span>
+                        <small>${node.fullKey}</small>
+                    </li>
+                `;
+            }).join('')}</ul>`;
+        }
+
+        function renderKeyTree() {
+            const container = document.getElementById('keyTreeContainer');
+            if (!container) return;
+
+            const sourceLang = getTreeSourceLanguage();
+            const keys = sourceLang && arbFiles[sourceLang]
+                ? Object.keys(arbFiles[sourceLang]).filter(k => !k.startsWith('@@'))
+                : [];
+
+            if (!keys.length) {
+                container.innerHTML = '<div class="key-tree-empty">Load ARB files first to see the key tree.</div>';
+                return;
+            }
+
+            const tree = buildKeyTree(keys);
+            container.innerHTML = renderKeyTreeNode(tree);
+        }
+
+        function selectTreeKey(key) {
+            const input = document.getElementById('newKeyName');
+            if (!input) return;
+            input.value = key;
+            input.focus();
+            input.setSelectionRange(key.length, key.length);
+            showSuccess(`✅ Selected key: ${key}`);
+        }
+
+        function renderLanguageSelector() {
+            const container = document.getElementById('language-selector');
+            container.innerHTML = languages.map(lang => `
+                <div class="language-option ${selectedLanguages.includes(lang) ? 'selected' : ''}"
+                     onclick="toggleLanguageSelection('${lang}')">
+                    ${languageNames[lang] || lang.toUpperCase()}
+                </div>
+            `).join('');
+        }
+
+        function toggleLanguageSelection(lang) {
+            if (selectedLanguages.includes(lang)) {
+                selectedLanguages = selectedLanguages.filter(l => l !== lang);
+            } else {
+                selectedLanguages.push(lang);
+            }
+            renderLanguageSelector();
+        }
+
+        function loadFromLocalStorage() {
+            const stored = localStorage.getItem('arbFiles');
+            if (stored) {
+                arbFiles = JSON.parse(stored);
+                showSuccess('✅ ARB files loaded from browser storage!');
+                renderTranslationCards();
+                renderComparisonEditorFromCurrentSelection();
+                populateReviewTab();
+                return true;
+            }
+            renderTranslationCards();
+            renderComparisonEditorFromCurrentSelection();
+            return false;
+        }
+
+        function compareKeys() {
+            if (selectedLanguages.length < 2) {
+                showError('Please select at least 2 languages to compare');
+                return;
+            }
+
+            const baseLanguage = selectedLanguages[0];
+            const baseKeys = arbFiles[baseLanguage] ? Object.keys(arbFiles[baseLanguage]).filter(k => !k.startsWith('@@')) : [];
+
+            const comparison = selectedLanguages.map(lang => {
+                const langKeys = arbFiles[lang] ? Object.keys(arbFiles[lang]).filter(k => !k.startsWith('@@')) : [];
+                const missing = lang === baseLanguage
+                    ? []
+                    : baseKeys.filter(key => !langKeys.includes(key));
+                const extra = langKeys.filter(key => !baseKeys.includes(key));
+
+                return {
+                    lang,
+                    label: languageNames[lang] || lang.toUpperCase(),
+                    missing,
+                    extra,
+                    coverage: baseKeys.length > 0 ? (((baseKeys.length - missing.length) / baseKeys.length) * 100) : 0
+                };
+            });
+
+            displayComparison(comparison, baseLanguage, baseKeys.length);
+            renderComparisonEditor(comparison, baseLanguage);
+        }
+
+        function renderComparisonEditorFromCurrentSelection() {
+            if (selectedLanguages.length < 2) {
+                const container = document.getElementById('compare-editor-container');
+                if (container) {
+                    container.innerHTML = '<div class="compare-editor-empty">Select at least 2 languages and click Compare Selected.</div>';
+                }
+                const counter = document.getElementById('compare-empty-counter');
+                if (counter) counter.textContent = 'Empty: 0';
+                currentEmptyCellIndex = -1;
+                return;
+            }
+
+            const baseLanguage = selectedLanguages[0];
+            const baseKeys = arbFiles[baseLanguage] ? Object.keys(arbFiles[baseLanguage]).filter(k => !k.startsWith('@@')) : [];
+            const comparison = selectedLanguages.map(lang => {
+                const langKeys = arbFiles[lang] ? Object.keys(arbFiles[lang]).filter(k => !k.startsWith('@@')) : [];
+                const missing = lang === baseLanguage ? [] : baseKeys.filter(key => !langKeys.includes(key));
+                const extra = langKeys.filter(key => !baseKeys.includes(key));
+
+                return {
+                    lang,
+                    label: languageNames[lang] || lang.toUpperCase(),
+                    missing,
+                    extra,
+                    coverage: baseKeys.length > 0 ? (((baseKeys.length - missing.length) / baseKeys.length) * 100) : 0
+                };
+            });
+
+            renderComparisonEditor(comparison, baseLanguage);
+        }
+
+        function updateComparisonCell(lang, key, value) {
+            if (!arbFiles[lang]) {
+                arbFiles[lang] = {};
+            }
+
+            if (value.trim() === '') {
+                delete arbFiles[lang][key];
+            } else {
+                arbFiles[lang][key] = value;
+            }
+
+            localStorage.setItem('arbFiles', JSON.stringify(arbFiles));
+            refreshEmptyComparisonCells();
+        }
+
+        function getComparisonCellTextareas() {
+            return Array.from(document.querySelectorAll('#compare-editor-container .compare-editor-cell textarea'));
+        }
+
+        function refreshEmptyComparisonCells() {
+            const textareas = getComparisonCellTextareas();
+            let emptyCount = 0;
+
+            textareas.forEach(textarea => {
+                const cell = textarea.closest('.compare-editor-cell');
+                if (!cell) return;
+                const isExtra = cell.classList.contains('extra');
+                const isEmpty = textarea.value.trim() === '';
+
+                cell.classList.remove('empty');
+
+                if (!isExtra && isEmpty) {
+                    cell.classList.add('empty');
+                    emptyCount += 1;
+                }
+            });
+
+            const counter = document.getElementById('compare-empty-counter');
+            if (counter) {
+                counter.textContent = `Empty: ${emptyCount}`;
+            }
+
+            if (emptyCount === 0) {
+                currentEmptyCellIndex = -1;
+                document.querySelectorAll('#compare-editor-container .compare-editor-cell.empty-focus').forEach(el => {
+                    el.classList.remove('empty-focus');
+                });
+            }
+
+            return emptyCount;
+        }
+
+        function getNavigableEmptyTextareas() {
+            const textareas = getComparisonCellTextareas();
+            return textareas.filter(textarea => {
+                const cell = textarea.closest('.compare-editor-cell');
+                if (!cell || cell.classList.contains('extra')) return false;
+                return textarea.value.trim() === '';
+            });
+        }
+
+        function focusEmptyComparisonCellByStep(step) {
+            const emptyTextareas = getNavigableEmptyTextareas();
+
+            document.querySelectorAll('#compare-editor-container .compare-editor-cell.empty-focus').forEach(el => {
+                el.classList.remove('empty-focus');
+            });
+
+            if (emptyTextareas.length === 0) {
+                currentEmptyCellIndex = -1;
+                showSuccess('✅ Không còn ô translation trống trong bảng compare.');
+                refreshEmptyComparisonCells();
+                return;
+            }
+
+            if (currentEmptyCellIndex < 0 || currentEmptyCellIndex >= emptyTextareas.length) {
+                currentEmptyCellIndex = step > 0 ? -1 : 0;
+            }
+
+            const nextIndex = step > 0
+                ? (currentEmptyCellIndex + 1 + emptyTextareas.length) % emptyTextareas.length
+                : (currentEmptyCellIndex - 1 + emptyTextareas.length) % emptyTextareas.length;
+
+            currentEmptyCellIndex = nextIndex;
+            const target = emptyTextareas[nextIndex];
+            const cell = target.closest('.compare-editor-cell');
+            if (cell) {
+                cell.classList.add('empty-focus');
+            }
+
+            target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+            target.focus();
+            showError(`⚠️ Empty ${nextIndex + 1}/${emptyTextareas.length}`);
+            refreshEmptyComparisonCells();
+        }
+
+        function focusNextEmptyComparisonCell() {
+            const textareas = getComparisonCellTextareas();
+            if (textareas.length === 0) {
+                showError('⚠️ Chưa có bảng compare để quét. Hãy chọn language và bấm Compare Selected.');
+                return;
+            }
+
+            focusEmptyComparisonCellByStep(1);
+        }
+
+        function focusPreviousEmptyComparisonCell() {
+            const textareas = getComparisonCellTextareas();
+            if (textareas.length === 0) {
+                showError('⚠️ Chưa có bảng compare để quét. Hãy chọn language và bấm Compare Selected.');
+                return;
+            }
+
+            focusEmptyComparisonCellByStep(-1);
+        }
+
+        function renderComparisonEditor(comparison, baseLanguage) {
+            const container = document.getElementById('compare-editor-container');
+            if (!container) return;
+
+            const keys = Array.from(new Set([
+                ...(arbFiles[baseLanguage] ? Object.keys(arbFiles[baseLanguage]).filter(k => !k.startsWith('@@')) : []),
+                ...comparison.flatMap(item => [...item.missing, ...item.extra])
+            ])).sort();
+
+            if (!keys.length) {
+                container.innerHTML = '<div class="compare-editor-empty">No keys available to compare.</div>';
+                const counter = document.getElementById('compare-empty-counter');
+                if (counter) counter.textContent = 'Empty: 0';
+                currentEmptyCellIndex = -1;
+                return;
+            }
+
+            const headerCells = selectedLanguages.map(lang => `<th>${escapeHtml(languageNames[lang] || lang.toUpperCase())}</th>`).join('');
+            const rowsHtml = keys.map(key => {
+                const baseHas = Object.prototype.hasOwnProperty.call(arbFiles[baseLanguage] || {}, key);
+                const rowBadge = baseHas ? '' : '<div class="compare-editor-badge extra">Extra key</div>';
+
+                const cells = selectedLanguages.map(lang => {
+                    const langData = arbFiles[lang] || {};
+                    const hasKey = Object.prototype.hasOwnProperty.call(langData, key);
+                    const value = hasKey ? langData[key] : '';
+                    const isMissing = !hasKey && lang !== baseLanguage;
+                    const isExtra = !baseHas && lang === baseLanguage;
+                    const cellClass = isMissing ? 'missing' : (isExtra ? 'extra' : 'present');
+
+                    return `
+                        <td class="compare-editor-cell ${cellClass}">
+                            <textarea
+                                data-lang="${lang}"
+                                data-key="${escapeHtml(key)}"
+                                placeholder="${escapeHtml(key)}"
+                                oninput="updateComparisonCell(this.dataset.lang, this.dataset.key, this.value)">${escapeHtml(value || '')}</textarea>
+                            <div class="cell-meta">${isMissing ? 'Missing' : (isExtra ? 'Base extra' : 'Saved')}</div>
+                        </td>
+                    `;
+                }).join('');
+
+                return `
+                    <tr>
+                        <td>
+                            <div class="compare-editor-key">${escapeHtml(key)}</div>
+                            ${rowBadge}
+                        </td>
+                        ${cells}
+                    </tr>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="compare-editor-wrap">
+                    <table class="compare-editor-table">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 260px;">Key</th>
+                                ${headerCells}
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                </div>
+            `;
+
+            currentEmptyCellIndex = -1;
+            refreshEmptyComparisonCells();
+        }
+
+        function displayComparison(comparison, baseLanguage, total) {
+            const missingContainer = document.getElementById('missing-keys');
+            const extraContainer = document.getElementById('extra-keys');
+
+            const missingLanguages = comparison.filter(item => item.lang !== baseLanguage && item.missing.length > 0);
+            const extraLanguages = comparison.filter(item => item.extra.length > 0);
+
+            missingContainer.innerHTML = missingLanguages.length > 0
+                ? missingLanguages.map(item => `
+                    <div class="key-item missing" style="cursor: default;">
+                        <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:8px;">
+                            <strong>${item.label}</strong>
+                            <span>${item.missing.length} missing</span>
+                        </div>
+                        <div style="font-size:12px; color: rgba(255,255,255,0.8); line-height:1.6;">
+                            ${item.missing.slice(0, 12).join(', ')}${item.missing.length > 12 ? ' ...' : ''}
+                        </div>
+                    </div>
+                `).join('')
+                : '<div style="padding: 20px; text-align: center; color: rgba(255,255,255,0.5);">✅ Không có ngôn ngữ nào bị thiếu keys</div>';
+
+            extraContainer.innerHTML = extraLanguages.length > 0
+                ? extraLanguages.map(item => `
+                    <div class="key-item extra" style="cursor: default;">
+                        <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:8px;">
+                            <strong>${item.label}</strong>
+                            <span>${item.extra.length} extra</span>
+                        </div>
+                        <div style="font-size:12px; color: rgba(255,255,255,0.8); line-height:1.6;">
+                            ${item.extra.slice(0, 12).join(', ')}${item.extra.length > 12 ? ' ...' : ''}
+                        </div>
+                    </div>
+                `).join('')
+                : '<div style="padding: 20px; text-align: center; color: rgba(255,255,255,0.5);">✅ Không có ngôn ngữ nào bị thừa keys</div>';
+
+            const totalMissing = missingLanguages.reduce((sum, item) => sum + item.missing.length, 0);
+            const totalExtra = extraLanguages.reduce((sum, item) => sum + item.extra.length, 0);
+
+            updateStats(total, totalMissing, totalExtra, comparison.length, baseLanguage);
+        }
+
+        function updateStats(total, missing, extra, languagesCount, baseLanguage) {
+            const statsContainer = document.getElementById('stats-container');
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${total}</div>
+                    <div class="stat-label">Total Keys</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${missing}</div>
+                    <div class="stat-label">Missing Keys</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${extra}</div>
+                    <div class="stat-label">Extra Keys</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${languagesCount}</div>
+                    <div class="stat-label">Compared</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${languageNames[baseLanguage] || baseLanguage.toUpperCase()}</div>
+                    <div class="stat-label">Base Language</div>
+                </div>
+            `;
+        }
+
+        function getCurrentDraftKeyName() {
+            return document.getElementById('newKeyName')?.value.trim() || 'translate_button';
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderTranslationCards() {
+            const container = document.getElementById('translations-form');
+            if (!container) return;
+
+            const currentKey = getCurrentDraftKeyName();
+            const safeKey = escapeHtml(currentKey);
+            const existingValues = {};
+            languages.forEach(lang => {
+                const input = document.getElementById(`trans-${lang}`);
+                if (input) existingValues[lang] = input.value;
+            });
+
+            const treeHtml = languages.map((lang, index) => `
+                <li class="translation-tree-item">
+                    <details ${index === 0 ? 'open' : ''}>
+                        <summary class="translation-tree-summary">
+                            <span class="translation-tree-badge">${index + 1}</span>
+                            <span>${languageNames[lang] || lang.toUpperCase()}</span>
+                        </summary>
+                        <div class="translation-tree-body">
+                            <div class="translation-tree-keyline">
+                                <span>key</span>
+                                <code>${safeKey}</code>
+                            </div>
+                            <div class="translation-tree-input-row">
+                                <label for="trans-${lang}">translation</label>
+                                <input
+                                    type="text"
+                                    id="trans-${lang}"
+                                    value="${escapeHtml(existingValues[lang] || '')}"
+                                    placeholder="${safeKey}"
+                                />
+                                <button type="button" class="translation-tree-ai-btn" data-lang="${lang}" data-key="${safeKey}" onclick="generateTranslation(this.dataset.lang, this.dataset.key)">✨ AI Generate</button>
+                            </div>
+                        </div>
+                    </details>
+                </li>
+            `).join('');
+
+            container.innerHTML = treeHtml
+                ? `<ul class="translation-tree-list">${treeHtml}</ul>`
+                : '<div class="translation-tree-empty">Load ARB files first to render language tree.</div>';
+        }
+
+        async function generateTranslation(lang, keyName) {
+            if (!apiKey) {
+                showError('Please set your OpenAI API Key first');
+                return;
+            }
+
+            const btn = event.target;
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            const baseText = document.getElementById('trans-en').value;
+            if (!baseText) {
+                showError('Please enter English translation first');
+                btn.classList.remove('loading');
+                btn.disabled = false;
+                return;
+            }
+
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-3.5-turbo',
+                        messages: [{
+                            role: 'user',
+                            content: `Translate this app UI text to ${languageNames[lang] || lang}: "${baseText}". Only provide the translation, nothing else.`
+                        }],
+                        temperature: 0.7,
+                        max_tokens: 100
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const translation = data.choices[0].message.content.trim();
+                document.getElementById(`trans-${lang}`).value = translation;
+                showSuccess(`✅ Generated translation for ${languageNames[lang]}`);
+            } catch (error) {
+                showError(`Failed to generate translation: ${error.message}`);
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'add') {
+                renderTranslationCards();
+            } else if (tabName === 'review') {
+                populateReviewTab();
+            }
+        }
+
+        function populateReviewTab() {
+            const container = document.getElementById('review-container');
+            // Implementation would populate actual keys from arbFiles
+            container.innerHTML = '<div style="color: white; text-align: center;">Load ARB files first to see keys here</div>';
+        }
+
+        function filterKeys() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            document.querySelectorAll('[data-key]').forEach(el => {
+                el.style.display = el.dataset.key.includes(searchTerm) ? 'block' : 'none';
+            });
+        }
+
+        function addNewKey(e) {
+            e.preventDefault();
+            const keyName = document.getElementById('newKeyName').value;
+
+            if (!keyName.trim()) {
+                showError('Please enter a key name');
+                return;
+            }
+
+            const translations = {};
+            let hasTranslation = false;
+
+            languages.forEach(lang => {
+                const value = document.getElementById(`trans-${lang}`).value.trim();
+                if (value) {
+                    translations[lang] = value;
+                    hasTranslation = true;
+                }
+            });
+
+            if (!hasTranslation) {
+                showError('Please enter at least one translation');
+                return;
+            }
+
+            // Update local arbFiles
+            Object.entries(translations).forEach(([lang, value]) => {
+                if (!arbFiles[lang]) arbFiles[lang] = {};
+                arbFiles[lang][keyName] = value;
+            });
+
+            // Save to localStorage
+            localStorage.setItem('arbFiles', JSON.stringify(arbFiles));
+
+            showSuccess(`✅ Key '${keyName}' added successfully!`);
+            resetForm();
+        }
+
+        function resetForm() {
+            document.getElementById('newKeyName').value = '';
+            document.getElementById('newKeyDescription').value = '';
+            languages.forEach(lang => {
+                const el = document.getElementById(`trans-${lang}`);
+                if (el) el.value = '';
+            });
+            renderTranslationCards();
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(arbFiles, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'translations-export.json';
+            link.click();
+            showSuccess('✅ Data exported successfully!');
+        }
+
+        function normalizeArbObject(data) {
+            const source = data || {};
+            const sorted = {};
+            const keys = Object.keys(source);
+            const metaKeys = keys.filter(k => k.startsWith('@@')).sort();
+            const valueKeys = keys.filter(k => !k.startsWith('@@')).sort();
+
+            metaKeys.forEach(key => {
+                sorted[key] = source[key];
+            });
+            valueKeys.forEach(key => {
+                sorted[key] = source[key];
+            });
+
+            return sorted;
+        }
+
+        async function exportAndOverwriteArbFiles() {
+            if (!arbFiles || Object.keys(arbFiles).length === 0) {
+                showError('❌ No ARB data available. Please load ARB files first.');
+                return;
+            }
+
+            if (!window.showDirectoryPicker) {
+                showError('❌ This browser does not support folder overwrite. Use Chrome/Edge and open this tool over http://localhost or https.');
+                return;
+            }
+
+            try {
+                const directoryHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                let writtenCount = 0;
+
+                for (const [lang, data] of Object.entries(arbFiles)) {
+                    const fileName = `intl_${lang}.arb`;
+                    const fileHandle = await directoryHandle.getFileHandle(fileName, { create: true });
+                    const writable = await fileHandle.createWritable();
+                    const normalized = normalizeArbObject(data);
+                    await writable.write(`${JSON.stringify(normalized, null, 2)}\n`);
+                    await writable.close();
+                    writtenCount += 1;
+                }
+
+                showSuccess(`✅ Overwrite completed: ${writtenCount} ARB file(s) updated.`);
+            } catch (error) {
+                if (error && error.name === 'AbortError') {
+                    showError('ℹ️ Export cancelled. No files were changed.');
+                    return;
+                }
+                showError(`❌ Failed to overwrite ARB files: ${error.message || error}`);
+            }
+        }
+
+        function showMessage(msg, type) {
+            if (type === 'loading') {
+                const errorEl = document.getElementById('error-message');
+                errorEl.innerHTML = `<span class="loading-spinner"></span> ${msg}`;
+                errorEl.classList.add('show');
+                setTimeout(() => errorEl.classList.remove('show'), 3000);
+            }
+        }
+
+        function showError(msg) {
+            const errorEl = document.getElementById('error-message');
+            errorEl.innerHTML = msg;
+            errorEl.classList.add('show');
+            setTimeout(() => errorEl.classList.remove('show'), 4000);
+        }
+
+        function showSuccess(msg) {
+            const successEl = document.getElementById('success-message');
+            successEl.innerHTML = msg;
+            successEl.classList.add('show');
+            setTimeout(() => successEl.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

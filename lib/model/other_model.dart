@@ -29,4 +29,11 @@ List<OtherModel> otherList = [
     skills: ['Flutter', 'Dart', "canvaskit", "Zalo Mini App", "ffmpeg", "video processing", "vlog maker", 'quote maker'],
     link: 'https://zalo-mini-app-mediatool.web.app/',
   ),
+  OtherModel(
+    name: 'Đa ngôn ngữ cho Flutter',
+    type: 'Flutter Tool',
+    date: '25 May 2026',
+    skills: ['missing keys', 'extra keys', 'intl', 'arb', 'localization manager'],
+    link: 'https://quoc67k1-profile.web.app/localization-manager.html',
+  ),
 ];
