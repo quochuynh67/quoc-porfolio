@@ -109,6 +109,12 @@ class _ImageViewerDialogState extends State<_ImageViewerDialog> {
                     child: PhotoView(
                       backgroundDecoration:
                       const BoxDecoration(color: Colors.black),
+                      loadingBuilder: (_, __) => const Center(
+                          child: CircularProgressIndicator(
+                              color: Colors.cyanAccent)),
+                      errorBuilder: (_, __, ___) => const Center(
+                          child: Icon(Icons.broken_image_outlined,
+                              color: Colors.white54, size: 48)),
                       imageProvider: widget.isAsset
                           ? AssetImage(widget.images[index])
                           : NetworkImage(widget.images[index]) as ImageProvider,

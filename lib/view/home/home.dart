@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_portfolio/view/localization/localization_manager_page.dart';
 import 'package:flutter_portfolio/view/others/others.dart';
 import 'package:flutter_portfolio/view/intro/introduction.dart';
 import 'package:flutter_portfolio/view/main/main_view.dart';
@@ -7,9 +8,10 @@ import 'package:flutter_portfolio/view/projects/project_view.dart';
 import 'package:flutter_portfolio/view/retro_game/retro_game_page.dart';
 import 'package:flutter_portfolio/view/vlog/feed_page.dart';
 
-import '../../view model/controller.dart';
+import '../../core/navigation/app_navigation.dart';
 import '../customer_service/cs_screen.dart';
 import '../media_tool/screen/screen.dart';
+
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -22,21 +24,18 @@ class HomePage extends StatelessWidget {
       return routeToPageIndex['/games'] ?? 0;
     }
 
-    print('_getPageIndexFromRoute Current path: $path');
     return routeToPageIndex[path] ?? 0;
   }
 
   bool isChillVideo() {
     final uri = Uri.base;
     final chill = uri.queryParameters['chill'];
-    print('chill: $chill');
     return chill == '1';
   }
 
   bool isVideoViewMode() {
     final uri = Uri.base;
     final mode = uri.queryParameters['videoViewMode'];
-    print('videoViewMode: $mode');
     return mode == '1';
   }
 
@@ -63,8 +62,8 @@ class HomePage extends StatelessWidget {
         const CsScreen(),
         const GamesPage(),
         const RetroGamePage(),
+        const LocalizationManagerPage(),
       ],
     );
   }
 }
-

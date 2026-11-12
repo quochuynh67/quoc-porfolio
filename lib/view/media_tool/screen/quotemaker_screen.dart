@@ -10,6 +10,7 @@ import 'package:screenshot/screenshot.dart';
 import '../ffmpeg_manager.dart';
 import '../file_utils.dart';
 import 'widget/crop_box/crop_box.dart';
+import 'widget/media_ui.dart';
 import 'widget/overlay_config_widget.dart';
 
 enum QuoteExportRatio { ratio916, ratio169, ratio11 }
@@ -41,7 +42,8 @@ class OverlayConfigModel {
       required this.fontSize,
       required this.dx,
       required this.textStyle,
-      required this.dy, required this.type,
+      required this.dy,
+      required this.type,
       required this.backgroundTextColor,
       required this.textColor});
 
@@ -86,7 +88,8 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
   /// Emit changes
   final mediaList = ValueNotifier<List<QuoteSource>>([]);
   final testMediaList = ValueNotifier<List<QuoteSource>>([]);
-  final BehaviorSubject<OverlayConfigModel?> currentOverlaySelected = BehaviorSubject();
+  final BehaviorSubject<OverlayConfigModel?> currentOverlaySelected =
+      BehaviorSubject();
   final audioList = ValueNotifier<List<String>>([]);
   // final progress = ValueNotifier<ProgressParam?>(null);
   // final cmdStream = ValueNotifier<String>('');
@@ -98,41 +101,43 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
 
   final BehaviorSubject<Offset> overlayConfigPosition = BehaviorSubject();
 
-
   /// crop & ratio preview
   final quoteRatio = ValueNotifier(QuoteExportRatio.ratio916);
   final cropRect = ValueNotifier(const Rect.fromLTRB(0.0, 0.0, 1.0, 1.0));
 
   /// overlay
-  final BehaviorSubject<OverlayConfigModel> titleOverlay = BehaviorSubject.seeded(OverlayConfigModel(
-      dx: 50.0,
-      dy: 50.0,
-      text: 'Title ',
-      fontSize: 16,
-      type: 'text1',
-      textStyle: TextStyle(),
-      backgroundTextColor: Colors.black.withOpacity(0.4),
-      textColor: Colors.white));
+  final BehaviorSubject<OverlayConfigModel> titleOverlay =
+      BehaviorSubject.seeded(OverlayConfigModel(
+          dx: 50.0,
+          dy: 50.0,
+          text: 'Title ',
+          fontSize: 16,
+          type: 'text1',
+          textStyle: TextStyle(),
+          backgroundTextColor: Colors.black.withOpacity(0.4),
+          textColor: Colors.white));
 
-  final BehaviorSubject<OverlayConfigModel> subtitleOverlay = BehaviorSubject.seeded(OverlayConfigModel(
-      dx: 50.0,
-      dy: 150.0,
-      text: 'Sub-title',
-      type: 'text2',
-      fontSize: 16,
-      textStyle: TextStyle(),
-      backgroundTextColor: Colors.black.withOpacity(0.4),
-      textColor: Colors.white));
+  final BehaviorSubject<OverlayConfigModel> subtitleOverlay =
+      BehaviorSubject.seeded(OverlayConfigModel(
+          dx: 50.0,
+          dy: 150.0,
+          text: 'Sub-title',
+          type: 'text2',
+          fontSize: 16,
+          textStyle: TextStyle(),
+          backgroundTextColor: Colors.black.withOpacity(0.4),
+          textColor: Colors.white));
 
-  final BehaviorSubject<OverlayConfigModel> authorOverlay = BehaviorSubject.seeded(OverlayConfigModel(
-      dx: 50.0,
-      dy: 200.0,
-      text: 'Author',
-      type: 'text3',
-      fontSize: 25,
-      textStyle: TextStyle(),
-      backgroundTextColor: Colors.black.withOpacity(0.4),
-      textColor: Colors.white));
+  final BehaviorSubject<OverlayConfigModel> authorOverlay =
+      BehaviorSubject.seeded(OverlayConfigModel(
+          dx: 50.0,
+          dy: 200.0,
+          text: 'Author',
+          type: 'text3',
+          fontSize: 25,
+          textStyle: TextStyle(),
+          backgroundTextColor: Colors.black.withOpacity(0.4),
+          textColor: Colors.white));
 
   /// CMD
   List<String> cmd = [];
@@ -157,6 +162,15 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
 
   @override
   void dispose() {
+    mediaList.dispose();
+    testMediaList.dispose();
+    audioList.dispose();
+    previewRect.dispose();
+    titleRect.dispose();
+    subTitleRect.dispose();
+    authorRect.dispose();
+    quoteRatio.dispose();
+    cropRect.dispose();
     currentOverlaySelected.close();
     titleOverlay.close();
     subtitleOverlay.close();
@@ -167,16 +181,16 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
 
   @override
   void didChangeDependencies() {
-    Future.delayed(const Duration(seconds: 1), (){
-      calculatePreviewWidgetSize();
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) calculatePreviewWidgetSize();
     });
     super.didChangeDependencies();
   }
 
   @override
   void didUpdateWidget(covariant QuoteMakerScreen oldWidget) {
-    Future.delayed(const Duration(seconds: 1), (){
-      calculatePreviewWidgetSize();
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) calculatePreviewWidgetSize();
     });
     super.didUpdateWidget(oldWidget);
   }
@@ -189,319 +203,403 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
         children: [
           Column(
             children: [
-              const Text('Tạo quote gồm 1 ảnh + 1 nhạc nền, xuất ra video mp4',
-                  style: TextStyle(fontSize: 16,color: Colors.black)),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: MediaTabHeader(
+                    title: 'Quote video maker',
+                    subtitle:
+                        'Pick an image and music, place your text, then export.'),
+              ),
+              const SizedBox(height: 12),
+              MediaPanel(
+                padding: const EdgeInsets.all(12),
+                child: Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    /// Select video/image Button
-                    ///
-                    OutlinedButton(
-                        onPressed: pickVideoImageFiles,
-                        child: const Text('Chọn ảnh')),
-                    const SizedBox(width: 12),
-
-                    /// Select audio Button
-                    ///
-                    ValueListenableBuilder(
-                        valueListenable: audioList,
-                        builder: (context, value, _) {
-                          return Row(
-                            children: [
-                              OutlinedButton(
-                                  onPressed: pickAudioFiles,
-                                  child: const Text('Chọn nhạc nền')),
-                              const SizedBox(width: 12),
-                              if(value.isNotEmpty) Text(value.first)
-                            ],
-                          );
-                        }
+                    FilledButton.icon(
+                      onPressed: pickVideoImageFiles,
+                      icon: const Icon(Icons.image_outlined, size: 18),
+                      label: const Text('Chọn ảnh'),
                     ),
-
-
+                    ValueListenableBuilder<List<String>>(
+                      valueListenable: audioList,
+                      builder: (context, value, _) => OutlinedButton.icon(
+                        onPressed: pickAudioFiles,
+                        icon: Icon(
+                            value.isEmpty
+                                ? Icons.music_note_outlined
+                                : Icons.check_circle_outline,
+                            size: 18),
+                        label: Text(
+                            value.isEmpty ? 'Chọn nhạc nền' : 'Đã chọn nhạc'),
+                      ),
+                    ),
+                    ValueListenableBuilder<QuoteExportRatio>(
+                      valueListenable: quoteRatio,
+                      builder: (context, ratio, _) =>
+                          SegmentedButton<QuoteExportRatio>(
+                        showSelectedIcon: false,
+                        style: const ButtonStyle(
+                            visualDensity: VisualDensity.compact),
+                        segments: const [
+                          ButtonSegment(
+                              value: QuoteExportRatio.ratio916,
+                              label: Text('9:16')),
+                          ButtonSegment(
+                              value: QuoteExportRatio.ratio169,
+                              label: Text('16:9')),
+                          ButtonSegment(
+                              value: QuoteExportRatio.ratio11,
+                              label: Text('1:1')),
+                        ],
+                        selected: {ratio},
+                        onSelectionChanged: (s) =>
+                            _handleChangeQuoteRatio(s.first),
+                      ),
+                    ),
+                    FilledButton.icon(
+                      onPressed: () => _captureAndExport(),
+                      icon: const Icon(Icons.movie_creation_outlined, size: 18),
+                      label: const Text('Xuất 1080p'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _captureAndExport(is480p: true),
+                      icon: const Icon(Icons.download_outlined, size: 18),
+                      label: const Text('Xuất 480p'),
+                    ),
                   ],
                 ),
               ),
-
-              /// Change ratio button
-              ///
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 4,
-                    alignment: WrapAlignment.center,
-                    children: [
-
-                      /// Test media list
-                      ///
-                      ValueListenableBuilder(
-                        builder: (context, value, _) {
-                          return value.isEmpty
-                              ? const SizedBox()
-                              : SizedBox(
-                            height: 200,
-                            child: Image.memory(value.first.bytes,
-                                fit: BoxFit.cover),
-                          );
-                        },
-                        valueListenable: testMediaList,
+              ValueListenableBuilder<List<String>>(
+                valueListenable: audioList,
+                builder: (context, value, _) => value.isEmpty
+                    ? const SizedBox()
+                    : Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(value.first.trim().replaceAll('\n', '  '),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  color: Color(0xFFB4B8C5), fontSize: 12)),
+                        ),
                       ),
-                      OutlinedButton(
-                          onPressed: () => _handleChangeQuoteRatio(
-                              QuoteExportRatio.ratio916),
-                          child: const Text('Định dạng 9:16')),
-                      OutlinedButton(
-                          onPressed: () => _handleChangeQuoteRatio(
-                              QuoteExportRatio.ratio169),
-                          child: const Text('Định dạng 16:9')),
-                      OutlinedButton(
-                          onPressed: () =>
-                              _handleChangeQuoteRatio(QuoteExportRatio.ratio11),
-                          child: const Text('Định dạng 1:1')),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Wrap(children: [
-                    OutlinedButton(
-                        onPressed: () {
-                          screenshotController
-                              .capture(delay: const Duration(milliseconds: 10))
-                              .then((capturedImage) async {
-                            final memoryImageSize = isg.ImageSizeGetter.getSize(
-                                isg.MemoryInput(capturedImage!));
-                            final mediaSize = Size(memoryImageSize.width.toDouble(),
-                                memoryImageSize.height.toDouble());
-                            testMediaList.value = [
-                              QuoteSource(false, capturedImage, mediaSize)
-                            ];
-                            FfmpegManager.instance.ffmpeg?.writeFile('background.jpg', capturedImage);
-                            final backgroundImageFile = FfmpegManager.instance.ffmpeg?.readFile('background.jpg');
-                            if (backgroundImageFile?.isNotEmpty == true) {
-                              _handleExport();
-                            }
-                          }).catchError((onError) {});
-                        },
-                        child: const Text("Xuất video 1080p")),
-                    const SizedBox(width: 12),
-                    OutlinedButton(
-                        onPressed: () {
-                          screenshotController
-                              .capture(delay: const Duration(milliseconds: 10))
-                              .then((capturedImage) async {
-                            final memoryImageSize = isg.ImageSizeGetter.getSize(
-                                isg.MemoryInput(capturedImage!));
-                            final mediaSize = Size(memoryImageSize.width.toDouble(),
-                                memoryImageSize.height.toDouble());
-                            testMediaList.value = [
-                              QuoteSource(false, capturedImage, mediaSize)
-                            ];
-                            FfmpegManager.instance.ffmpeg?.writeFile('background.jpg', capturedImage);
-                            final backgroundImageFile = FfmpegManager.instance.ffmpeg?.readFile('background.jpg');
-                            if (backgroundImageFile?.isNotEmpty == true) {
-                              _handleExport(is480p: true);
-                            }
-                          }).catchError((onError) {});
-                        },
-                        child: const Text("Xuất video 480p")),
-                  ]),
-                  // ValueListenableBuilder(
-                  //     valueListenable: cmdStream,
-                  //     builder: (context, data, __) {
-                  //       if (data.isEmpty) return const SizedBox();
-                  //       return Text('cmd: $data');
-                  //     }),
-                  // ValueListenableBuilder(
-                  //     valueListenable: progress,
-                  //     builder: (context, data, __) {
-                  //       if (data == null) return const SizedBox();
-                  //       return Row(
-                  //         mainAxisAlignment: MainAxisAlignment.end,
-                  //         children: [
-                  //           const SizedBox(
-                  //               width: 16,
-                  //               height: 16,
-                  //               child: CircularProgressIndicator()),
-                  //           const SizedBox(width: 12),
-                  //           Text(
-                  //               'Đang xuất video ${((data.ratio.isNaN ? 0 : data.ratio) * 100).ceil()}% - ${data.time}'),
-                  //         ],
-                  //       );
-                  //     })
-                ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 12),
 
               /// QuoteCanvas
               ///
               ValueListenableBuilder<QuoteExportRatio>(
                 builder: (context, value, _) {
                   Size size = _getSupportSizeByRatio(ratio: value);
-                  return SizedBox(
-                    height: 640,
-                    child: Screenshot(
-                      controller: screenshotController,
-                      key: previewWidgetKey,
-                      child: AspectRatio(
-                        aspectRatio: size.aspectRatio,
-                        child: ValueListenableBuilder(
-                            valueListenable: mediaList,
-                            builder: (context, sourceValue, _) {
-                              return ValueListenableBuilder<Rect>(
-                                  valueListenable: cropRect,
-                                  builder: (context, cropRectValue, _) {
-                                    return sourceValue.isEmpty
-                                        ? Container(color: Colors.grey)
-                                        : Stack(
-                                      children: [
-                                        /// QuoteCanvasEditor
-                                        ///
-                                        CropBox(
-                                            clipSize:
-                                            sourceValue.first.mediaSize,
-                                            cropRatio: size,
-                                            cropRect: cropRectValue,
-                                            backgroundColor: Colors.cyan,
-                                            cropRectUpdateEnd: (Rect rect) {
-                                              cropRect.value = rect;
-                                            },
-                                            child: Container(
-                                              color: Colors.grey,
-                                              child: (sourceValue
-                                                  .first.isVideo)
-                                                  ? const Center(
-                                                  child: Text('Video'))
-                                                  : Image.memory(
-                                                  sourceValue
-                                                      .first.bytes,
-                                                  fit: BoxFit.cover),
-                                            )),
+                  return Expanded(
+                    child: Center(
+                      child: Screenshot(
+                        controller: screenshotController,
+                        key: previewWidgetKey,
+                        child: AspectRatio(
+                          aspectRatio: size.aspectRatio,
+                          child: ValueListenableBuilder(
+                              valueListenable: mediaList,
+                              builder: (context, sourceValue, _) {
+                                return ValueListenableBuilder<Rect>(
+                                    valueListenable: cropRect,
+                                    builder: (context, cropRectValue, _) {
+                                      return sourceValue.isEmpty
+                                          ? Container(
+                                              decoration: BoxDecoration(
+                                                color: mediaPanelColor,
+                                                border: Border.all(
+                                                    color: mediaPanelBorder),
+                                                borderRadius:
+                                                    BorderRadius.circular(14),
+                                              ),
+                                              child: const MediaEmptyState(
+                                                  icon: Icons
+                                                      .add_photo_alternate_outlined,
+                                                  label:
+                                                      'Chọn ảnh để bắt đầu thiết kế quote'),
+                                            )
+                                          : Stack(
+                                              children: [
+                                                /// QuoteCanvasEditor
+                                                ///
+                                                CropBox(
+                                                    clipSize: sourceValue
+                                                        .first.mediaSize,
+                                                    cropRatio: size,
+                                                    cropRect: cropRectValue,
+                                                    backgroundColor:
+                                                        Colors.cyan,
+                                                    cropRectUpdateEnd:
+                                                        (Rect rect) {
+                                                      cropRect.value = rect;
+                                                    },
+                                                    child: Container(
+                                                      color: Colors.grey,
+                                                      child: (sourceValue
+                                                              .first.isVideo)
+                                                          ? const Center(
+                                                              child:
+                                                                  Text('Video'))
+                                                          : Image.memory(
+                                                              sourceValue
+                                                                  .first.bytes,
+                                                              fit:
+                                                                  BoxFit.cover),
+                                                    )),
 
-                                        /// TextOverlay
-                                        ///
-                                        StreamBuilder<OverlayConfigModel>(
-                                            stream: titleOverlay,
-                                            builder: (context, snapshot) {
-                                              final titleOverlayValue = snapshot.data;
-                                              if(titleOverlayValue == null) return const SizedBox();
-                                              return Positioned(
-                                                top: titleOverlayValue.dy,
-                                                left: titleOverlayValue.dx,
-                                                child: GestureDetector(
-                                                  onTap:() {
-                                                    currentOverlaySelected.add(null);
-                                                    Future.delayed(const Duration(milliseconds: 100), (){
-                                                      currentOverlaySelected.add(titleOverlayValue);
-                                                    });
-                                                  },
-                                                  onPanUpdate: (details) {
-                                                    titleOverlay.value = titleOverlay.value.copyWith(
-                                                        dx: titleOverlay.value.dx + details.delta.dx,
-                                                        dy: titleOverlay.value.dy + details.delta.dy,
-                                                        text: titleOverlay.value.text,
-                                                        textColor: titleOverlay.value.textColor,
-                                                        fontSize: titleOverlay.value.fontSize,
-                                                        textStyle: titleOverlay.value.textStyle,
-                                                        type: titleOverlay.value.type,
-                                                        backgroundTextColor: titleOverlay.value.backgroundTextColor);
-                                                  },
-                                                  child: Container(
-                                                    color: titleOverlayValue.backgroundTextColor.withOpacity(0.4),
-                                                    key: titleWidgetKey,
-                                                    child:  Text(titleOverlayValue.text,
-                                                        style: titleOverlayValue.textStyle.copyWith(
-                                                            fontSize: titleOverlayValue.fontSize,
-                                                            color: titleOverlayValue.textColor)),
-                                                  ),
-                                                ),
-                                              );
-                                            }
-                                        ),
+                                                /// TextOverlay
+                                                ///
+                                                StreamBuilder<
+                                                        OverlayConfigModel>(
+                                                    stream: titleOverlay,
+                                                    builder:
+                                                        (context, snapshot) {
+                                                      final titleOverlayValue =
+                                                          snapshot.data;
+                                                      if (titleOverlayValue ==
+                                                          null)
+                                                        return const SizedBox();
+                                                      return Positioned(
+                                                        top: titleOverlayValue
+                                                            .dy,
+                                                        left: titleOverlayValue
+                                                            .dx,
+                                                        child: GestureDetector(
+                                                          onTap: () {
+                                                            currentOverlaySelected
+                                                                .add(null);
+                                                            Future.delayed(
+                                                                const Duration(
+                                                                    milliseconds:
+                                                                        100),
+                                                                () {
+                                                              currentOverlaySelected
+                                                                  .add(
+                                                                      titleOverlayValue);
+                                                            });
+                                                          },
+                                                          onPanUpdate:
+                                                              (details) {
+                                                            titleOverlay.value = titleOverlay.value.copyWith(
+                                                                dx: titleOverlay
+                                                                        .value
+                                                                        .dx +
+                                                                    details
+                                                                        .delta
+                                                                        .dx,
+                                                                dy: titleOverlay
+                                                                        .value
+                                                                        .dy +
+                                                                    details
+                                                                        .delta
+                                                                        .dy,
+                                                                text: titleOverlay
+                                                                    .value.text,
+                                                                textColor: titleOverlay
+                                                                    .value
+                                                                    .textColor,
+                                                                fontSize: titleOverlay
+                                                                    .value
+                                                                    .fontSize,
+                                                                textStyle: titleOverlay
+                                                                    .value
+                                                                    .textStyle,
+                                                                type: titleOverlay.value.type,
+                                                                backgroundTextColor: titleOverlay.value.backgroundTextColor);
+                                                          },
+                                                          child: Container(
+                                                            color: titleOverlayValue
+                                                                .backgroundTextColor
+                                                                .withOpacity(
+                                                                    0.4),
+                                                            key: titleWidgetKey,
+                                                            child: Text(
+                                                                titleOverlayValue
+                                                                    .text,
+                                                                style: titleOverlayValue
+                                                                    .textStyle
+                                                                    .copyWith(
+                                                                        fontSize:
+                                                                            titleOverlayValue
+                                                                                .fontSize,
+                                                                        color: titleOverlayValue
+                                                                            .textColor)),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    }),
 
-                                        StreamBuilder<OverlayConfigModel>(
-                                            stream: subtitleOverlay,
-                                            builder: (context, snapshot) {
-                                              final subtitleOverlayValue = snapshot.data;
-                                              if(subtitleOverlayValue == null) return const SizedBox();
-                                              return Positioned(
-                                                top: subtitleOverlayValue.dy,
-                                                left: subtitleOverlayValue.dx,
-                                                child: GestureDetector(
-                                                  onTap:() {
-                                                    currentOverlaySelected.add(null);
-                                                    Future.delayed(const Duration(milliseconds: 100), (){
-                                                      currentOverlaySelected.add(subtitleOverlayValue);
-                                                    });
-                                                  },
-                                                  onPanUpdate: (details) {
-                                                    subtitleOverlay.value = subtitleOverlay.value.copyWith(
-                                                        dx: subtitleOverlay.value.dx + details.delta.dx,
-                                                        dy: subtitleOverlay.value.dy + details.delta.dy,
-                                                        text: subtitleOverlay.value.text,
-                                                        textColor: subtitleOverlay.value.textColor,
-                                                        fontSize: subtitleOverlay.value.fontSize,
-                                                        textStyle: subtitleOverlay.value.textStyle,
-                                                        type: subtitleOverlay.value.type,
-                                                        backgroundTextColor: subtitleOverlay.value.backgroundTextColor);
-                                                  },
-                                                  child: Container(
-                                                    color: subtitleOverlayValue.backgroundTextColor.withOpacity(0.4),
-                                                    key: subtitleWidgetKey,
-                                                    child:  Text(subtitleOverlayValue.text,
-                                                        style: subtitleOverlayValue.textStyle.copyWith(
-                                                            fontSize: subtitleOverlayValue.fontSize,
-                                                            color: subtitleOverlayValue.textColor)),
-                                                  ),
-                                                ),
-                                              );
-                                            }
-                                        ),
+                                                StreamBuilder<
+                                                        OverlayConfigModel>(
+                                                    stream: subtitleOverlay,
+                                                    builder:
+                                                        (context, snapshot) {
+                                                      final subtitleOverlayValue =
+                                                          snapshot.data;
+                                                      if (subtitleOverlayValue ==
+                                                          null)
+                                                        return const SizedBox();
+                                                      return Positioned(
+                                                        top:
+                                                            subtitleOverlayValue
+                                                                .dy,
+                                                        left:
+                                                            subtitleOverlayValue
+                                                                .dx,
+                                                        child: GestureDetector(
+                                                          onTap: () {
+                                                            currentOverlaySelected
+                                                                .add(null);
+                                                            Future.delayed(
+                                                                const Duration(
+                                                                    milliseconds:
+                                                                        100),
+                                                                () {
+                                                              currentOverlaySelected
+                                                                  .add(
+                                                                      subtitleOverlayValue);
+                                                            });
+                                                          },
+                                                          onPanUpdate:
+                                                              (details) {
+                                                            subtitleOverlay.value = subtitleOverlay.value.copyWith(
+                                                                dx: subtitleOverlay.value.dx +
+                                                                    details
+                                                                        .delta
+                                                                        .dx,
+                                                                dy: subtitleOverlay
+                                                                        .value
+                                                                        .dy +
+                                                                    details
+                                                                        .delta
+                                                                        .dy,
+                                                                text: subtitleOverlay
+                                                                    .value.text,
+                                                                textColor: subtitleOverlay
+                                                                    .value
+                                                                    .textColor,
+                                                                fontSize: subtitleOverlay
+                                                                    .value
+                                                                    .fontSize,
+                                                                textStyle:
+                                                                    subtitleOverlay
+                                                                        .value
+                                                                        .textStyle,
+                                                                type: subtitleOverlay.value.type,
+                                                                backgroundTextColor: subtitleOverlay.value.backgroundTextColor);
+                                                          },
+                                                          child: Container(
+                                                            color: subtitleOverlayValue
+                                                                .backgroundTextColor
+                                                                .withOpacity(
+                                                                    0.4),
+                                                            key:
+                                                                subtitleWidgetKey,
+                                                            child: Text(
+                                                                subtitleOverlayValue
+                                                                    .text,
+                                                                style: subtitleOverlayValue
+                                                                    .textStyle
+                                                                    .copyWith(
+                                                                        fontSize:
+                                                                            subtitleOverlayValue
+                                                                                .fontSize,
+                                                                        color: subtitleOverlayValue
+                                                                            .textColor)),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    }),
 
-                                        StreamBuilder<OverlayConfigModel>(
-                                            stream: authorOverlay,
-                                            builder: (context, snapshot) {
-                                              final authorOverlayValue = snapshot.data;
-                                              if(authorOverlayValue == null) return const SizedBox();
-                                              return Positioned(
-                                                top: authorOverlayValue.dy,
-                                                left: authorOverlayValue.dx,
-                                                child: GestureDetector(
-                                                  onTap:() {
-                                                    currentOverlaySelected.add(null);
-                                                    Future.delayed(const Duration(milliseconds: 100), (){
-                                                      currentOverlaySelected.add(authorOverlayValue);
-                                                    });
-                                                  },
-                                                  onPanUpdate: (details) {
-                                                    authorOverlay.value = subtitleOverlay.value.copyWith(
-                                                        dx: authorOverlay.value.dx + details.delta.dx,
-                                                        dy: authorOverlay.value.dy + details.delta.dy,
-                                                        text: authorOverlay.value.text,
-                                                        textColor: authorOverlay.value.textColor,
-                                                        fontSize: authorOverlay.value.fontSize,
-                                                        textStyle: authorOverlay.value.textStyle,
-                                                        type: authorOverlay.value.type,
-                                                        backgroundTextColor: authorOverlay.value.backgroundTextColor);
-                                                  },
-                                                  child: Container(
-                                                    color: authorOverlayValue.backgroundTextColor.withOpacity(0.4),
-                                                    key: authorWidgetKey,
-                                                    child:  Text(authorOverlayValue.text,
-                                                        style: authorOverlayValue.textStyle.copyWith(
-                                                            fontSize: authorOverlayValue.fontSize,
-                                                            color: authorOverlayValue.textColor)),
-                                                  ),
-                                                ),
-                                              );
-                                            }
-                                        ),
-                                      ],
-                                    );
-                                  });
-                            }),
+                                                StreamBuilder<
+                                                        OverlayConfigModel>(
+                                                    stream: authorOverlay,
+                                                    builder:
+                                                        (context, snapshot) {
+                                                      final authorOverlayValue =
+                                                          snapshot.data;
+                                                      if (authorOverlayValue ==
+                                                          null)
+                                                        return const SizedBox();
+                                                      return Positioned(
+                                                        top: authorOverlayValue
+                                                            .dy,
+                                                        left: authorOverlayValue
+                                                            .dx,
+                                                        child: GestureDetector(
+                                                          onTap: () {
+                                                            currentOverlaySelected
+                                                                .add(null);
+                                                            Future.delayed(
+                                                                const Duration(
+                                                                    milliseconds:
+                                                                        100),
+                                                                () {
+                                                              currentOverlaySelected
+                                                                  .add(
+                                                                      authorOverlayValue);
+                                                            });
+                                                          },
+                                                          onPanUpdate:
+                                                              (details) {
+                                                            authorOverlay.value = authorOverlay.value.copyWith(
+                                                                dx: authorOverlay.value.dx +
+                                                                    details
+                                                                        .delta
+                                                                        .dx,
+                                                                dy: authorOverlay
+                                                                        .value
+                                                                        .dy +
+                                                                    details
+                                                                        .delta
+                                                                        .dy,
+                                                                text: authorOverlay
+                                                                    .value.text,
+                                                                textColor: authorOverlay
+                                                                    .value
+                                                                    .textColor,
+                                                                fontSize: authorOverlay
+                                                                    .value
+                                                                    .fontSize,
+                                                                textStyle:
+                                                                    authorOverlay
+                                                                        .value
+                                                                        .textStyle,
+                                                                type: authorOverlay.value.type,
+                                                                backgroundTextColor: authorOverlay.value.backgroundTextColor);
+                                                          },
+                                                          child: Container(
+                                                            color: authorOverlayValue
+                                                                .backgroundTextColor
+                                                                .withOpacity(
+                                                                    0.4),
+                                                            key:
+                                                                authorWidgetKey,
+                                                            child: Text(
+                                                                authorOverlayValue
+                                                                    .text,
+                                                                style: authorOverlayValue
+                                                                    .textStyle
+                                                                    .copyWith(
+                                                                        fontSize:
+                                                                            authorOverlayValue
+                                                                                .fontSize,
+                                                                        color: authorOverlayValue
+                                                                            .textColor)),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    }),
+                                              ],
+                                            );
+                                    });
+                              }),
+                        ),
                       ),
                     ),
                   );
@@ -510,7 +608,6 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
               ),
             ],
           ),
-
 
           /// ConfigOverlayWidget
           ///
@@ -521,29 +618,32 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
                 return Positioned(
                   top: position.dy,
                   left: position.dx,
-                  width: 400,
+                  width: MediaQuery.sizeOf(context).width < 440
+                      ? MediaQuery.sizeOf(context).width - 32
+                      : 400,
                   child: StreamBuilder<OverlayConfigModel?>(
                       stream: currentOverlaySelected,
                       builder: (context, snapshot) {
                         final value = snapshot.data;
-                        if(value == null) return const SizedBox();
+                        if (value == null) return const SizedBox();
                         return GestureDetector(
                           onPanUpdate: (details) {
-                            overlayConfigPosition.add(Offset(position.dx + details.delta.dx,
+                            overlayConfigPosition.add(Offset(
+                                position.dx + details.delta.dx,
                                 position.dy + details.delta.dy));
-
                           },
                           child: OverlayConfigWidget(
                             previewRect: Rect.zero,
                             overlay: value,
-                            onClosed: (){
+                            onClosed: () {
                               currentOverlaySelected.add(null);
                             },
-                            onBackgroundTextColorUpdated: (v){
-                              switch(value.type) {
+                            onBackgroundTextColorUpdated: (v) {
+                              switch (value.type) {
                                 case 'text1':
                                   final temp = titleOverlay.value.copyWith(
-                                      dx: titleOverlay.value.dx, dy: titleOverlay.value.dy,
+                                      dx: titleOverlay.value.dx,
+                                      dy: titleOverlay.value.dy,
                                       text: titleOverlay.value.text,
                                       textColor: titleOverlay.value.textColor,
                                       fontSize: titleOverlay.value.fontSize,
@@ -552,16 +652,19 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
                                   break;
                                 case 'text2':
                                   final temp = subtitleOverlay.value.copyWith(
-                                      dx: subtitleOverlay.value.dx, dy: subtitleOverlay.value.dy,
+                                      dx: subtitleOverlay.value.dx,
+                                      dy: subtitleOverlay.value.dy,
                                       text: subtitleOverlay.value.text,
-                                      textColor: subtitleOverlay.value.textColor,
+                                      textColor:
+                                          subtitleOverlay.value.textColor,
                                       fontSize: subtitleOverlay.value.fontSize,
                                       backgroundTextColor: v);
                                   subtitleOverlay.value = temp;
                                   break;
                                 case 'text3':
                                   final temp = authorOverlay.value.copyWith(
-                                      dx: authorOverlay.value.dx, dy: authorOverlay.value.dy,
+                                      dx: authorOverlay.value.dx,
+                                      dy: authorOverlay.value.dy,
                                       text: authorOverlay.value.text,
                                       textColor: authorOverlay.value.textColor,
                                       fontSize: authorOverlay.value.fontSize,
@@ -570,145 +673,191 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
                                   break;
                               }
                             },
-                            onFontSizeUpdated: (v){
-                              switch(value.type) {
+                            onFontSizeUpdated: (v) {
+                              switch (value.type) {
                                 case 'text1':
-                                  final temp  = titleOverlay.value.copyWith(
-                                      dx: titleOverlay.value.dx, dy: titleOverlay.value.dy,
+                                  final temp = titleOverlay.value.copyWith(
+                                      dx: titleOverlay.value.dx,
+                                      dy: titleOverlay.value.dy,
                                       text: titleOverlay.value.text,
                                       textColor: titleOverlay.value.textColor,
                                       fontSize: v,
-                                      backgroundTextColor: titleOverlay.value.backgroundTextColor);
-                                  titleOverlay.value = temp;
-                                  break;
-                                case 'text2':
-                                  final temp  = subtitleOverlay.value.copyWith(
-                                      dx: subtitleOverlay.value.dx, dy: subtitleOverlay.value.dy,
-                                      text: subtitleOverlay.value.text,
-                                      textColor: subtitleOverlay.value.textColor,
-                                      fontSize: v,
-                                      backgroundTextColor: subtitleOverlay.value.backgroundTextColor);
-                                  subtitleOverlay.value = temp;
-                                  break;
-                                case 'text3':
-                                  final temp  = authorOverlay.value.copyWith(
-                                      dx: authorOverlay.value.dx, dy: authorOverlay.value.dy,
-                                      text: authorOverlay.value.text,
-                                      textColor: authorOverlay.value.textColor,
-                                      fontSize: v,
-                                      backgroundTextColor: authorOverlay.value.backgroundTextColor);
-                                  authorOverlay.value = temp;
-                                  break;
-                              }
-                            },
-                            onTextColorUpdated: (v){
-                              switch(value.type) {
-                                case 'text1':
-                                  final temp = titleOverlay.value.copyWith(
-                                      dx: titleOverlay.value.dx, dy: titleOverlay.value.dy,
-                                      text: titleOverlay.value.text,
-                                      textColor: v,
-                                      fontSize: titleOverlay.value.fontSize,
-                                      backgroundTextColor: titleOverlay.value.backgroundTextColor);
+                                      backgroundTextColor: titleOverlay
+                                          .value.backgroundTextColor);
                                   titleOverlay.value = temp;
                                   break;
                                 case 'text2':
                                   final temp = subtitleOverlay.value.copyWith(
-                                      dx: subtitleOverlay.value.dx, dy: subtitleOverlay.value.dy,
+                                      dx: subtitleOverlay.value.dx,
+                                      dy: subtitleOverlay.value.dy,
                                       text: subtitleOverlay.value.text,
-                                      textColor: v,
-                                      fontSize: subtitleOverlay.value.fontSize,
-                                      backgroundTextColor: subtitleOverlay.value.backgroundTextColor);
+                                      textColor:
+                                          subtitleOverlay.value.textColor,
+                                      fontSize: v,
+                                      backgroundTextColor: subtitleOverlay
+                                          .value.backgroundTextColor);
                                   subtitleOverlay.value = temp;
                                   break;
                                 case 'text3':
                                   final temp = authorOverlay.value.copyWith(
-                                      dx: authorOverlay.value.dx, dy: authorOverlay.value.dy,
+                                      dx: authorOverlay.value.dx,
+                                      dy: authorOverlay.value.dy,
                                       text: authorOverlay.value.text,
-                                      textColor: v,
-                                      fontSize: authorOverlay.value.fontSize,
-                                      backgroundTextColor: authorOverlay.value.backgroundTextColor);
+                                      textColor: authorOverlay.value.textColor,
+                                      fontSize: v,
+                                      backgroundTextColor: authorOverlay
+                                          .value.backgroundTextColor);
                                   authorOverlay.value = temp;
                                   break;
                               }
                             },
-                            onTextUpdated: (v){
-                              switch(value.type) {
+                            onTextColorUpdated: (v) {
+                              switch (value.type) {
                                 case 'text1':
                                   final temp = titleOverlay.value.copyWith(
-                                      dx: titleOverlay.value.dx, dy: titleOverlay.value.dy,
-                                      text: v,
-                                      textColor: titleOverlay.value.textColor,
+                                      dx: titleOverlay.value.dx,
+                                      dy: titleOverlay.value.dy,
+                                      text: titleOverlay.value.text,
+                                      textColor: v,
                                       fontSize: titleOverlay.value.fontSize,
-                                      backgroundTextColor: titleOverlay.value.backgroundTextColor);
+                                      backgroundTextColor: titleOverlay
+                                          .value.backgroundTextColor);
                                   titleOverlay.value = temp;
                                   break;
                                 case 'text2':
                                   final temp = subtitleOverlay.value.copyWith(
-                                      dx: subtitleOverlay.value.dx, dy: subtitleOverlay.value.dy,
-                                      text: v,
-                                      textColor: subtitleOverlay.value.textColor,
+                                      dx: subtitleOverlay.value.dx,
+                                      dy: subtitleOverlay.value.dy,
+                                      text: subtitleOverlay.value.text,
+                                      textColor: v,
                                       fontSize: subtitleOverlay.value.fontSize,
-                                      backgroundTextColor: subtitleOverlay.value.backgroundTextColor);
+                                      backgroundTextColor: subtitleOverlay
+                                          .value.backgroundTextColor);
+                                  subtitleOverlay.value = temp;
+                                  break;
+                                case 'text3':
+                                  final temp = authorOverlay.value.copyWith(
+                                      dx: authorOverlay.value.dx,
+                                      dy: authorOverlay.value.dy,
+                                      text: authorOverlay.value.text,
+                                      textColor: v,
+                                      fontSize: authorOverlay.value.fontSize,
+                                      backgroundTextColor: authorOverlay
+                                          .value.backgroundTextColor);
+                                  authorOverlay.value = temp;
+                                  break;
+                              }
+                            },
+                            onTextUpdated: (v) {
+                              switch (value.type) {
+                                case 'text1':
+                                  final temp = titleOverlay.value.copyWith(
+                                      dx: titleOverlay.value.dx,
+                                      dy: titleOverlay.value.dy,
+                                      text: v,
+                                      textColor: titleOverlay.value.textColor,
+                                      fontSize: titleOverlay.value.fontSize,
+                                      backgroundTextColor: titleOverlay
+                                          .value.backgroundTextColor);
+                                  titleOverlay.value = temp;
+                                  break;
+                                case 'text2':
+                                  final temp = subtitleOverlay.value.copyWith(
+                                      dx: subtitleOverlay.value.dx,
+                                      dy: subtitleOverlay.value.dy,
+                                      text: v,
+                                      textColor:
+                                          subtitleOverlay.value.textColor,
+                                      fontSize: subtitleOverlay.value.fontSize,
+                                      backgroundTextColor: subtitleOverlay
+                                          .value.backgroundTextColor);
 
                                   subtitleOverlay.value = temp;
                                   break;
                                 case 'text3':
                                   final temp = authorOverlay.value.copyWith(
-                                      dx: authorOverlay.value.dx, dy: authorOverlay.value.dy,
+                                      dx: authorOverlay.value.dx,
+                                      dy: authorOverlay.value.dy,
                                       text: v,
                                       textColor: authorOverlay.value.textColor,
                                       fontSize: authorOverlay.value.fontSize,
-                                      backgroundTextColor: authorOverlay.value.backgroundTextColor);
+                                      backgroundTextColor: authorOverlay
+                                          .value.backgroundTextColor);
 
                                   authorOverlay.value = temp;
                                   break;
                               }
                             },
                             onTextStyleUpdated: (v, textStyle) {
-                              switch(value.type) {
+                              switch (value.type) {
                                 case 'text1':
                                   final temp = titleOverlay.value.copyWith(
-                                    dx: titleOverlay.value.dx, dy: titleOverlay.value.dy,
+                                    dx: titleOverlay.value.dx,
+                                    dy: titleOverlay.value.dy,
                                     text: titleOverlay.value.text,
                                     textColor: titleOverlay.value.textColor,
                                     fontSize: titleOverlay.value.fontSize,
-                                    backgroundTextColor: titleOverlay.value.backgroundTextColor,
+                                    backgroundTextColor:
+                                        titleOverlay.value.backgroundTextColor,
                                     textStyle: textStyle,
                                   );
                                   titleOverlay.value = temp;
                                   break;
                                 case 'text2':
                                   final temp = subtitleOverlay.value.copyWith(
-                                      dx: subtitleOverlay.value.dx, dy: subtitleOverlay.value.dy,
+                                      dx: subtitleOverlay.value.dx,
+                                      dy: subtitleOverlay.value.dy,
                                       text: subtitleOverlay.value.text,
-                                      textColor: subtitleOverlay.value.textColor,
+                                      textColor:
+                                          subtitleOverlay.value.textColor,
                                       fontSize: subtitleOverlay.value.fontSize,
-                                      backgroundTextColor: subtitleOverlay.value.backgroundTextColor,
+                                      backgroundTextColor: subtitleOverlay
+                                          .value.backgroundTextColor,
                                       textStyle: textStyle);
                                   subtitleOverlay.value = temp;
                                   break;
                                 case 'text3':
                                   final temp = authorOverlay.value.copyWith(
-                                      dx: authorOverlay.value.dx, dy: authorOverlay.value.dy,
+                                      dx: authorOverlay.value.dx,
+                                      dy: authorOverlay.value.dy,
                                       text: authorOverlay.value.text,
                                       textColor: authorOverlay.value.textColor,
                                       fontSize: authorOverlay.value.fontSize,
-                                      backgroundTextColor: authorOverlay.value.backgroundTextColor,textStyle: textStyle);
+                                      backgroundTextColor: authorOverlay
+                                          .value.backgroundTextColor,
+                                      textStyle: textStyle);
                                   authorOverlay.value = temp;
                                   break;
                               }
                             },
                           ),
                         );
-                      }
-                  ),
+                      }),
                 );
-              }
-          ),
+              }),
         ],
       ),
     );
+  }
+
+  void _captureAndExport({bool is480p = false}) {
+    screenshotController
+        .capture(delay: const Duration(milliseconds: 10))
+        .then((capturedImage) async {
+      final memoryImageSize =
+          isg.ImageSizeGetter.getSize(isg.MemoryInput(capturedImage!));
+      final mediaSize = Size(
+          memoryImageSize.width.toDouble(), memoryImageSize.height.toDouble());
+      testMediaList.value = [QuoteSource(false, capturedImage, mediaSize)];
+      FfmpegManager.instance.ffmpeg?.writeFile('background.jpg', capturedImage);
+      final backgroundImageFile =
+          FfmpegManager.instance.ffmpeg?.readFile('background.jpg');
+      if (backgroundImageFile?.isNotEmpty == true) {
+        _handleExport(is480p: is480p);
+      }
+    }).catchError((onError) {
+      _showMessage('Add an image before exporting.', isError: true);
+    });
   }
 
   Future<void> pickAudioFiles() async {
@@ -719,6 +868,7 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
           allowMultiple: false);
 
       if (filePickerResult != null) {
+        audioInput.clear();
         List<String> picked = [];
         for (int i = 0; i < filePickerResult!.files.length; ++i) {
           final file = filePickerResult!.files.elementAt(i);
@@ -733,7 +883,7 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
         audioList.value = picked;
       }
     } catch (e) {
-      print('HAHA --- [pickAudioFiles] --- Error: $e');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error picking audio files: $e')),
       );
@@ -741,36 +891,43 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
   }
 
   Future<void> pickVideoImageFiles() async {
-   try {
-     filePickerResult = await FilePicker.platform.pickFiles(
-         type: FileType.custom,
-         allowedExtensions: ['png', 'jpg', 'jpeg'],
-         allowCompression: false,
-         allowMultiple: false);
+    try {
+      filePickerResult = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['png', 'jpg', 'jpeg'],
+          allowCompression: false,
+          allowMultiple: false);
 
-     if (filePickerResult != null) {
-       List<QuoteSource> picked = [];
-       for (int i = 0; i < filePickerResult!.files.length; ++i) {
-         final file = filePickerResult!.files.elementAt(i);
-         bool isVideo = QuoteSource.isVideoType(file.extension ?? '');
-         final memoryImageSize =
-         isg.ImageSizeGetter.getSize(isg.MemoryInput(file.bytes!));
-         Size mediaSize = Size(memoryImageSize.width.toDouble(),
-             memoryImageSize.height.toDouble());
-         print('HAHA picked size $mediaSize');
-         picked.add(QuoteSource(isVideo, file.bytes!, mediaSize));
-       }
-       mediaList.value = picked;
-     }
-   } catch (e) {
-     print('HAHA --- [pickVideoImageFiles] --- Error: $e');
-     ScaffoldMessenger.of(context).showSnackBar(
-       SnackBar(content: Text('Error picking video/image files: $e')),
-     );
-   }
+      if (filePickerResult != null) {
+        List<QuoteSource> picked = [];
+        for (int i = 0; i < filePickerResult!.files.length; ++i) {
+          final file = filePickerResult!.files.elementAt(i);
+          bool isVideo = QuoteSource.isVideoType(file.extension ?? '');
+          final memoryImageSize =
+              isg.ImageSizeGetter.getSize(isg.MemoryInput(file.bytes!));
+          Size mediaSize = Size(memoryImageSize.width.toDouble(),
+              memoryImageSize.height.toDouble());
+          picked.add(QuoteSource(isVideo, file.bytes!, mediaSize));
+        }
+        mediaList.value = picked;
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking video/image files: $e')),
+      );
+    }
   }
 
   Future<void> _handleExport({bool is480p = false}) async {
+    if (!FfmpegManager.instance.isLoaded) {
+      _showMessage('Media engine is not ready.', isError: true);
+      return;
+    }
+    if (audioInput.isEmpty) {
+      _showMessage('Select background music first.', isError: true);
+      return;
+    }
     cmd.clear();
     cmd.insertAll(0, audioInput);
     cmd.insertAll(0, clipInput);
@@ -797,52 +954,63 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
     ]);
 
     // cmdStream.value = cmd.toString();
-    print('HAHA --- [_handleExport]  --- cmd [$cmd]');
-    await FfmpegManager.instance.runCommand(cmd);
-    final exportBytes = FfmpegManager.instance.ffmpeg?.readFile('output.mp4');
-    if (exportBytes == null || exportBytes.isEmpty) {
-      print('HAHA --- [_handleExport]  --- exportBytes is empty');
+    final success = await FfmpegManager.instance.runCommand(cmd);
+    if (!mounted) return;
+    if (!success) {
+      _showMessage('Could not export the quote video.', isError: true);
       return;
     }
-    print('HAHA --- [_handleExport]  --- ready to download output.mp4 [${exportBytes.length} bytes]');
-    if (exportBytes.isNotEmpty) {
-      FileUtils.downloadVideoOutputInWeb('output.mp4');
-      // progress.value = null;
+    final exportBytes = FfmpegManager.instance.ffmpeg?.readFile('output.mp4');
+    if (exportBytes == null || exportBytes.isEmpty) {
+      _showMessage('The exported video is empty.', isError: true);
+      return;
     }
+    FileUtils.downloadVideoOutputInWeb('output.mp4');
+    _showMessage('Quote video exported successfully.');
   }
 
   void _handleChangeQuoteRatio(QuoteExportRatio ratio) {
     quoteRatio.value = ratio;
     _resetAllOverlayOffset();
-    Future.delayed(const Duration(seconds: 1), (){
-      calculatePreviewWidgetSize();
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) calculatePreviewWidgetSize();
     });
   }
 
   void calculatePreviewWidgetSize() {
-    print('HAHA absolute coordinates on screen: ${previewWidgetKey.globalPaintBounds}');
     previewRect.value = previewWidgetKey.globalPaintBounds;
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      backgroundColor: isError ? Colors.red : null,
+    ));
   }
 
   void _resetAllOverlayOffset() {
     cropRect.value = const Rect.fromLTRB(0.0, 0.0, 1.0, 1.0);
 
     titleOverlay.value = titleOverlay.value.copyWith(
-        dx: 50.0, dy: 100.0,
+        dx: 50.0,
+        dy: 100.0,
         text: titleOverlay.value.text,
         textColor: titleOverlay.value.textColor,
         fontSize: titleOverlay.value.fontSize,
         backgroundTextColor: titleOverlay.value.backgroundTextColor);
 
     subtitleOverlay.value = subtitleOverlay.value.copyWith(
-        dx: 50.0, dy: 150.0,
+        dx: 50.0,
+        dy: 150.0,
         text: subtitleOverlay.value.text,
         textColor: subtitleOverlay.value.textColor,
         fontSize: subtitleOverlay.value.fontSize,
         backgroundTextColor: subtitleOverlay.value.backgroundTextColor);
 
     authorOverlay.value = authorOverlay.value.copyWith(
-        dx: 50.0, dy: 200.0,
+        dx: 50.0,
+        dy: 200.0,
         text: authorOverlay.value.text,
         textColor: authorOverlay.value.textColor,
         fontSize: authorOverlay.value.fontSize,
@@ -850,7 +1018,7 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
   }
 
   Size _getSupportSizeByRatio({QuoteExportRatio? ratio, bool is480p = false}) {
-    if(is480p) {
+    if (is480p) {
       switch (ratio ?? quoteRatio.value) {
         case QuoteExportRatio.ratio916:
           return const Size(360, 640);
@@ -871,17 +1039,17 @@ class VlogMakerScreenState extends State<QuoteMakerScreen> {
   }
 
   bool isExceedRectWidth(Rect? textRect, Rect? previewRect) {
-    if(textRect == null || previewRect == null) return false;
+    if (textRect == null || previewRect == null) return false;
     return textRect.right > previewRect.right;
   }
 
   bool isExceedRectHeight(Rect? textRect, Rect? previewRect) {
-    if(textRect == null || previewRect == null) return false;
+    if (textRect == null || previewRect == null) return false;
     return textRect.bottom > previewRect.bottom;
   }
 
   bool isExceedRectLeftTop(Rect? textRect, Rect? previewRect) {
-    if(textRect == null || previewRect == null) return false;
+    if (textRect == null || previewRect == null) return false;
     return textRect.top <= previewRect.top || textRect.left <= previewRect.left;
   }
 }

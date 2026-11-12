@@ -108,7 +108,12 @@ class _OverlayConfigWidgetState extends State<OverlayConfigWidget> {
     _textColor.value = widget.overlay?.textColor ?? Colors.white;
     _textBackgroundColor.value = widget.overlay?.backgroundTextColor ?? Colors.black.withOpacity(0.4);
     return Container(
-      color: Colors.cyan.withOpacity(0.7),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B2133),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.cyanAccent.withOpacity(.5)),
+        boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 24)],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
@@ -117,7 +122,7 @@ class _OverlayConfigWidgetState extends State<OverlayConfigWidget> {
           children: [
             InkWell(onTap: (){
               widget.onClosed?.call();
-            },child: const Align(alignment: Alignment.topRight,child: SizedBox(width: 50, height: 50, child: Icon(Icons.close),))),
+            },child: const Align(alignment: Alignment.topRight,child: SizedBox(width: 50, height: 50, child: Icon(Icons.close, color: Colors.white70),))),
             TextField(
               controller: textEditingController,
                 maxLines: 10,

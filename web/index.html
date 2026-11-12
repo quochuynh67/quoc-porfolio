@@ -16,8 +16,6 @@
     -->
 
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta content="IE=Edge" http-equiv="X-UA-Compatible">
     <meta name="description" content="A new Flutter project.">
     <link rel="icon" type="image/png" href="favicon.png"/>
@@ -35,7 +33,14 @@
     <link rel="manifest" href="manifest.json">
 
     <!-- This script adds the flutter initialization JS code -->
-    <script src="assets/ffmpeg/ffmpeg.min.js" defer></script>
+    <script src="assets/ffmpeg/ffmpeg.min.js"></script>
+    <script>
+      // ffmpeg_wasm binds to global createFFmpeg/fetchFile, but the UMD bundle only exposes self.FFmpeg.
+      if (self.FFmpeg) {
+        self.createFFmpeg = self.createFFmpeg || self.FFmpeg.createFFmpeg;
+        self.fetchFile = self.fetchFile || self.FFmpeg.fetchFile;
+      }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"
             crossorigin="anonymous"></script>
 </head>
