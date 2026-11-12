@@ -31,3 +31,21 @@ void goToPage(int index, {Map<String, String>? queryParameters}) {
     Uri(path: path, queryParameters: queryParameters).toString(),
   );
 }
+
+/// Browser tab title for each page index (same indexes as [routeToPageIndex]).
+const Map<int, String> pageTitles = {
+  0: 'Home',
+  1: 'Projects',
+  2: 'Others',
+  3: 'Media Tools',
+  4: 'Vlogs',
+  5: 'Chat With Me',
+  6: 'Games',
+  7: 'Retro Game',
+  8: 'Localization Manager',
+};
+
+void updateDocumentTitle(int index) {
+  final title = pageTitles[index];
+  if (title != null) html.document.title = title;
+}

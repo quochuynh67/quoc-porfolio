@@ -41,8 +41,11 @@ class _MainViewState extends State<MainView> {
     if (controller.positions.length == 1) controller.jumpToPage(index);
   }
 
+  void _onPageChanged() => updateDocumentTitle(currentPage.value);
+
   @override
   void dispose() {
+    currentPage.removeListener(_onPageChanged);
     _popSub?.cancel();
     super.dispose();
   }
@@ -51,7 +54,9 @@ class _MainViewState extends State<MainView> {
   void initState() {
     super.initState();
     _popSub = html.window.on['app-popstate'].listen(_syncPageWithUrl);
+    currentPage.addListener(_onPageChanged);
     currentPage.value = widget.initialPage;
+    updateDocumentTitle(widget.initialPage);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && controller.hasClients) {
         controller.jumpToPage(widget.initialPage);
