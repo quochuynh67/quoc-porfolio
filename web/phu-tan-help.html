@@ -3071,11 +3071,11 @@
 
 <script>
     // Supabase Configuration (keep public ANON key in meta if you want; fallback to existing key)
-    const SUPABASE_URL = 'https://qwgqgqdtgwkqcbosyqtl.supabase.co'
+    const SUPABASE_URL = document.querySelector('meta[name="supabase-url"]')?.content || ''
     // If you add <meta name="supabase-anon-key" content="PUBLIC_ANON_KEY"> in <head>, it will be used here.
     const SUPABASE_KEY_META = document.querySelector('meta[name="supabase-anon-key"]')?.content
-    const SUPABASE_KEY = SUPABASE_KEY_META || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3Z3FncWR0Z3drcWNib3N5cXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNTUxMzcsImV4cCI6MjA4NDczMTEzN30.zvmsRLxGTUsFCaQor-b-Rby7Rk3MX4f3RV8DCP1Wf70'
-    const supabaseClient = (window?.supabase && typeof window.supabase.createClient === 'function')
+    const SUPABASE_KEY = SUPABASE_KEY_META || ''
+    const supabaseClient = (SUPABASE_URL && SUPABASE_KEY && window?.supabase && typeof window.supabase.createClient === 'function')
         ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
         : (typeof createClient === 'function' ? createClient(SUPABASE_URL, SUPABASE_KEY) : null)
     if (!supabaseClient) console.error('Supabase client could not be initialized. Check CDN or createClient availability.')
@@ -3644,57 +3644,10 @@
         }
     }
 
-    // Admin delete: prompt for password, validate against value stored in Supabase then delete
+    // Privileged deletion belongs in an authenticated backend/Edge Function.
     async function adminDelete(id) {
-        try {
-            const pwd = prompt('Enter admin password to delete this request:')
-            if (pwd === null) return // cancelled
-
-            // fetch stored admin password from Supabase table "admin_settings"
-            // expected row: { key: 'admin_delete_password', value: '<password>' }
-            const { data: setting, error: settingErr } = await supabaseClient
-                .from('admin_settings')
-                .select('value')
-                .eq('row_key', 'admin_delete_password')
-                .single()
-
-            if (settingErr) {
-                console.error('Failed to load admin password setting:', settingErr)
-                alert('❌ Could not verify admin password. Check server settings.')
-                return
-            }
-            if (!setting || !setting.value) {
-                alert('❌ Admin password not configured. Contact administrator.')
-                return
-            }
-
-            if (pwd !== setting.value) {
-                alert('❌ Incorrect admin password')
-                return
-            }
-
-            if (!confirm('⚠️ Confirm delete this request and its volunteer entries?')) return
-
-            // delete related volunteers first (ignore if none)
-            const { error: volErr } = await supabaseClient
-                .from('volunteers')
-                .delete()
-                .eq('request_id', id)
-            if (volErr) throw volErr
-
-            // delete the request
-            const { error: reqErr } = await supabaseClient
-                .from('requests')
-                .delete()
-                .eq('id', id)
-            if (reqErr) throw reqErr
-
-            alert('✅ Request deleted successfully')
-            renderRequests()
-        } catch (error) {
-            console.error('Delete error:', error)
-            alert('❌ Error deleting request: ' + (error.message || error))
-        }
+        void id
+        alert('🔒 Admin deletion is disabled in the public client. Use the authenticated admin service.')
     }
 
     async function updateStats() {

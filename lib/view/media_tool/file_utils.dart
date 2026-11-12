@@ -33,7 +33,6 @@ class FileUtils {
     String mimeType = 'application/octet-stream',
   }) {
     if (bytes == null || bytes.isEmpty) {
-      print('Output file is null or empty, cannot download.');
       return false;
     }
 

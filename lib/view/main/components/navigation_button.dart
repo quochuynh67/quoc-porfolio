@@ -10,6 +10,11 @@ class NavigationTextButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextButton(
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          shape: const StadiumBorder(),
+          foregroundColor: Colors.cyanAccent,
+        ),
         onPressed: onTap,
         child: Text(
           text,

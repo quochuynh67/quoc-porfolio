@@ -2,25 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../model/project_model.dart';
+import '../../../features/projects/domain/project.dart';
 
 class ProjectLinks extends StatelessWidget {
-  final int index;
+  final Project project;
 
-  const ProjectLinks({super.key, required this.index});
+  const ProjectLinks({super.key, required this.project});
 
   @override
   Widget build(BuildContext context) {
-    String? link = projectList[index].link;
-    String? githubLink = projectList[index].githubLink;
-    return Row(
+    String? link = project.link;
+    String? githubLink = project.githubLink;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Row(
           children: [
             Text('Check on Github',
                 style: TextStyle(
                     color: githubLink != null ? Colors.white : Colors.grey,
-                    fontWeight: githubLink != null ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: githubLink != null
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                     fontSize: 12),
                 overflow: TextOverflow.ellipsis),
             IconButton(
@@ -35,7 +41,6 @@ class ProjectLinks extends StatelessWidget {
                 icon: SvgPicture.asset('assets/icons/github.svg')),
           ],
         ),
-        const Spacer(),
         TextButton(
             onPressed: () {
               if (link == null || link.isEmpty) {
@@ -50,7 +55,8 @@ class ProjectLinks extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                   color: link != null ? Colors.amber : Colors.grey,
-                  fontWeight: link != null ? FontWeight.bold : FontWeight.normal,
+                  fontWeight:
+                      link != null ? FontWeight.bold : FontWeight.normal,
                   fontSize: 10),
             ))
       ],

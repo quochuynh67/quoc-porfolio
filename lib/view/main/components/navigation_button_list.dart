@@ -1,22 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_portfolio/view%20model/controller.dart';
+import 'package:flutter_portfolio/core/navigation/app_navigation.dart';
 
 import 'navigation_button.dart';
-import 'dart:html' as html;
 
 class NavigationButtonList extends StatelessWidget {
   const NavigationButtonList({super.key});
-  void goToPage(int index) {
-    controller.animateToPage(index,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeIn);
-    final newPath = routeToPageIndex.entries.firstWhere((e) => e.value == index).key;
-    // Updates the URL without reload
-    final uri = index == 6
-        ? Uri(path: newPath, queryParameters: const {'game': 'tuoitho'})
-        : Uri(path: newPath);
-    html.window.history.pushState(null, '', uri.toString());
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,65 +14,21 @@ class NavigationButtonList extends StatelessWidget {
       builder: (context, value, child) {
         return Transform.scale(
           scale: value,
-          child: Row(
-            children: [
-              NavigationTextButton(
-                  onTap: () {
-                    // controller.animateToPage(0,
-                    //     duration: const Duration(milliseconds: 500),
-                    //     curve: Curves.easeIn);
-                    goToPage(0);
-                  },
-                  text: 'Home'),
-              NavigationTextButton(
-                  onTap: () {
-                    // controller.animateToPage(1,
-                    //     duration: const Duration(milliseconds: 500),
-                    //     curve: Curves.easeIn);
-                    goToPage(1);
-                  },
-                  text: 'Projects'),
-              NavigationTextButton(
-                  onTap: () {
-                    // controller.animateToPage(2,
-                    //     duration: const Duration(milliseconds: 500),
-                    //     curve: Curves.easeIn);
-                    goToPage(2);
-                  },
-                  text: 'Others'),
-              NavigationTextButton(
-                  onTap: () {
-                    // controller.animateToPage(3,
-                    //     duration: const Duration(milliseconds: 500),
-                    //     curve: Curves.easeIn);
-                    goToPage(3);
-                  },
-                  text: 'Tools'),
-              NavigationTextButton(onTap: () {
-                // controller.animateToPage(4,
-                //     duration: const Duration(milliseconds: 500),
-                //     curve: Curves.easeIn);
-                goToPage(4);
-              }, text: 'FlutterWeb_Vlogs'),
-              NavigationTextButton(
-                  onTap: () {
-                    // controller.animateToPage(5,
-                    //     duration: const Duration(milliseconds: 500),
-                    //     curve: Curves.easeIn);
-                    goToPage(5);
-                  },
-                  text: 'FlutterChatMe'),
-              NavigationTextButton(
-                  onTap: () {
-                    goToPage(6);
-                  },
-                  text: 'Games'),
-              NavigationTextButton(
-                  onTap: () {
-                    goToPage(7);
-                  },
-                  text: 'Retro game'),
-            ],
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(.05),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: Colors.white.withOpacity(.08)),
+            ),
+            child: Row(
+              children: [
+                NavigationTextButton(onTap: () => goToPage(0), text: 'Home'),
+                NavigationTextButton(
+                    onTap: () => goToPage(1), text: 'Projects'),
+                NavigationTextButton(onTap: () => goToPage(2), text: 'Others'),
+              ],
+            ),
           ),
         );
       },

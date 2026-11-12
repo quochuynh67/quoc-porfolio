@@ -1190,7 +1190,9 @@
         let arbFiles = {};
         let languages = [];
         let selectedLanguages = [];
-        let apiKey = localStorage.getItem('openai_api_key') || '';
+        // Provider secrets must never be stored or used in a public browser app.
+        localStorage.removeItem('openai_api_key');
+        let apiKey = '';
         let currentEmptyCellIndex = -1;
 
         // Language names
@@ -1330,15 +1332,8 @@
         }
 
         function saveApiKey() {
-            const key = document.getElementById('apiKey').value;
-            if (key.trim()) {
-                localStorage.setItem('openai_api_key', key);
-                apiKey = key;
-                showSuccess('API Key saved successfully!');
-                document.getElementById('api-key-section').style.display = 'none';
-            } else {
-                showError('Please enter a valid API key');
-            }
+            document.getElementById('apiKey').value = '';
+            showError('Direct browser API keys are disabled. Use a protected backend proxy.');
         }
 
         function initializeLanguageSelector() {
@@ -1854,10 +1849,8 @@
         }
 
         async function generateTranslation(lang, keyName) {
-            if (!apiKey) {
-                showError('Please set your OpenAI API Key first');
-                return;
-            }
+            showError('AI translation is disabled until a protected backend proxy is configured.');
+            return;
 
             const btn = event.target;
             btn.classList.add('loading');

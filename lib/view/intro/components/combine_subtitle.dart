@@ -8,72 +8,45 @@ class CombineSubtitleText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
+    return Wrap(
+      alignment: WrapAlignment.start,
       children: [
         const Responsive(
-          desktop: AnimatedSubtitleText(
-              start: 30, end: 40, text: 'Mobile '),
-          largeMobile: AnimatedSubtitleText(
-              start: 30, end: 25, text: 'Mobile '),
-          mobile: AnimatedSubtitleText(
-              start: 25, end: 20, text: 'Mobile '),
-          tablet: AnimatedSubtitleText(
-              start: 40, end: 30, text: 'Mobile '),
+          desktop: AnimatedSubtitleText(start: 30, end: 40, text: 'Mobile '),
+          largeMobile:
+              AnimatedSubtitleText(start: 30, end: 25, text: 'Mobile '),
+          mobile: AnimatedSubtitleText(start: 25, end: 20, text: 'Mobile '),
+          tablet: AnimatedSubtitleText(start: 40, end: 30, text: 'Mobile '),
         ),
         (kIsWeb && Responsive.isLargeMobile(context)
             ? const Responsive(
-          desktop: AnimatedSubtitleText(
-              start: 30,
-              end: 40,
-              text: 'Developer ',
-              gradient: true),
-          largeMobile: AnimatedSubtitleText(
-              start: 30,
-              end: 25,
-              text: 'Developer ',
-              gradient: true),
-          mobile: AnimatedSubtitleText(
-              start: 25,
-              end: 20,
-              text: 'Developer ',
-              gradient: true),
-          tablet: AnimatedSubtitleText(
-              start: 40,
-              end: 30,
-              text: 'Developer ',
-              gradient: true),
-        )
+                desktop: AnimatedSubtitleText(
+                    start: 30, end: 40, text: 'Developer ', gradient: true),
+                largeMobile: AnimatedSubtitleText(
+                    start: 30, end: 25, text: 'Developer ', gradient: true),
+                mobile: AnimatedSubtitleText(
+                    start: 25, end: 20, text: 'Developer ', gradient: true),
+                tablet: AnimatedSubtitleText(
+                    start: 40, end: 30, text: 'Developer ', gradient: true),
+              )
             : ShaderMask(
-          shaderCallback: (bounds) {
-            return const LinearGradient(colors: [
-              Colors.pink,
-              Colors.blue,
-            ]).createShader(bounds);
-          },
-          child: const Responsive(
-            desktop: AnimatedSubtitleText(
-                start: 30,
-                end: 40,
-                text: 'Developer ',
-                gradient: false),
-            largeMobile: AnimatedSubtitleText(
-                start: 30,
-                end: 25,
-                text: 'Developer ',
-                gradient: false),
-            mobile: AnimatedSubtitleText(
-                start: 25,
-                end: 20,
-                text: 'Developer ',
-                gradient: true),
-            tablet: AnimatedSubtitleText(
-                start: 40,
-                end: 30,
-                text: 'Developer ',
-                gradient: false),
-          ),
-        ))
+                shaderCallback: (bounds) {
+                  return const LinearGradient(colors: [
+                    Colors.pink,
+                    Colors.blue,
+                  ]).createShader(bounds);
+                },
+                child: const Responsive(
+                  desktop: AnimatedSubtitleText(
+                      start: 30, end: 40, text: 'Developer ', gradient: false),
+                  largeMobile: AnimatedSubtitleText(
+                      start: 30, end: 25, text: 'Developer ', gradient: false),
+                  mobile: AnimatedSubtitleText(
+                      start: 25, end: 20, text: 'Developer ', gradient: true),
+                  tablet: AnimatedSubtitleText(
+                      start: 40, end: 30, text: 'Developer ', gradient: false),
+                ),
+              ))
       ],
     );
   }

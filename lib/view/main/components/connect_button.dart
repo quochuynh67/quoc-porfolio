@@ -2,6 +2,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../res/constants.dart';
+import '../../../view model/responsive.dart';
 
 class ConnectButton extends StatelessWidget {
   const ConnectButton({super.key});
@@ -9,15 +10,15 @@ class ConnectButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: defaultPadding),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: InkWell(
         onTap: () {
           launchUrl(Uri.parse('https://zalo.me/0762985603'));
         },
         borderRadius: BorderRadius.circular(defaultPadding + 10),
         child: Container(
-            height: 60,
-            width: 150,
+            height: 46,
+            width: Responsive.isLargeMobile(context) ? 92 : 132,
             decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(defaultPadding),
                 gradient: LinearGradient(colors: [

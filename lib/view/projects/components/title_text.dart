@@ -15,7 +15,7 @@ class TitleText extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          '$prefix ',
+          prefix.isEmpty ? '' : '$prefix ',
           style: Theme.of(context).textTheme.titleMedium!.copyWith(
               color: Colors.white,
               fontSize: !Responsive.isDesktop(context)

@@ -14,7 +14,7 @@ class FfmpegManager {
 
   FFmpeg? ffmpeg = createFFmpeg(
     CreateFFmpegParam(
-      log: true,
+      log: false,
       corePath: _ffmpegCoreSingleThreadCdn,
     ),
   );
@@ -25,6 +25,10 @@ class FfmpegManager {
   final cmd = ValueNotifier<String?>(null);
 
   bool isLoaded = false;
+  Future<void>? _loading;
+  bool _isRunning = false;
+
+  bool get isRunning => _isRunning;
 
   bool get isWebFfmpegSupported {
     return true;
@@ -53,66 +57,43 @@ class FfmpegManager {
     return _ffmpegCoreSingleThreadCdn;
   }
 
-  Future<void> loadFFmpeg(VoidCallback onInitialized, {bool setLog = true, Function(String)? onFailed}) async {
-    try{
-      if(ffmpeg?.isLoaded() ?? false) {
-        js.context.callMethod('logger', [
-          'FFmpegManager already loaded'
-        ]);
+  Future<void> loadFFmpeg(VoidCallback onInitialized,
+      {bool setLog = false, Function(String)? onFailed}) async {
+    try {
+      if (ffmpeg?.isLoaded() ?? false) {
         checkLoaded();
         onInitialized.call();
         return;
       }
-      js.context.callMethod('logger', [
-        'FFmpegManager start 1'
-      ]);
-      if (!canUseMultiThreadCore) {
-        js.context.callMethod('logger', [
-          'FFmpegManager non-isolated environment detected ($webSupportDetails). Falling back to single-thread core.'
-        ]);
-      }
-      ffmpeg = createFFmpeg(
-        CreateFFmpegParam(
-          log: true,
-          corePath: resolvedCorePath,
-        ),
-      );
-      js.context.callMethod('logger', [
-        'FFmpegManager loading ffmpeg core from $resolvedCorePath'
-      ]);
-
-      if(setLog) {
-        ffmpeg?.setProgress(_onProgressHandler);
-        ffmpeg?.setLogger(_onLogHandler);
-      }
-      js.context.callMethod('logger', [
-        'FFmpegManager start 2'
-      ]);
-      await ffmpeg?.load();
-      js.context.callMethod('logger', [
-        'FFmpegManager await ffmpeg.load()'
-      ]);
+      _loading ??= _load(setLog);
+      await _loading;
       checkLoaded();
       onInitialized.call();
-    } catch(e) {
+    } catch (e) {
+      _loading = null;
       onFailed?.call(e.toString());
-      js.context.callMethod('logger', [
-        'FFmpegManager catch error when init $e'
-      ]);
     }
+  }
+
+  Future<void> _load(bool setLog) async {
+    ffmpeg = createFFmpeg(
+      CreateFFmpegParam(log: setLog, corePath: resolvedCorePath),
+    );
+    ffmpeg?.setProgress(_onProgressHandler);
+    if (setLog) ffmpeg?.setLogger(_onLogHandler);
+    await ffmpeg?.load();
   }
 
   void checkLoaded() {
     isLoaded = ffmpeg?.isLoaded() ?? false;
-    js.context.callMethod('logger', [
-      'FFmpegManager checkLoaded isLoaded $isLoaded'
-    ]);
   }
 
   void _onProgressHandler(ProgressParam progress) {
     final isDone = progress.ratio >= 1;
 
-    this.progress.value = isDone ? null : '${((progress.ratio.isNaN ? 0 : progress.ratio) * 100).ceil()}% - ${progress.time}s';
+    this.progress.value = isDone
+        ? null
+        : '${((progress.ratio.isNaN ? 0 : progress.ratio) * 100).ceil()}% - ${progress.time}s';
 
     if (isDone) {
       statistics.value = null;
@@ -123,31 +104,31 @@ class FfmpegManager {
     r'frame\s*=\s*(\d+)\s+fps\s*=\s*(\d+(?:\.\d+)?)\s+q\s*=\s*([\d.-]+)\s+L?size\s*=\s*(\d+)\w*\s+time\s*=\s*([\d:\.]+)\s+bitrate\s*=\s*([\d.]+)\s*(\w+)/s\s+speed\s*=\s*([\d.]+)x',
   );
 
-  Future<void> runCommand(List<String> command, {Function(String)? onFailed}) async {
+  Future<bool> runCommand(List<String> command,
+      {Function(String)? onFailed}) async {
     if (!isLoaded) {
-      js.context.callMethod('logger', [
-        'FFmpegManager runCommand isLoaded is false'
-      ]);
       onFailed?.call('FFmpeg is not loaded yet');
-      return;
+      return false;
+    }
+    if (_isRunning) {
+      onFailed?.call('Another media task is already running');
+      return false;
     }
     try {
+      _isRunning = true;
       cmd.value = command.join(' ');
       status.value = ProcessingStatus.started.name;
-      js.context.callMethod('logger', [
-        'FFmpegManager runCommand $command'
-      ]);
       await ffmpeg?.run(command);
       status.value = ProcessingStatus.completed.name;
-      js.context.callMethod('logger', [
-        'FFmpegManager runCommand completed'
-      ]);
+      return true;
     } catch (e) {
-      status.value = ProcessingStatus.completed.name;
-      js.context.callMethod('logger', [
-        'FFmpegManager runCommand error: $e'
-      ]);
+      status.value = ProcessingStatus.failed.name;
       onFailed?.call(e.toString());
+      return false;
+    } finally {
+      _isRunning = false;
+      cmd.value = null;
+      statistics.value = null;
     }
   }
 
@@ -172,7 +153,8 @@ class FfmpegManager {
         final bitrateUnit = match.group(7);
         // is the speed at which the conversion is happening, relative to real-time
         final speed = match.group(8);
-        statistics.value = '\n[PROGRESS]: frame: $frame, fps: $fps, q: $q, size: $size, time: $time, bitrate: $bitrate$bitrateUnit, speed: $speed';
+        statistics.value =
+            '\n[PROGRESS]: frame: $frame, fps: $fps, q: $q, size: $size, time: $time, bitrate: $bitrate$bitrateUnit, speed: $speed';
       }
     }
   }
@@ -191,9 +173,4 @@ class FfmpegManager {
   FfmpegManager._internal();
 }
 
- enum ProcessingStatus {
-   started,
-   saving,
-   downloading,
-   completed
-}
+enum ProcessingStatus { started, saving, downloading, completed, failed }
