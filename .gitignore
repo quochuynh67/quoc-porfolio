@@ -46,5 +46,20 @@ app.*.map.json
 /android/app/release
 
 # Secure keys/secrets configurations
+**/.env
+**/.env.*
+!**/.env.example
 supabase_keys.json
-.env
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+google-services.json
+GoogleService-Info.plist
+
+# Deployment caches and generated hosting output
+.firebase/
+firebase-debug.log
+
+web/.env
