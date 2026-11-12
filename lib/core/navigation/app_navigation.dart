@@ -45,7 +45,9 @@ const Map<int, String> pageTitles = {
   8: 'Localization Manager',
 };
 
+const String siteTitle = 'Quoc67k1';
+
 void updateDocumentTitle(int index) {
   final title = pageTitles[index];
-  if (title != null) html.document.title = title;
+  if (title != null) html.document.title = '$siteTitle - $title';
 }
