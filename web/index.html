@@ -32,6 +32,15 @@
     <title>flutter_portfolio</title>
     <link rel="manifest" href="manifest.json">
 
+    <script>
+      // The app manages URLs itself with history.pushState (see goToPage). Flutter's
+      // engine asserts on popstate entries it did not create, so swallow the native
+      // event here (registered first, capture phase) and re-emit it as `app-popstate`.
+      window.addEventListener('popstate', function (e) {
+        e.stopImmediatePropagation();
+        window.dispatchEvent(new Event('app-popstate'));
+      }, true);
+    </script>
     <!-- This script adds the flutter initialization JS code -->
     <script src="assets/ffmpeg/ffmpeg.min.js"></script>
     <script>

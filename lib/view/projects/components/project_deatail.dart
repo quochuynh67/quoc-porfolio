@@ -21,7 +21,7 @@ class ProjectDetail extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: SizedBox(
-              height: 160,
+              height: 140,
               width: double.infinity,
               child: Image.asset(thumb,
                   fit: BoxFit.cover,

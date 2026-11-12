@@ -116,7 +116,7 @@ List<Project> projectList = [
     tags: ['mobile', 'flutter only'],
   ),
   Project(
-    'Quê tôi 67k1',
+    'Quê tôi tattantat67k1',
     'A personal collection inspired by childhood memories, hometown culture, and the retro games I grew up with.',
     ['assets/images/quoc_logo.png'],
     'https://tattantat67k1.web.app/',
