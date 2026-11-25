@@ -11,9 +11,15 @@ class _StubExporter implements EditorExporter {
 
   @override
   Future<ExportOutcome> run(
-          ExportRequest request, ExportProgress onProgress) async =>
+    ExportRequest request,
+    ExportProgress onProgress, {
+    ExportLog? onLog,
+  }) async =>
       const ExportOutcome.failure(
           'Video export needs the web build (FFmpeg WebAssembly).', []);
+
+  @override
+  void cancel() {}
 
   @override
   bool download(Uint8List bytes, String fileName) => false;

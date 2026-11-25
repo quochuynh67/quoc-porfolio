@@ -12,8 +12,20 @@ import 'editor_exporter.dart';
 EditorExporter createExporter() => _WebExporter();
 
 class _WebExporter implements EditorExporter {
+  bool _cancelled = false;
+
   @override
   bool get supported => true;
+
+  @override
+  void cancel() {
+    _cancelled = true;
+    final mgr = FfmpegManager.instance;
+    try {
+      mgr.ffmpeg?.exit();
+    } catch (_) {}
+    mgr.reset();
+  }
 
   @override
   bool download(Uint8List bytes, String fileName) =>
@@ -37,8 +49,10 @@ class _WebExporter implements EditorExporter {
   @override
   Future<ExportOutcome> run(
     ExportRequest request,
-    ExportProgress onProgress,
-  ) async {
+    ExportProgress onProgress, {
+    ExportLog? onLog,
+  }) async {
+    _cancelled = false;
     final mgr = FfmpegManager.instance;
     final log = <String>[];
     final written = <String>{};
@@ -47,6 +61,7 @@ class _WebExporter implements EditorExporter {
       await _load(mgr);
       final ff = mgr.ffmpeg!;
       ff.setLogger((l) {
+        onLog?.call(l.message);
         log.add(l.message);
         if (log.length > 400) log.removeRange(0, 100);
       });
@@ -71,7 +86,7 @@ class _WebExporter implements EditorExporter {
         project: request.project,
         shortSide: request.shortSide,
         imagePngs: request.imagePngs,
-        overlayPngs: request.overlayPngs,
+        sequences: request.sequences,
         hasAudio: hasAudio,
         includeMusic: request.includeMusic,
       ));
@@ -83,10 +98,16 @@ class _WebExporter implements EditorExporter {
       final total = plan.steps.length;
       for (var i = 0; i < total; i++) {
         final step = plan.steps[i];
+        if (_cancelled) {
+          return const ExportOutcome.failure('Export cancelled.', []);
+        }
         onProgress(step.label, i / total);
         var ok = await mgr.runCommand(step.args);
         if (!ok && step.fallbackArgs != null) {
           ok = await mgr.runCommand(step.fallbackArgs!);
+        }
+        if (_cancelled) {
+          return const ExportOutcome.failure('Export cancelled.', []);
         }
         if (!ok) {
           return ExportOutcome.failure(

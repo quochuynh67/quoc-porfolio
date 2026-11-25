@@ -63,11 +63,21 @@ void main() {
       final controller = _seeded();
       await tester.pumpWidget(MaterialApp(
         theme: ThemeData.dark(),
-        home: Scaffold(body: VideoEditorStudioScreen(controller: controller, store: TemplateStore(persist: false))),
+        home: Scaffold(
+            body: VideoEditorStudioScreen(
+                controller: controller, store: TemplateStore(persist: false))),
       ));
       await tester.pump(const Duration(milliseconds: 100));
       // Walk through every tool tab.
-      for (final label in ['Text', 'Stickers', 'Transitions', 'Filters', 'Templates', 'Analyze', 'Edit']) {
+      for (final label in [
+        'Text',
+        'Stickers',
+        'Transitions',
+        'Filters',
+        'Templates',
+        'Analyze',
+        'Edit'
+      ]) {
         final tab = find.text(label).first;
         await tester.ensureVisible(tab);
         await tester.tap(tab, warnIfMissed: false);
@@ -106,7 +116,8 @@ void logicTests() {
     c.setSourceDuration(id, const Duration(seconds: 10));
     expect(c.project.duration, const Duration(seconds: 10));
     c.trimSelectedClip(
-        inPoint: const Duration(seconds: 2), outPoint: const Duration(seconds: 8));
+        inPoint: const Duration(seconds: 2),
+        outPoint: const Duration(seconds: 8));
     expect(c.project.duration, const Duration(seconds: 6));
     c.setSelectedClipSpeed(2);
     expect(c.project.duration, const Duration(seconds: 3));
@@ -119,7 +130,8 @@ void logicTests() {
     final c = _seeded();
     c.applyProjectTemplate(tpl);
     expect(c.project.aspectRatio, closeTo(9 / 16, .001));
-    expect(c.project.clips.every((x) => x.transition == EditorTransition.glitch),
+    expect(
+        c.project.clips.every((x) => x.transition == EditorTransition.glitch),
         isTrue);
     expect(c.project.clips.first.filter.preset, 'vivid');
     expect(c.project.overlays.length, greaterThan(2));
@@ -157,13 +169,16 @@ void visibilityTests() {
     final controller = _seeded();
     controller.seek(controller.selectedOverlay?.start ?? Duration.zero);
     await tester.pumpWidget(MaterialApp(
-      home: Scaffold(body: VideoEditorStudioScreen(controller: controller, store: TemplateStore(persist: false))),
+      home: Scaffold(
+          body: VideoEditorStudioScreen(
+              controller: controller, store: TemplateStore(persist: false))),
     ));
     await tester.pump(const Duration(milliseconds: 100));
     final text = find.text('TRAVEL VLOG');
     expect(text, findsOneWidget);
     final opacity = tester
-        .widgetList<Opacity>(find.ancestor(of: text, matching: find.byType(Opacity)))
+        .widgetList<Opacity>(
+            find.ancestor(of: text, matching: find.byType(Opacity)))
         .map((o) => o.opacity)
         .reduce((a, b) => a * b);
     expect(opacity, greaterThan(.9));
@@ -178,7 +193,9 @@ void visibilityTests() {
     controller.selectClip(controller.project.clips.last.id);
     controller.updateSelectedTransition(EditorTransition.slideLeft);
     await tester.pumpWidget(MaterialApp(
-      home: Scaffold(body: VideoEditorStudioScreen(controller: controller, store: TemplateStore(persist: false))),
+      home: Scaffold(
+          body: VideoEditorStudioScreen(
+              controller: controller, store: TemplateStore(persist: false))),
     ));
     controller.seek(const Duration(seconds: 5, milliseconds: 300));
     await tester.pump(const Duration(milliseconds: 100));

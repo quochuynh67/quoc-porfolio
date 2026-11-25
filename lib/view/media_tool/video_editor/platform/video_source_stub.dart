@@ -21,6 +21,8 @@ class _StubVideoSource implements VideoSource {
   @override
   void seek(Duration time) {}
   @override
+  Future<void> seekTo(Duration time) async {}
+  @override
   void play() {}
   @override
   void pause() {}

@@ -19,6 +19,7 @@ class ExportOutcome {
 }
 
 typedef ExportProgress = void Function(String label, double fraction);
+typedef ExportLog = void Function(String line);
 
 /// Renders a project with FFmpeg (WebAssembly in the browser).
 abstract class EditorExporter {
@@ -26,7 +27,14 @@ abstract class EditorExporter {
 
   bool get supported;
 
-  Future<ExportOutcome> run(ExportRequest request, ExportProgress onProgress);
+  Future<ExportOutcome> run(
+    ExportRequest request,
+    ExportProgress onProgress, {
+    ExportLog? onLog,
+  });
+
+  /// Aborts the running render (the FFmpeg core is restarted).
+  void cancel();
 
   /// Saves [bytes] as a file download. Returns false when unsupported.
   bool download(Uint8List bytes, String fileName);

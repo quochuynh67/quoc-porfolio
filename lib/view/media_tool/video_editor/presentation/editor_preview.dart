@@ -10,9 +10,9 @@ import '../application/video_editor_controller.dart';
 import '../domain/editor_catalog.dart';
 import '../domain/video_editor_project.dart';
 import '../platform/video_source.dart';
-import 'editor_motion.dart';
 import 'editor_transitions.dart';
 import 'editor_visuals.dart';
+import 'overlay_layer.dart';
 
 String formatTime(Duration value) {
   final minutes = value.inMinutes.remainder(60).toString().padLeft(2, '0');
@@ -374,7 +374,7 @@ class _EditorPreviewState extends State<EditorPreview> {
                           borderRadius: BorderRadius.circular(10),
                           child: _Canvas(
                             editor: _editor,
-                            frameFor: _frameView,
+                            frameFor: (key) => _frames[key],
                             base: active == null
                                 ? const _EmptyCanvas()
                                 : transition == null
@@ -473,7 +473,7 @@ class _Canvas extends StatelessWidget {
 
   final VideoEditorController editor;
   final Widget base;
-  final Widget Function(String key, BoxFit fit) frameFor;
+  final ui.Image? Function(String key) frameFor;
   final String? transitionLabel;
 
   @override
@@ -514,9 +514,6 @@ class _Canvas extends StatelessWidget {
   }
 }
 
-/// A draggable, animated overlay. The [Positioned] must be a direct child of
-/// the canvas [Stack] — wrapping it in a LayoutBuilder is what previously
-/// made text and stickers vanish.
 class _OverlayItem extends StatelessWidget {
   const _OverlayItem({
     required this.editor,
@@ -530,114 +527,25 @@ class _OverlayItem extends StatelessWidget {
   final EditorOverlay overlay;
   final Size canvas;
   final double scale;
-  final Widget Function(String key, BoxFit fit) frameFor;
-
-  Widget _content(MotionFrame m, Duration local) {
-    switch (overlay.type) {
-      case EditorOverlayType.sticker:
-        return EditorStickerView(emoji: overlay.label, size: 76 * scale);
-      case EditorOverlayType.sprite:
-        return SpriteView(spec: overlay.sprite!, time: local, size: 96 * scale);
-      case EditorOverlayType.particles:
-        return ParticleView(
-            kind: overlay.label, time: local, size: 160 * scale);
-      case EditorOverlayType.video:
-        return SizedBox(
-          width: 140 * scale,
-          height: 140 * scale,
-          child: BlendBox(
-            blendMode: BlendMode.screen,
-            child: frameFor('ov:${overlay.id}', BoxFit.contain),
-          ),
-        );
-      case EditorOverlayType.text:
-        return EditorTextView(
-          text: overlay.label,
-          style: overlay.style,
-          scale: scale,
-          maxWidth: canvas.width * .9,
-          revealFraction: m.reveal,
-          charMotion: m.charMotion,
-        );
-    }
-  }
+  final ui.Image? Function(String key) frameFor;
 
   @override
   Widget build(BuildContext context) {
-    final selected = editor.selectedOverlayId == overlay.id;
-    final local = editor.position - overlay.start;
-    final m = computeMotion(overlay, editor.position, editor.isPlaying, scale);
-
-    Widget child = _content(m, local);
-
-    if (m.glitch > 0 && overlay.type == EditorOverlayType.text) {
-      Widget ghost(Color color, double dx) => Transform.translate(
-            offset: Offset(dx * scale, 0),
-            child: ColorFiltered(
-              colorFilter: ColorFilter.mode(color, BlendMode.srcATop),
-              child: Opacity(opacity: .75, child: _content(m, local)),
-            ),
-          );
-      child = Stack(
-        clipBehavior: Clip.none,
-        children: [
-          ghost(const Color(0xFF00FFFF), -5),
-          ghost(const Color(0xFFFF2D6F), 5),
-          child,
-        ],
-      );
-    }
-    if (m.blur > .1) {
-      child = ImageFiltered(
-        imageFilter: ui.ImageFilter.blur(sigmaX: m.blur, sigmaY: m.blur),
-        child: child,
-      );
-    }
-
-    return Positioned.fill(
-      child: Align(
-        alignment: Alignment(
-          overlay.position.dx * 2 - 1,
-          overlay.position.dy * 2 - 1,
-        ),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => editor.selectOverlay(overlay.id),
-          onPanStart: (_) => editor.selectOverlay(overlay.id),
-          onPanUpdate: (details) {
-            editor.updateSelectedOverlay(
-              position: Offset(
-                (overlay.position.dx + details.delta.dx / canvas.width)
-                    .clamp(.02, .98),
-                (overlay.position.dy + details.delta.dy / canvas.height)
-                    .clamp(.02, .98),
-              ),
-            );
-          },
-          child: Transform.translate(
-            offset: Offset(m.dx, m.dy),
-            child: Opacity(
-              opacity: m.opacity,
-              child: Transform.rotate(
-                angle: overlay.rotation + m.rotation,
-                child: Transform.scale(
-                  scale: overlay.scale * m.scale,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color:
-                            selected ? Colors.cyanAccent : Colors.transparent,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: child,
-                  ),
-                ),
-              ),
-            ),
-          ),
+    return OverlayLayer(
+      overlay: overlay,
+      canvas: canvas,
+      unit: scale,
+      position: editor.position,
+      playing: editor.isPlaying,
+      selected: editor.selectedOverlayId == overlay.id,
+      videoFrame: overlay.type == EditorOverlayType.video
+          ? frameFor('ov:${overlay.id}')
+          : null,
+      onTap: () => editor.selectOverlay(overlay.id),
+      onDrag: (delta) => editor.updateSelectedOverlay(
+        position: Offset(
+          (overlay.position.dx + delta.dx / canvas.width).clamp(.02, .98),
+          (overlay.position.dy + delta.dy / canvas.height).clamp(.02, .98),
         ),
       ),
     );

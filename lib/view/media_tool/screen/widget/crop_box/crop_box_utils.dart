@@ -20,7 +20,7 @@ class CropBoxUtils {
     }
   }
 
-  static  Size mapSize(double w, double h, int orientation) {
+  static Size mapSize(double w, double h, int orientation) {
     if ([90, 270, -90, -270].contains(orientation)) return Size(h, w);
     return Size(w, h);
   }

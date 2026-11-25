@@ -31,23 +31,57 @@ void main() {
       return;
     }
     final withAudio = await gen('a.mp4', [
-      '-f', 'lavfi', '-i', 'testsrc=size=640x360:rate=30:duration=4',
-      '-f', 'lavfi', '-i', 'sine=frequency=440:duration=4',
-      '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest',
+      '-f',
+      'lavfi',
+      '-i',
+      'testsrc=size=640x360:rate=30:duration=4',
+      '-f',
+      'lavfi',
+      '-i',
+      'sine=frequency=440:duration=4',
+      '-c:v',
+      'libx264',
+      '-pix_fmt',
+      'yuv420p',
+      '-c:a',
+      'aac',
+      '-shortest',
     ]);
     final silent = await gen('b.mp4', [
-      '-f', 'lavfi', '-i', 'testsrc2=size=320x240:rate=25:duration=3',
-      '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
+      '-f',
+      'lavfi',
+      '-i',
+      'testsrc2=size=320x240:rate=25:duration=3',
+      '-c:v',
+      'libx264',
+      '-pix_fmt',
+      'yuv420p',
     ]);
     final png = await gen('i.png', [
-      '-f', 'lavfi', '-i', 'color=c=orange:s=200x100', '-frames:v', '1',
+      '-f',
+      'lavfi',
+      '-i',
+      'color=c=orange:s=200x100',
+      '-frames:v',
+      '1',
     ]);
     final overlayPng = await gen('o.png', [
-      '-f', 'lavfi', '-i', 'color=c=red@0.5:s=360x640,format=rgba',
-      '-frames:v', '1',
+      '-f',
+      'lavfi',
+      '-i',
+      'color=c=red@0.5:s=360x640,format=rgba',
+      '-frames:v',
+      '1',
+    ]);
+    final fxVideo = await gen('fx.mp4', [
+      '-f', 'lavfi', '-i', 'testsrc=size=160x90:rate=24:duration=1',
+      '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
     ]);
     final music = await gen('m.mp3', [
-      '-f', 'lavfi', '-i', 'sine=frequency=220:duration=10',
+      '-f',
+      'lavfi',
+      '-i',
+      'sine=frequency=220:duration=10',
     ]);
 
     EditorClip clip(String id, EditorAssetType t, Uint8List b, int ms,
@@ -75,8 +109,18 @@ void main() {
             filter: const EditorFilter(preset: 'vivid', brightness: .1)),
         clip('c2', EditorAssetType.video, silent, 1500,
             tr: EditorTransition.slideLeft, speed: 2),
-        clip('c3', EditorAssetType.image, png, 2000, tr: EditorTransition.circle),
-        clip('c4', EditorAssetType.image, png, 1500, tr: EditorTransition.none),
+        clip('c3', EditorAssetType.image, png, 2000,
+                tr: EditorTransition.circle)
+            .copyWith(
+                transition: EditorTransition.fx,
+                fx: EditorFx(id: 'f', name: 'WebM', video: fxVideo)),
+        clip('c4', EditorAssetType.image, png, 1500)
+            .copyWith(
+                transition: EditorTransition.fx,
+                fx: const EditorFx(
+                    id: 's',
+                    name: 'Boom',
+                    sprite: SpriteSpec(cols: 2, rows: 2))),
       ],
       overlays: [
         const EditorOverlay(
@@ -103,12 +147,20 @@ void main() {
       project: project,
       shortSide: 360,
       imagePngs: {'c3': png, 'c4': png},
-      overlayPngs: {'o1': overlayPng},
+      sequences: {
+        'o1': OverlaySequence([overlayPng], 20),
+        'o2': OverlaySequence([for (var i = 0; i < 8; i++) overlayPng], 20),
+        'fx:3': OverlaySequence([for (var i = 0; i < 17; i++) overlayPng], 20),
+      },
       hasAudio: {'c1': true, 'c2': false},
     ));
     expect(plan.width, 360);
     expect(plan.height, 640);
-    expect(plan.warnings.any((w) => w.contains('confetti')), isTrue);
+    expect(plan.warnings, isEmpty);
+    for (final step in plan.steps) {
+      expect(step.args.join(' '), isNot(contains('lavfi')),
+          reason: 'the wasm core has no lavfi input');
+    }
 
     for (final e in plan.inputs.entries) {
       await File('${tmp.path}/${e.key}').writeAsBytes(e.value);
@@ -125,16 +177,23 @@ void main() {
     expect(await out.exists(), isTrue);
 
     final probe = await Process.run('ffprobe', [
-      '-v', 'error', '-show_entries', 'stream=codec_type,width,height',
-      '-show_entries', 'format=duration', '-of', 'default=nw=1', out.path,
+      '-v',
+      'error',
+      '-show_entries',
+      'stream=codec_type,width,height',
+      '-show_entries',
+      'format=duration',
+      '-of',
+      'default=nw=1',
+      out.path,
     ]);
     final text = probe.stdout.toString();
     expect(text, contains('codec_type=video'));
     expect(text, contains('codec_type=audio'));
     expect(text, contains('width=360'));
     expect(text, contains('height=640'));
-    final dur = double.parse(
-        RegExp(r'duration=([\d.]+)').firstMatch(text)!.group(1)!);
+    final dur =
+        double.parse(RegExp(r'duration=([\d.]+)').firstMatch(text)!.group(1)!);
     // 2.5 + 1.5 + 2.0 + 1.5 = 7.5s timeline.
     expect(dur, closeTo(7.5, .6));
   }, timeout: const Timeout(Duration(minutes: 3)));

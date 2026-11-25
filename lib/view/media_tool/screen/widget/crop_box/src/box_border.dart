@@ -6,7 +6,7 @@ class CropBoxBorder {
   Radius get noNullRadius => radius ?? const Radius.circular(0);
 
   /// border width
-  /// 
+  ///
   /// default [2]
   final double width;
 

@@ -84,6 +84,17 @@ class FfmpegManager {
     await ffmpeg?.load();
   }
 
+  /// Discards the running core (after [FFmpeg.exit]) so the next load starts
+  /// from a clean instance.
+  void reset() {
+    _loading = null;
+    _isRunning = false;
+    isLoaded = false;
+    ffmpeg = createFFmpeg(
+      CreateFFmpegParam(log: false, corePath: resolvedCorePath),
+    );
+  }
+
   void checkLoaded() {
     isLoaded = ffmpeg?.isLoaded() ?? false;
   }

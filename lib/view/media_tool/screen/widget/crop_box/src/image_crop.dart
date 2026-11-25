@@ -12,43 +12,50 @@ class ImageCropOutputFormatQuality {
   static const int low = 25;
   static const int veryLow = 5;
 }
+
 class ImageCrop {
   /// get crop result image, type is Uint8List
-  static Future<Uint8List?> getResult({required Rect clipRect, required Uint8List image, int? outputQuality, Size? outputSize}) async {
-
+  static Future<Uint8List?> getResult(
+      {required Rect clipRect,
+      required Uint8List image,
+      int? outputQuality,
+      Size? outputSize}) async {
     final Size memoryImageSize = await getImageSize(image);
     final editorOption = ImageEditorOption();
 
     editorOption.addOption(ClipOption(
-      x: clipRect.left * memoryImageSize.width,
-      y: clipRect.top * memoryImageSize.height,
-      width: clipRect.width * memoryImageSize.width,
-      height: clipRect.height * memoryImageSize.height
-    ));
+        x: clipRect.left * memoryImageSize.width,
+        y: clipRect.top * memoryImageSize.height,
+        width: clipRect.width * memoryImageSize.width,
+        height: clipRect.height * memoryImageSize.height));
 
-    if(outputSize != null) {
-      editorOption.addOption(ScaleOption(outputSize.width.toInt(), outputSize.height.toInt()));
+    if (outputSize != null) {
+      editorOption.addOption(
+          ScaleOption(outputSize.width.toInt(), outputSize.height.toInt()));
     }
 
-    editorOption.outputFormat = OutputFormat.jpeg(outputQuality ?? ImageCropOutputFormatQuality.high);
-    final result = await ImageEditor.editImage(image: image, imageEditorOption: editorOption);
+    editorOption.outputFormat =
+        OutputFormat.jpeg(outputQuality ?? ImageCropOutputFormatQuality.high);
+    final result = await ImageEditor.editImage(
+        image: image, imageEditorOption: editorOption);
     return result;
   }
 
   /// get image size with exif
   static Future<Size> getImageSize(Uint8List bytes) async {
     try {
-      Map<String?, IfdTag>? data =
-        await readExifFromBytes(bytes);
-      double width = data['EXIF ExifImageWidth']?.values.toList().first.toDouble();
-      double height = data['EXIF ExifImageLength']?.values.toList().first.toDouble();
-      if(width > height) {
+      Map<String?, IfdTag>? data = await readExifFromBytes(bytes);
+      double width =
+          data['EXIF ExifImageWidth']?.values.toList().first.toDouble();
+      double height =
+          data['EXIF ExifImageLength']?.values.toList().first.toDouble();
+      if (width > height) {
         if (data['Image Orientation']!.printable.contains('Horizontal')) {
           return Size(width.toDouble(), height);
-        }else {
+        } else {
           return Size(height, width);
         }
-      }else{
+      } else {
         return Size(width, height);
       }
     } catch (e) {
@@ -58,6 +65,5 @@ class ImageCrop {
       final Size memoryImageSize = Size(width, height);
       return Size(memoryImageSize.width, memoryImageSize.height);
     }
-    
   }
 }

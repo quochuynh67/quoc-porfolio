@@ -42,12 +42,12 @@ class _MyWidgetState extends State<MyWidget> {
   int orientation = 0;
   bool hflip = false;
   bool vflip = false;
-  Size cropRatio = Size(9 , 16);
+  Size cropRatio = Size(9, 16);
   Size clipSize = Size(750, 1181);
   Rect? _rect;
 
   void validateRotate() {
-    if(orientation == 90 || orientation == 270) {
+    if (orientation == 90 || orientation == 270) {
       clipSize = Size(clipSize.height, clipSize.width);
     }
   }
@@ -63,7 +63,7 @@ class _MyWidgetState extends State<MyWidget> {
           cropRect: _rect,
           cropRectUpdateEnd: (Rect rect) {},
           child: Transform(
-            child:  Image.network(
+            child: Image.network(
               "https://img1.maka.im/materialStore/beijingshejia/tupianbeijinga/9/M_7TNT6NIM/M_7TNT6NIM_v1.jpg",
               width: clipSize.width,
               height: clipSize.height,
@@ -96,7 +96,7 @@ class _MyWidgetState extends State<MyWidget> {
                     }
                     orientation -= 90;
                     validateRotate();
-                    setState((){});
+                    setState(() {});
                   }),
               MaterialButton(
                   child: const Text('RR'),
@@ -107,18 +107,22 @@ class _MyWidgetState extends State<MyWidget> {
                       orientation = 0;
                     }
                     validateRotate();
-                    setState((){
-
-                    });
+                    setState(() {});
                   }),
-              MaterialButton(color: Colors.yellow,child: const Text('VFlip'), onPressed: () {
-                vflip = !vflip;
-                setState((){});
-              }),
-              MaterialButton(color: Colors.yellow,child: const Text('HFlip'), onPressed: () {
-                hflip = !hflip;
-                setState((){});
-              }),
+              MaterialButton(
+                  color: Colors.yellow,
+                  child: const Text('VFlip'),
+                  onPressed: () {
+                    vflip = !vflip;
+                    setState(() {});
+                  }),
+              MaterialButton(
+                  color: Colors.yellow,
+                  child: const Text('HFlip'),
+                  onPressed: () {
+                    hflip = !hflip;
+                    setState(() {});
+                  }),
             ],
           ),
         )

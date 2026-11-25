@@ -17,6 +17,9 @@ abstract class VideoSource {
   Duration get position;
   bool get playing;
   void seek(Duration time);
+
+  /// Seeks and completes once the frame at [time] is decoded.
+  Future<void> seekTo(Duration time);
   void play();
   void pause();
   void setVolume(double volume);

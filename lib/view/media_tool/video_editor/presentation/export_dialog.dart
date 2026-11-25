@@ -23,26 +23,26 @@ class _ExportDialogState extends State<ExportDialog> {
   int _shortSide = 720;
   bool _music = true;
   String _label = '';
+  String _logLine = '';
   double _fraction = 0;
+  bool _cancelled = false;
   ExportOutcome? _outcome;
 
   VideoEditorProject get _project => widget.project;
 
   List<String> get _heads {
     final notes = <String>[];
-    for (final o in _project.overlays.where((o) => !isExportableOverlay(o))) {
-      notes.add('${o.type.name} "${o.label}" is skipped (only text and '
-          'emoji stickers are rendered).');
+    if (_project.overlays.any((o) => o.type == EditorOverlayType.sticker)) {
+      notes.add('Emoji stickers are exported as static images.');
     }
-    if (_project.clips.any((c) => c.transition == EditorTransition.fx)) {
-      notes.add('Sprite / WebM effect packs in transitions become a flash.');
+    if (_project.overlays.any((o) => o.type == EditorOverlayType.video)) {
+      notes.add('Video overlays are sampled at 20 fps (screen blend is '
+          'baked into the overlay frames).');
     }
-    if (_project.overlays.any((o) =>
-        isExportableOverlay(o) &&
-        (o.enter != OverlayEnter.none ||
-            o.exit != OverlayExit.none ||
-            o.loop != OverlayLoop.none))) {
-      notes.add('Text / sticker animations are exported as static overlays.');
+    final frames = _project.overlays.fold<int>(
+        0, (a, o) => a + (o.duration.inMilliseconds * 20 / 1000).ceil());
+    if (frames > 600) {
+      notes.add('Many animated overlays: rendering will take a while.');
     }
     return notes;
   }
@@ -50,8 +50,10 @@ class _ExportDialogState extends State<ExportDialog> {
   Future<void> _start() async {
     setState(() {
       _phase = _Phase.running;
-      _label = 'Preparing overlays…';
+      _label = 'Preparing…';
+      _logLine = '';
       _fraction = 0;
+      _cancelled = false;
     });
     try {
       final imagePngs = <String, Uint8List>{};
@@ -61,27 +63,44 @@ class _ExportDialogState extends State<ExportDialog> {
         }
       }
       if (!mounted) return;
-      final overlayPngs =
-          await renderOverlayPngs(context, _project, _shortSide);
-      if (!mounted) return;
+      final sequences = await renderSequences(
+        context,
+        _project,
+        _shortSide,
+        isCancelled: () => _cancelled,
+        onProgress: (label, fraction) {
+          if (mounted) {
+            setState(() {
+              _label = label;
+              _fraction = fraction * .35;
+            });
+          }
+        },
+      );
+      if (!mounted || _cancelled) return;
       final outcome = await _exporter.run(
         ExportRequest(
           project: _project,
           shortSide: _shortSide,
           imagePngs: imagePngs,
-          overlayPngs: overlayPngs,
+          sequences: sequences,
           includeMusic: _music,
         ),
         (label, fraction) {
           if (mounted) {
             setState(() {
               _label = label;
-              _fraction = fraction;
+              _fraction = .35 + fraction * .65;
             });
           }
         },
+        onLog: (line) {
+          if (mounted && line.trim().isNotEmpty) {
+            _logLine = line.trim();
+          }
+        },
       );
-      if (!mounted) return;
+      if (!mounted || _cancelled) return;
       if (outcome.ok) _exporter.download(outcome.bytes!, 'vlog.mp4');
       setState(() {
         _outcome = outcome;
@@ -181,6 +200,17 @@ class _ExportDialogState extends State<ExportDialog> {
             const SizedBox(height: 12),
             LinearProgressIndicator(value: _fraction <= 0 ? null : _fraction),
             const SizedBox(height: 10),
+            if (_logLine.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(_logLine,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 10,
+                      color: Colors.white38)),
+            ],
+            const SizedBox(height: 10),
             const Text('Do not close this tab while exporting.',
                 style: TextStyle(color: Colors.white54, fontSize: 11)),
           ],
@@ -248,7 +278,16 @@ class _ExportDialogState extends State<ExportDialog> {
           ),
         ];
       case _Phase.running:
-        return const [];
+        return [
+          TextButton(
+            onPressed: () {
+              _cancelled = true;
+              _exporter.cancel();
+              setState(() => _phase = _Phase.options);
+            },
+            child: const Text('Cancel'),
+          ),
+        ];
       case _Phase.done:
         return [
           TextButton(

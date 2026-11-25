@@ -85,6 +85,25 @@ class _WebVideoSource implements VideoSource {
   }
 
   @override
+  Future<void> seekTo(Duration time) async {
+    final v = _video;
+    if (v == null) return;
+    final target = time.inMicroseconds / 1e6;
+    if ((v.currentTime - target).abs() < .001 && v.readyState >= 2) return;
+    final done = Completer<void>();
+    void onSeeked(web.Event _) {
+      if (!done.isCompleted) done.complete();
+    }
+
+    final cb = onSeeked.toJS;
+    v.addEventListener('seeked', cb);
+    v.currentTime = target;
+    _forceNext = true;
+    await done.future.timeout(const Duration(seconds: 3), onTimeout: () {});
+    v.removeEventListener('seeked', cb);
+  }
+
+  @override
   void play() {
     final v = _video;
     if (v == null || playing) return;

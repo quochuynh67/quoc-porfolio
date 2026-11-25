@@ -4,8 +4,10 @@ class GridLine {
   /// Grid line color
   /// Default `Colors.white`
   Color color;
+
   /// grid line width
   double width;
+
   /// Grid line padding
   EdgeInsets? padding;
 

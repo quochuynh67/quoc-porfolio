@@ -38,12 +38,20 @@ class ExportPlan {
 }
 
 /// What the plan needs to know that only FFmpeg can tell us.
+/// Pre-rendered transparent full-canvas frames of one overlay (or effect).
+class OverlaySequence {
+  const OverlaySequence(this.frames, this.fps);
+  final List<Uint8List> frames;
+  final int fps;
+  bool get isStatic => frames.length == 1;
+}
+
 class ExportRequest {
   const ExportRequest({
     required this.project,
     required this.shortSide,
     required this.imagePngs,
-    required this.overlayPngs,
+    required this.sequences,
     this.hasAudio = const {},
     this.includeMusic = true,
   });
@@ -56,8 +64,9 @@ class ExportRequest {
   /// Image clips re-encoded as PNG, by clip id.
   final Map<String, Uint8List> imagePngs;
 
-  /// Full-canvas transparent PNGs for text / sticker overlays, by overlay id.
-  final Map<String, Uint8List> overlayPngs;
+  /// Overlay renders by overlay id; sprite-effect transitions use
+  /// `fx:<clip index>`.
+  final Map<String, OverlaySequence> sequences;
 
   /// Whether each video clip has an audio stream, by clip id.
   final Map<String, bool> hasAudio;
@@ -65,6 +74,35 @@ class ExportRequest {
 }
 
 const _fps = 30;
+
+/// 16-bit mono 22.05 kHz silence. Used instead of the `lavfi` anullsrc
+/// source, which the WebAssembly core does not ship.
+Uint8List silenceWav(Duration length) {
+  const rate = 22050;
+  final samples = (length.inMicroseconds * rate / 1e6).ceil() + rate ~/ 2;
+  final dataLen = samples * 2;
+  final out = ByteData(44 + dataLen);
+  void str(int o, String v) {
+    for (var i = 0; i < v.length; i++) {
+      out.setUint8(o + i, v.codeUnitAt(i));
+    }
+  }
+
+  str(0, 'RIFF');
+  out.setUint32(4, 36 + dataLen, Endian.little);
+  str(8, 'WAVEfmt ');
+  out.setUint32(16, 16, Endian.little);
+  out.setUint16(20, 1, Endian.little);
+  out.setUint16(22, 1, Endian.little);
+  out.setUint32(24, rate, Endian.little);
+  out.setUint32(28, rate * 2, Endian.little);
+  out.setUint16(32, 2, Endian.little);
+  out.setUint16(34, 16, Endian.little);
+  str(36, 'data');
+  out.setUint32(40, dataLen, Endian.little);
+  return out.buffer.asUint8List();
+}
+
 const _encode = [
   '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23', //
   '-pix_fmt', 'yuv420p', '-r', '$_fps',
@@ -174,7 +212,12 @@ ExportPlan buildExportPlan(ExportRequest r) {
       ? 'scale=$w:$h:force_original_aspect_ratio=decrease,'
           'pad=$w:$h:(ow-iw)/2:(oh-ih)/2:black'
       : 'scale=$w:$h:force_original_aspect_ratio=increase,crop=$w:$h';
-  const silence = 'anullsrc=r=44100:cl=stereo';
+  var longest = Duration.zero;
+  for (final c in clips) {
+    if (c.duration > longest) longest = c.duration;
+  }
+  inputs['silence.wav'] = silenceWav(longest);
+  cleanup.add('silence.wav');
 
   // 1) Normalise every clip: size, fps, grade, speed, audio.
   for (var i = 0; i < clips.length; i++) {
@@ -199,7 +242,7 @@ ExportPlan buildExportPlan(ExportRequest r) {
       cleanup.add(img);
       steps.add(ExportStep('Clip ${i + 1}/${clips.length}', [
         '-loop', '1', '-framerate', '$_fps', '-t', dur, '-i', img, //
-        '-f', 'lavfi', '-t', dur, '-i', silence,
+        '-i', 'silence.wav',
         '-vf', vf, '-map', '0:v', '-map', '1:a',
         ..._encode, '-t', dur, out,
       ]));
@@ -219,7 +262,7 @@ ExportPlan buildExportPlan(ExportRequest r) {
           : 'aresample=44100';
       steps.add(ExportStep('Clip ${i + 1}/${clips.length}', [
         '-ss', sec(c.trimStart), '-t', span, '-i', src, //
-        if (!audio) ...['-f', 'lavfi', '-t', dur, '-i', silence],
+        if (!audio) ...['-i', 'silence.wav'],
         '-vf', vf, '-af', af,
         '-map', '0:v:0', '-map', audio ? '0:a:0' : '1:a:0',
         ..._encode, '-t', dur, out,
@@ -239,10 +282,6 @@ ExportPlan buildExportPlan(ExportRequest r) {
     if (!wantsTransition) {
       parts.add('c$i.mp4');
       continue;
-    }
-    if (c.transition == EditorTransition.fx) {
-      warnings.add('Clip ${i + 1}: sprite / WebM effect packs are not '
-          'rendered in exports — a flash transition is used instead.');
     }
     final prevDur = clips[i - 1].duration;
     final lastAt = prevDur > const Duration(milliseconds: 150)
@@ -277,8 +316,47 @@ ExportPlan buildExportPlan(ExportRequest r) {
       trArgs(xfadeFor(c.transition)),
       fallbackArgs: trArgs('fade'),
     ));
+    // Effect pack (sprite sheet frames or WebM/MP4) on top of the transition.
+    var trFinal = tr;
+    final fx = c.transition == EditorTransition.fx ? c.fx : null;
+    if (fx != null) {
+      final tf = 'tf$i.mp4';
+      final seq = r.sequences['fx:$i'];
+      if (fx.video != null) {
+        final fxFile =
+            'fx$i.${sniffMime(fx.video!).contains('webm') ? 'webm' : 'mp4'}';
+        inputs[fxFile] = fx.video!;
+        cleanup.add(fxFile);
+        steps.add(ExportStep('Transition $i: effect', [
+          '-i', tr, '-i', fxFile, //
+          '-filter_complex',
+          '[1:v]scale=$w:$h:force_original_aspect_ratio=increase,crop=$w:$h,'
+              'fps=$_fps,format=yuv420p,setsar=1[f];'
+              '[0:v]format=yuv420p[b];'
+              '[b][f]blend=all_mode=screen[v]',
+          '-map', '[v]', '-map', '0:a', ..._encode, '-t', win, tf,
+        ]));
+        trFinal = tf;
+        cleanup.add(tf);
+      } else if (seq != null) {
+        final prefix = 'fx${i}_';
+        for (var k = 0; k < seq.frames.length; k++) {
+          inputs['$prefix${k.toString().padLeft(4, '0')}.png'] = seq.frames[k];
+          cleanup.add('$prefix${k.toString().padLeft(4, '0')}.png');
+        }
+        steps.add(ExportStep('Transition $i: effect', [
+          '-i', tr, '-framerate', '${seq.fps}', '-i', '$prefix%04d.png', //
+          '-filter_complex',
+          '[1:v]format=rgba,setpts=PTS-STARTPTS[f];'
+              '[0:v][f]overlay=0:0:eof_action=pass:format=auto[v]',
+          '-map', '[v]', '-map', '0:a', ..._encode, '-t', win, tf,
+        ]));
+        trFinal = tf;
+        cleanup.add(tf);
+      }
+    }
     final rest = c.duration - window;
-    parts.add(tr);
+    parts.add(trFinal);
     if (rest > const Duration(milliseconds: 80)) {
       steps.add(ExportStep('Transition $i: remainder', [
         '-ss', win, '-i', 'c$i.mp4', ..._encode, '-t', sec(rest), main, //
@@ -313,11 +391,11 @@ ExportPlan buildExportPlan(ExportRequest r) {
   final total = project.duration;
   final overlays = <EditorOverlay>[];
   for (final o in project.overlays) {
-    if (r.overlayPngs.containsKey(o.id)) {
+    if (r.sequences.containsKey(o.id)) {
       overlays.add(o);
     } else {
-      warnings.add('${_overlayName(o)} "${o.label}" is not included in the '
-          'export (only text and emoji stickers are rendered).');
+      warnings.add('${_overlayName(o)} "${o.label}" could not be rendered '
+          'and was skipped.');
     }
   }
   final tracks =
@@ -334,14 +412,37 @@ ExportPlan buildExportPlan(ExportRequest r) {
     var videoLabel = '0:v';
     for (var k = 0; k < overlays.length; k++) {
       final o = overlays[k];
-      final file = 'ov$k.png';
-      inputs[file] = r.overlayPngs[o.id]!;
-      cleanup.add(file);
-      args.addAll(
-          ['-loop', '1', '-framerate', '$_fps', '-t', sec(total), '-i', file]);
+      final seq = r.sequences[o.id]!;
       final next = 'v$k';
-      graph.add("[$videoLabel][$inputIndex:v]overlay=0:0:"
-          "enable='between(t,${sec(o.start)},${sec(o.end)})':format=auto[$next]");
+      final window = "enable='between(t,${sec(o.start)},${sec(o.end)})'";
+      if (seq.isStatic) {
+        final file = 'ov$k.png';
+        inputs[file] = seq.frames.first;
+        cleanup.add(file);
+        args.addAll([
+          '-loop',
+          '1',
+          '-framerate',
+          '$_fps',
+          '-t',
+          sec(total),
+          '-i',
+          file
+        ]);
+        graph.add('[$videoLabel][$inputIndex:v]overlay=0:0:$window:'
+            'format=auto[$next]');
+      } else {
+        for (var n = 0; n < seq.frames.length; n++) {
+          final name = 'ov${k}_${n.toString().padLeft(4, '0')}.png';
+          inputs[name] = seq.frames[n];
+          cleanup.add(name);
+        }
+        args.addAll(['-framerate', '${seq.fps}', '-i', 'ov${k}_%04d.png']);
+        graph.add('[$inputIndex:v]format=rgba,'
+            'setpts=PTS-STARTPTS+${sec(o.start)}/TB[s$k];'
+            '[$videoLabel][s$k]overlay=0:0:eof_action=pass:$window:'
+            'format=auto[$next]');
+      }
       videoLabel = next;
       inputIndex++;
     }

@@ -101,12 +101,14 @@ class _OverlayConfigWidgetState extends State<OverlayConfigWidget> {
     textEditingController.text = widget.overlay?.text ?? '';
     super.initState();
   }
+
   @override
   Widget build(BuildContext context) {
     // textEditingController.text = widget.overlay?.text?? '';
     _fontSize.value = widget.overlay?.fontSize ?? 10.0;
     _textColor.value = widget.overlay?.textColor ?? Colors.white;
-    _textBackgroundColor.value = widget.overlay?.backgroundTextColor ?? Colors.black.withOpacity(0.4);
+    _textBackgroundColor.value =
+        widget.overlay?.backgroundTextColor ?? Colors.black.withOpacity(0.4);
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF1B2133),
@@ -120,15 +122,24 @@ class _OverlayConfigWidgetState extends State<OverlayConfigWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            InkWell(onTap: (){
-              widget.onClosed?.call();
-            },child: const Align(alignment: Alignment.topRight,child: SizedBox(width: 50, height: 50, child: Icon(Icons.close, color: Colors.white70),))),
+            InkWell(
+                onTap: () {
+                  widget.onClosed?.call();
+                },
+                child: const Align(
+                    alignment: Alignment.topRight,
+                    child: SizedBox(
+                      width: 50,
+                      height: 50,
+                      child: Icon(Icons.close, color: Colors.white70),
+                    ))),
             TextField(
-              controller: textEditingController,
+                controller: textEditingController,
                 maxLines: 10,
                 decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                    hintText: widget.overlay?.text ?? 'Nhập văn bản', label: Text('Nhập văn bản'))),
+                    border: const OutlineInputBorder(),
+                    hintText: widget.overlay?.text ?? 'Nhập văn bản',
+                    label: Text('Nhập văn bản'))),
             const SizedBox(height: 12),
             ValueListenableBuilder(
                 valueListenable: _fontSize,
@@ -207,7 +218,8 @@ class _OverlayConfigWidgetState extends State<OverlayConfigWidget> {
                                       portraitOnly: true,
                                       onColorChanged: (Color value) {
                                         _textBackgroundColor.value = value;
-                                        widget.onBackgroundTextColorUpdated?.call(value);
+                                        widget.onBackgroundTextColorUpdated
+                                            ?.call(value);
                                       },
                                     ),
                                   ),
@@ -241,8 +253,10 @@ class _OverlayConfigWidgetState extends State<OverlayConfigWidget> {
                                   initialFontFamily: 'Anton',
                                   onFontChanged: (font) {
                                     _selectedFontFamily.value = font.fontFamily;
-                                    _selectedTextStyle.value = font.toTextStyle();
-                                    widget.onTextStyleUpdated?.call(font.fontFamily, font.toTextStyle());
+                                    _selectedTextStyle.value =
+                                        font.toTextStyle();
+                                    widget.onTextStyleUpdated?.call(
+                                        font.fontFamily, font.toTextStyle());
                                   },
                                   googleFonts: _myGoogleFonts,
                                 ),
@@ -258,11 +272,11 @@ class _OverlayConfigWidgetState extends State<OverlayConfigWidget> {
                     )),
                 const SizedBox(width: 12),
                 ValueListenableBuilder(
-                  valueListenable: _selectedTextStyle,
-                  builder: (context, value, _) {
-                    return Text('Mẫu chữ ví dụ', style: value?.copyWith(fontSize: 20));
-                  }
-                )
+                    valueListenable: _selectedTextStyle,
+                    builder: (context, value, _) {
+                      return Text('Mẫu chữ ví dụ',
+                          style: value?.copyWith(fontSize: 20));
+                    })
               ],
             )
           ],
