@@ -17,14 +17,14 @@
 
     <meta charset="UTF-8">
     <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-    <meta name="description" content="A new Flutter project.">
-    <link rel="icon" type="image/png" href="favicon.png"/>
+    <meta name="description" content="Quốc 67K1 — Mobile developer portfolio and personal projects.">
+    <link rel="icon" type="image/png" href="favicon.png?v=3"/>
 
     <!-- iOS meta tags & icons -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="flutter_portfolio">
-    <link rel="apple-touch-icon" href="icons/Icon-192.png">
+    <link rel="apple-touch-icon" href="icons/Icon-192.png?v=3">
     <!--    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">-->
     <!--    <meta http-equiv="Cross-Origin-Embedder-Policy" content="same-origin">-->
     <!-- Favicon -->
@@ -33,6 +33,26 @@
     <link rel="manifest" href="manifest.json">
 
     <script>
+      // Remove the legacy Flutter service worker once. It otherwise keeps
+      // serving an old main.dart.js and stale image assets after a deploy.
+      if ('serviceWorker' in navigator && !sessionStorage.getItem('sw-reset-v4')) {
+        sessionStorage.setItem('sw-reset-v4', '1');
+        Promise.all([
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            return Promise.all(registrations.map(function(registration) {
+              return registration.unregister();
+            }));
+          }),
+          'caches' in window
+            ? caches.keys().then(function(keys) {
+                return Promise.all(keys.map(function(key) { return caches.delete(key); }));
+              })
+            : Promise.resolve()
+        ]).then(function() {
+          if (navigator.serviceWorker.controller) window.location.reload();
+        });
+      }
+
       // The app manages URLs itself with history.pushState (see goToPage). Flutter's
       // engine asserts on popstate entries it did not create, so swallow the native
       // event here (registered first, capture phase) and re-emit it as `app-popstate`.
@@ -56,38 +76,19 @@
 <body>
 <div id="loader">
     <div class="loader-inner">
-        <div class="loader-line-wrap">
-            <div class="loader-line"></div>
-        </div>
-        <div class="loader-line-wrap">
-            <div class="loader-line"></div>
-        </div>
-        <div class="loader-line-wrap">
-            <div class="loader-line"></div>
-        </div>
-        <div class="loader-line-wrap">
-            <div class="loader-line"></div>
-        </div>
-        <div class="loader-line-wrap">
-            <div class="loader-line"></div>
-        </div>
+        <img src="assets/assets/images/quoc67_mark.svg" alt="Quốc 67K1" class="loader-logo">
+        <div class="loader-progress"></div>
     </div>
 </div>
 <script>
     {{flutter_bootstrap_js}}
 </script>
 <script>
-    window.addEventListener('load', function() {
-      var loading = document.querySelector('#loader');
-      if (loading) {
-        loading.style.visibility = 'visible';
-      }
-    });
-
     window.addEventListener('flutter-first-frame', function() {
       var loading = document.querySelector('#loader');
       if (loading) {
-        loading.style.visibility = 'hidden';
+        loading.classList.add('is-hidden');
+        window.setTimeout(function() { loading.remove(); }, 280);
       }
     });
 </script>
@@ -134,9 +135,9 @@
        display: none !important;
     }
 
-.loader {
-  background: #000;
-  background: radial-gradient(#222, #000);
+#loader {
+  background: #020617;
+  background: radial-gradient(circle at center, #11182a 0%, #020617 62%);
   bottom: 0;
   left: 0;
   overflow: hidden;
@@ -144,87 +145,44 @@
   right: 0;
   top: 0;
   z-index: 99999;
+  opacity: 1;
+  transition: opacity 240ms ease, visibility 240ms ease;
+  visibility: visible;
+}
+#loader.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .loader-inner {
   bottom: 0;
-  height: 60px;
+  height: 132px;
   left: 0;
   margin: auto;
   position: absolute;
   right: 0;
   top: 0;
-  width: 100px;
+  width: 104px;
 }
-
-.loader-line-wrap {
-  animation:
-      spin 2000ms cubic-bezier(.175, .885, .32, 1.275) infinite
-  ;
-  box-sizing: border-box;
-  height: 50px;
-  left: 0;
-  overflow: hidden;
-  position: absolute;
-  top: 0;
-  transform-origin: 50% 100%;
-  width: 100px;
+.loader-logo {
+  display: block;
+  width: 96px;
+  height: 96px;
+  filter: drop-shadow(0 0 18px rgba(124, 92, 255, .45));
+  animation: logo-pulse 1.5s ease-in-out infinite;
 }
-.loader-line {
-  border-radius: 100%;
-  box-sizing: border-box;
-  height: 100px;
-  left: 0;
-  margin: 0 auto;
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 100px;
+.loader-progress {
+  height: 3px;
+  margin-top: 22px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #ff4d9d, #7c5cff, #22d3ee);
+  animation: progress-pulse 1.2s ease-in-out infinite;
 }
-.loader-line-wrap:nth-child(1) { animation-delay: -50ms; }
-.loader-line-wrap:nth-child(2) { animation-delay: -100ms; }
-.loader-line-wrap:nth-child(3) { animation-delay: -150ms; }
-.loader-line-wrap:nth-child(4) { animation-delay: -200ms; }
-.loader-line-wrap:nth-child(5) { animation-delay: -250ms; }
-
-.loader-line-wrap:nth-child(1) .loader-line {
-  border-color: hsl(0, 80%, 60%);
-  height: 90px;
-  width: 90px;
-  top: 7px;
-}
-.loader-line-wrap:nth-child(2) .loader-line {
-  border-color: hsl(60, 80%, 60%);
-  height: 76px;
-  width: 76px;
-  top: 14px;
-}
-.loader-line-wrap:nth-child(3) .loader-line {
-  border-color: hsl(120, 80%, 60%);
-  height: 62px;
-  width: 62px;
-  top: 21px;
-}
-.loader-line-wrap:nth-child(4) .loader-line {
-  border-color: hsl(180, 80%, 60%);
-  height: 48px;
-  width: 48px;
-  top: 28px;
-}
-.loader-line-wrap:nth-child(5) .loader-line {
-  border-color: hsl(240, 80%, 60%);
-  height: 34px;
-  width: 34px;
-  top: 35px;
-}
-
-@keyframes spin {
-  0%, 15% {
-      transform: rotate(0);
-  }
-  100% {
-      transform: rotate(360deg);
-  }
+@keyframes logo-pulse { 50% { transform: translateY(-4px) scale(1.03); } }
+@keyframes progress-pulse { 0%, 100% { opacity: .25; transform: scaleX(.35); } 50% { opacity: 1; transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .loader-logo, .loader-progress { animation: none; }
 }
 </style>
 

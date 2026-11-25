@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../res/constants.dart';
 import '../../../view model/responsive.dart';
@@ -64,8 +65,8 @@ class AnimatedImageContainerState extends State<AnimatedImageContainer>
                 color: Colors.black,
                 borderRadius: BorderRadius.circular(30),
               ),
-              child: Image.asset(
-                'assets/images/image.png',
+              child: SvgPicture.asset(
+                'assets/images/quoc67_mark.svg',
                 height: Responsive.isLargeMobile(context)
                     ? MediaQuery.sizeOf(context).width * 0.2
                     : Responsive.isTablet(context)
@@ -76,7 +77,7 @@ class AnimatedImageContainerState extends State<AnimatedImageContainer>
                     : Responsive.isTablet(context)
                         ? MediaQuery.sizeOf(context).width * 0.14
                         : 200,
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
               ),
             ),
           ),

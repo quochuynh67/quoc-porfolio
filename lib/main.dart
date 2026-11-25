@@ -17,6 +17,11 @@ Future<void> main() async {
     VideoPlayerPlugin.registerWith(Registrar());
   }
 
+  runApp(const PortfolioApp());
+  unawaited(_initializeSupabase());
+}
+
+Future<void> _initializeSupabase() async {
   if (AppConfig.hasSupabaseClientConfig) {
     try {
       await Supabase.initialize(
@@ -29,6 +34,4 @@ Future<void> main() async {
   } else {
     AppLogger.warning('Supabase public client configuration is not set.');
   }
-
-  runApp(const PortfolioApp());
 }

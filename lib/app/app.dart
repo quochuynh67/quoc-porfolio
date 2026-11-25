@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../res/constants.dart';
-import '../view/splash/splash_view.dart';
+import '../view/home/home.dart';
 
 class PortfolioApp extends StatelessWidget {
   const PortfolioApp({super.key});
@@ -23,7 +23,7 @@ class PortfolioApp extends StatelessWidget {
               bodySmall: const TextStyle(color: bodyTextColor),
             ),
       ),
-      home: const SplashView(),
+      home: const HomePage(),
     );
   }
 }
