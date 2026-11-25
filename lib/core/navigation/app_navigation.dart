@@ -14,6 +14,7 @@ final Map<String, int> routeToPageIndex = {
   '/games': 6,
   '/retroGame': 7,
   '/localizationManager': 8,
+  '/journal': 9,
 };
 
 void goToPage(int index, {Map<String, String>? queryParameters}) {
@@ -43,6 +44,7 @@ const Map<int, String> pageTitles = {
   6: 'Games',
   7: 'Retro Game',
   8: 'Localization Manager',
+  9: 'Dev Journal',
 };
 
 const String siteTitle = 'Quoc67k1';

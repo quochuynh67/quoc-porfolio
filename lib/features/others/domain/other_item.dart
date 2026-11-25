@@ -20,6 +20,13 @@ class OtherModel {
 
 List<OtherModel> otherList = [
   OtherModel(
+    name: 'Dev Journal',
+    type: 'Engineering blog & notes',
+    date: 'Living knowledge base',
+    skills: ['Flutter', 'Architecture', 'AI workflow', 'Vibe coding'],
+    pageIndex: 9,
+  ),
+  OtherModel(
     name: 'Đa ngôn ngữ cho Flutter',
     type: 'Flutter Tool',
     date: '25 May 2026',

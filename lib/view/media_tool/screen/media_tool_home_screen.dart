@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../res/constants.dart';
 import '../ffmpeg_manager.dart';
 import '../file_utils.dart';
+import '../video_editor/presentation/video_editor_studio_screen.dart';
 import 'quotemaker_screen.dart';
 import 'widget/media_ui.dart';
 import 'vlogmaker_screen.dart';
@@ -50,7 +51,7 @@ class _MediaToolHomeScreenState extends State<MediaToolHomeScreen> {
     return Theme(
         data: _mediaTheme(Theme.of(context)),
         child: DefaultTabController(
-          length: 3,
+          length: 4,
           child: ColoredBox(
             color: bgColor,
             child: Column(
@@ -122,6 +123,9 @@ class _MediaToolHomeScreenState extends State<MediaToolHomeScreen> {
                       Tab(icon: Icon(Icons.bolt), text: 'Quick tools'),
                       Tab(icon: Icon(Icons.format_quote), text: 'Quote maker'),
                       Tab(icon: Icon(Icons.slideshow), text: 'Slideshow'),
+                      Tab(
+                          icon: Icon(Icons.video_camera_back_rounded),
+                          text: 'Video Studio'),
                     ],
                   ),
                 ),
@@ -147,8 +151,9 @@ class _MediaToolHomeScreenState extends State<MediaToolHomeScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
                       _buildQuickToolsGrid(),
-                      QuoteMakerScreen(),
-                      VlogMakerScreen(),
+                      const QuoteMakerScreen(),
+                      const VlogMakerScreen(),
+                      const VideoEditorStudioScreen(),
                     ],
                   ),
                 ),

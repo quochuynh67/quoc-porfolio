@@ -63,3 +63,5 @@ GoogleService-Info.plist
 firebase-debug.log
 
 web/.env
+.rea-video-venv/
+rea-video-output/
