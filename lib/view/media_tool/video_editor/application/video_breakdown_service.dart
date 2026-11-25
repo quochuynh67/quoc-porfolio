@@ -21,7 +21,8 @@ class VideoBreakdownService {
       ..writeln()
       ..writeln('## Shot timeline')
       ..writeln()
-      ..writeln('| # | Time | Source | Type | Trim | Speed | Filter | Transition |')
+      ..writeln(
+          '| # | Time | Source | Type | Trim | Speed | Filter | Transition |')
       ..writeln('|---|---|---|---|---|---|---|---|');
 
     var cursor = Duration.zero;

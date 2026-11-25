@@ -12,6 +12,7 @@ import '../domain/video_editor_project.dart';
 import 'editor_panels.dart';
 import 'editor_preview.dart';
 import 'editor_visuals.dart';
+import 'export_dialog.dart';
 import 'editor_timeline.dart';
 
 class VideoEditorStudioScreen extends StatefulWidget {
@@ -377,31 +378,11 @@ class _VideoEditorStudioScreenState extends State<VideoEditorStudioScreen> {
       _showMessage('Add at least one clip before export.');
       return;
     }
+    _controller.seek(_controller.position);
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Export'),
-        content: Text(
-          '${project.clips.length} clips • ${project.overlays.length} overlays • '
-          '${project.audioTracks.length} audio tracks\n\n'
-          'Rendering to a video file is not available in the browser yet. '
-          'Open the Analyze tab to copy a VIDEO.md breakdown of this project '
-          'that can drive an FFmpeg render.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _selectTool(EditorTool.analyze);
-            },
-            child: const Text('Open Analyze'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Continue editing'),
-          ),
-        ],
-      ),
+      barrierDismissible: false,
+      builder: (context) => ExportDialog(project: project),
     );
   }
 
