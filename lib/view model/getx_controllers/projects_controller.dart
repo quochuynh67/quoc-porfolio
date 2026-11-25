@@ -1,20 +1,11 @@
 import 'package:get/get.dart';
 
-class ProjectController  extends GetxController{
-  RxList<bool> hovers =[
-    false,
-    false,
-    false,
-    false,
-    false,
-    false,
-    false,
-    false,
-    false,
-  ].obs;
+class ProjectController extends GetxController {
+  final RxMap<String, bool> hovers = <String, bool>{}.obs;
 
-
-  onHover(int index,bool value){
-    hovers[index]=value;
+  void onHover(String key, bool value) {
+    hovers[key] = value;
   }
+
+  bool isHovered(String key) => hovers[key] ?? false;
 }

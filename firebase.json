@@ -14,17 +14,6 @@
     ],
     "frameworksBackend": {
       "region": "asia-east1"
-    },
-    "headers": [
-      {
-        "source": "/**",
-        "headers": [
-          {
-            "key": "Access-Control-Allow-Origin",
-            "value": "*"
-          }
-        ]
-      }
-    ]
+    }
   }
 }

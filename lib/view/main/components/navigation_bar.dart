@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_portfolio/view%20model/responsive.dart';
 import 'package:flutter_portfolio/view/intro/components/side_menu_button.dart';
 import 'package:flutter_portfolio/view/main/components/connect_button.dart';
@@ -21,9 +22,26 @@ class TopNavigationBar extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
               child: !Responsive.useCompactNavigation(context)
-                  ? Image.asset('assets/images/quoc_logo.png')
-                  : MenuButton(
-                      onTap: () => Scaffold.of(context).openDrawer(),
+                  ? SvgPicture.asset(
+                      'assets/images/quoc67_brand.svg',
+                      width: 148,
+                      height: 46,
+                      fit: BoxFit.contain,
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        MenuButton(
+                          onTap: () => Scaffold.of(context).openDrawer(),
+                        ),
+                        const SizedBox(width: 8),
+                        SvgPicture.asset(
+                          'assets/images/quoc67_brand.svg',
+                          width: 84,
+                          height: 36,
+                          fit: BoxFit.contain,
+                        ),
+                      ],
                     ),
             ),
             // if(Responsive.isLargeMobile(context)) MenuButton(),

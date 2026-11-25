@@ -13,52 +13,30 @@ class ProjectLinks extends StatelessWidget {
   Widget build(BuildContext context) {
     String? link = project.link;
     String? githubLink = project.githubLink;
-    return Wrap(
-      spacing: 8,
-      runSpacing: 4,
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    return Row(
       children: [
-        Row(
-          children: [
-            Text('Check on Github',
-                style: TextStyle(
-                    color: githubLink != null ? Colors.white : Colors.grey,
-                    fontWeight: githubLink != null
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                    fontSize: 12),
-                overflow: TextOverflow.ellipsis),
-            IconButton(
-                onPressed: () {
-                  if (githubLink == null || githubLink.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                        content: Text('No link available for this project')));
-                    return;
-                  }
-                  launchUrl(Uri.parse(githubLink));
-                },
-                icon: SvgPicture.asset('assets/icons/github.svg')),
-          ],
+        if (githubLink != null && githubLink.isNotEmpty)
+          IconButton(
+            tooltip: 'View source',
+            visualDensity: VisualDensity.compact,
+            onPressed: () => launchUrl(Uri.parse(githubLink)),
+            icon: SvgPicture.asset('assets/icons/github.svg',
+                width: 20, height: 20),
+          ),
+        const Spacer(),
+        TextButton.icon(
+          onPressed: link == null || link.isEmpty
+              ? null
+              : () => launchUrl(Uri.parse(link)),
+          icon: const Icon(Icons.open_in_new_rounded, size: 16),
+          label: const Text('Open project'),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.amber,
+            visualDensity: VisualDensity.compact,
+            textStyle:
+                const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+          ),
         ),
-        TextButton(
-            onPressed: () {
-              if (link == null || link.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('No link available for this project')));
-                return;
-              }
-              launchUrl(Uri.parse(link));
-            },
-            child: Text(
-              'Read More>>',
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  color: link != null ? Colors.amber : Colors.grey,
-                  fontWeight:
-                      link != null ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 10),
-            ))
       ],
     );
   }

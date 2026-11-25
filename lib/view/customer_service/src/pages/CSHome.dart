@@ -1,8 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../supabase_options.dart';
 import 'auth.dart';
 import 'rooms.dart';
 import 'users.dart';
@@ -18,11 +20,12 @@ class _CSHomePageState extends State<CSHomePage> {
   bool _error = false;
   bool _initialized = false;
   User? _user;
+  StreamSubscription<AuthState>? _authSubscription;
 
   @override
   void initState() {
-    initializeSupabase();
     super.initState();
+    initializeSupabase();
   }
 
   SupabaseChatCoreConfig config = const SupabaseChatCoreConfig(
@@ -40,21 +43,29 @@ class _CSHomePageState extends State<CSHomePage> {
   );
 
   void initializeSupabase() async {
+    if (!isSupabaseConfigured) {
+      if (mounted) {
+        setState(() => _error = true);
+      }
+      return;
+    }
     SupabaseChatCore.instance.setConfig(config);
     try {
-      Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-        setState(() {
-          _user = data.session?.user;
-        });
+      _authSubscription =
+          Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+        if (!mounted) return;
+        setState(() => _user = data.session?.user);
       });
-      setState(() {
-        _initialized = true;
-      });
+      if (mounted) setState(() => _initialized = true);
     } catch (e) {
-      setState(() {
-        _error = true;
-      });
+      if (mounted) setState(() => _error = true);
     }
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   void logout() async {

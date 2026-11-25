@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 
 import 'package:file_picker/_internal/file_picker_web.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_portfolio/res/constants.dart';
-import 'package:flutter_portfolio/view/customer_service/supabase_options.dart';
-import 'package:flutter_portfolio/view/splash/splash_view.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_portfolio/core/config/app_config.dart';
+import 'package:flutter_portfolio/app/app.dart';
+import 'package:flutter_portfolio/core/logging/app_logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player_web/video_player_web.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
@@ -18,46 +17,18 @@ Future<void> main() async {
     VideoPlayerPlugin.registerWith(Registrar());
   }
 
-  if (isSupabaseConfigured) {
+  if (AppConfig.hasSupabaseClientConfig) {
     try {
       await Supabase.initialize(
-        url: supabaseOptions.url,
-        anonKey: supabaseOptions.anonKey,
+        url: AppConfig.supabaseUrl,
+        anonKey: AppConfig.supabasePublishableKey,
       );
-    } catch (e) {
-      debugPrint('[WARN] Supabase init failed: $e');
+    } catch (_) {
+      AppLogger.configurationFailure('Supabase');
     }
   } else {
-    debugPrint(
-      '[WARN] Supabase keys are not configured. '
-      'Run/build with --dart-define-from-file=supabase_keys.json to enable Supabase features.',
-    );
+    AppLogger.warning('Supabase public client configuration is not set.');
   }
 
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          scaffoldBackgroundColor: bgColor,
-          useMaterial3: true,
-          textTheme: GoogleFonts.openSansTextTheme(Theme.of(context).textTheme)
-              .apply(
-                bodyColor: Colors.white,
-              )
-              .copyWith(
-                bodyLarge: const TextStyle(color: bodyTextColor),
-                bodyMedium: const TextStyle(color: bodyTextColor),
-                bodySmall: const TextStyle(color: bodyTextColor),
-              ),
-        ),
-        home: const SplashView());
-  }
+  runApp(const PortfolioApp());
 }

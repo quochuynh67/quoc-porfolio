@@ -60,8 +60,7 @@ class ProjectsView extends StatelessWidget {
           ProjectGrid(
             projects: projects,
             crossAxisCount: columns,
-            cardHeight: (columns == 1 ? 300 : 290) +
-                (projects.any((p) => p.thumbnail != null) ? 190 : 0),
+            cardHeight: projects.any((p) => p.thumbnail != null) ? 344 : 268,
           ),
         ],
       );

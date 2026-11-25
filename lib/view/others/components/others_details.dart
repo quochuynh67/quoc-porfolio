@@ -2,9 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../model/other_model.dart';
+import '../../../features/others/domain/other_item.dart';
 import '../../../res/constants.dart';
 import '../../../view model/getx_controllers/certification_controller.dart';
+import '../../../core/navigation/app_navigation.dart';
 
 class OtherStack extends StatelessWidget {
   final controller = Get.put(OtherController());
@@ -15,18 +16,27 @@ class OtherStack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final item = otherList[index];
+    void openItem() {
+      if (item.pageIndex != null) {
+        goToPage(item.pageIndex!, queryParameters: item.queryParameters);
+      } else if (item.link != null) {
+        launchUrl(Uri.parse(item.link!));
+      }
+    }
+
     return InkWell(
       onHover: (value) {
         controller.onHover(index, value);
       },
-      onTap: () {},
-      borderRadius: BorderRadius.circular(30),
+      onTap: openItem,
+      borderRadius: BorderRadius.circular(22),
       child: AnimatedContainer(
           padding: const EdgeInsets.all(defaultPadding),
           height: double.infinity,
           width: double.infinity,
           decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30), color: bgColor),
+              borderRadius: BorderRadius.circular(21), color: secondaryColor),
           duration: const Duration(milliseconds: 500),
           child: SingleChildScrollView(
             child: Column(
@@ -42,6 +52,14 @@ class OtherStack extends StatelessWidget {
                 const SizedBox(
                   height: defaultPadding / 2,
                 ),
+                Text(
+                  '${item.type}  •  ${item.date}',
+                  style:
+                      const TextStyle(color: Colors.cyanAccent, fontSize: 11),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: defaultPadding / 2),
                 Tooltip(
                   message: otherList[index].skills.join(', '),
                   child: Text.rich(
@@ -68,7 +86,7 @@ class OtherStack extends StatelessWidget {
                 ),
                 InkWell(
                   onTap: () {
-                    launchUrl(Uri.parse(otherList[index].link));
+                    openItem();
                   },
                   child: Container(
                     height: 40,
@@ -89,11 +107,11 @@ class OtherStack extends StatelessWidget {
                               offset: Offset(0, 1),
                               blurRadius: 5),
                         ]),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Details',
+                          item.pageIndex == null ? 'Open link' : 'Explore',
                           style: TextStyle(color: Colors.white, fontSize: 10),
                         ),
                         SizedBox(

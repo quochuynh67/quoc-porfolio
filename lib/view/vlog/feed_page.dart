@@ -21,7 +21,8 @@ import 'video_model.dart';
 bool soundState = false;
 
 class FeedPage extends StatefulWidget {
-  const FeedPage({Key? key, required this.isPlayChillVideoAtFirst}) : super(key: key);
+  const FeedPage({Key? key, required this.isPlayChillVideoAtFirst})
+      : super(key: key);
 
   final bool isPlayChillVideoAtFirst;
   @override
@@ -29,9 +30,9 @@ class FeedPage extends StatefulWidget {
 }
 
 class _FeedPageState extends State<FeedPage> {
-  static const String _viewType = 'reactjs-vlog-iframe';
+  static const String _viewType = 'jx2-web-iframe';
   static bool _isFactoryRegistered = false;
-  bool _useReactVlog = true; // Default to loading the ReactJS version
+  bool _useReactVlog = true;
 
   static const String _ownerSupabaseUserId =
       String.fromEnvironment('OWNER_SUPABASE_USER_ID', defaultValue: '');
@@ -75,7 +76,7 @@ class _FeedPageState extends State<FeedPage> {
       // ignore: undefined_prefixed_name
       ui.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
         final iframe = html.IFrameElement()
-          ..src = 'https://quoc-research-retrogame.web.app/?feature=vlog'
+          ..src = 'https://quockht2web.vercel.app/'
           ..style.border = '0'
           ..style.width = '100%'
           ..style.height = '100%'
@@ -168,7 +169,8 @@ class _FeedPageState extends State<FeedPage> {
   Future<void> _markUploadCooldownNow() async {
     lastUploadAt = DateTime.now();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_uploadCooldownStorageKey, lastUploadAt!.millisecondsSinceEpoch);
+    await prefs.setInt(
+        _uploadCooldownStorageKey, lastUploadAt!.millisecondsSinceEpoch);
     _startUploadCooldownTickerIfNeeded();
   }
 
@@ -218,8 +220,9 @@ class _FeedPageState extends State<FeedPage> {
           '[VLOG][SUPABASE] page=$loadedPage loaded=${entries.length} pageSize=$_supaBasePageSize hasMore=$_hasMoreSupaBaseVideo totalLoaded=$_supaBaseOffset');
 
       final newVideos = entries
-        .map((e) => _toSupabaseVideo(e.publicUrl, uploaderName: e.uploaderName))
-        .toList()
+          .map((e) =>
+              _toSupabaseVideo(e.publicUrl, uploaderName: e.uploaderName))
+          .toList()
         ..shuffle();
       supaBaseVideos.addAll(newVideos);
     } catch (e) {
@@ -279,7 +282,8 @@ class _FeedPageState extends State<FeedPage> {
     if (!canCurrentUserUpload) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Chỉ chủ tài khoản mới được thêm video')),
+          const SnackBar(
+              content: Text('Chỉ chủ tài khoản mới được thêm video')),
         );
       }
       return;
@@ -287,7 +291,9 @@ class _FeedPageState extends State<FeedPage> {
     if (_isCooldownActive) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Vui lòng chờ $_cooldownText trước khi thêm video tiếp theo')),
+          SnackBar(
+              content: Text(
+                  'Vui lòng chờ $_cooldownText trước khi thêm video tiếp theo')),
         );
       }
       return;
@@ -305,7 +311,8 @@ class _FeedPageState extends State<FeedPage> {
     if (bytes == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không đọc được dữ liệu video để upload')),
+          const SnackBar(
+              content: Text('Không đọc được dữ liệu video để upload')),
         );
       }
       return;
@@ -321,7 +328,8 @@ class _FeedPageState extends State<FeedPage> {
         uploaderName: uploaderName,
         uploaderUserId: currentUser.id,
       );
-      final uploadedVideo = _toSupabaseVideo(publicUrl, uploaderName: uploaderName);
+      final uploadedVideo =
+          _toSupabaseVideo(publicUrl, uploaderName: uploaderName);
       supaBaseVideos.insert(0, uploadedVideo);
 
       final current = videoStream.valueOrNull ?? [];
@@ -551,7 +559,10 @@ class _FeedPageState extends State<FeedPage> {
     );
   }
 
-  Widget _buildSelectorTab({required String title, required bool isActive, required VoidCallback onTap}) {
+  Widget _buildSelectorTab(
+      {required String title,
+      required bool isActive,
+      required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -559,10 +570,14 @@ class _FeedPageState extends State<FeedPage> {
         curve: Curves.easeInOut,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? Colors.white.withValues(alpha: 0.15) : Colors.transparent,
+          color: isActive
+              ? Colors.white.withValues(alpha: 0.15)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isActive ? Colors.white.withValues(alpha: 0.25) : Colors.transparent,
+            color: isActive
+                ? Colors.white.withValues(alpha: 0.25)
+                : Colors.transparent,
             width: 1,
           ),
         ),
@@ -581,7 +596,7 @@ class _FeedPageState extends State<FeedPage> {
   @override
   Widget build(BuildContext context) {
     Widget content;
-    
+
     if (_useReactVlog && kIsWeb) {
       content = const SizedBox.expand(
         child: HtmlElementView(viewType: _viewType),
@@ -656,21 +671,6 @@ class _FeedPageState extends State<FeedPage> {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Premium top header bar for the version selector to prevent iframe click swallowing
-        Container(
-          height: 60,
-          color: const Color(0xFF0F0F1A), // Matches the dark modern background theme
-          alignment: Alignment.centerLeft,
-          child: _buildVersionSelectorRow(),
-        ),
-        Expanded(child: content),
-      ],
-    );
+    return content;
   }
 }
-
-
-

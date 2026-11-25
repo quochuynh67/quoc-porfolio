@@ -1,43 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../model/other_model.dart';
+import '../../../features/others/domain/other_item.dart';
 import '../../../res/constants.dart';
 import '../../../view model/getx_controllers/certification_controller.dart';
 import 'others_details.dart';
+
 class OtherGrid extends StatelessWidget {
-  final int crossAxisCount;
-  final double ratio;
-  OtherGrid({super.key, this.crossAxisCount = 3,  this.ratio=1.3});
+  OtherGrid({super.key});
   final controller = Get.put(OtherController());
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 30),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       itemCount: otherList.length,
-      gridDelegate:  SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount, childAspectRatio: ratio, crossAxisSpacing: defaultPadding, mainAxisSpacing: defaultPadding),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 420,
+          mainAxisExtent: 235,
+          crossAxisSpacing: defaultPadding,
+          mainAxisSpacing: defaultPadding),
       itemBuilder: (context, index) {
         return Obx(() => AnimatedContainer(
             duration: const Duration(milliseconds: 500),
             decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(22),
                 gradient: const LinearGradient(colors: [
                   Colors.pinkAccent,
                   Colors.blue,
                 ]),
-                boxShadow:  [
+                boxShadow: [
                   BoxShadow(
-                    color: Colors.pink,
-                    offset: const Offset(-2, 0),
-                    blurRadius: controller.hovers[index] ? 20 : 10,
+                    color: Colors.cyanAccent
+                        .withOpacity(controller.hovers[index] ? .28 : .10),
+                    blurRadius: controller.hovers[index] ? 20 : 8,
                   ),
-                  BoxShadow(
-                    color: Colors.blue,
-                    offset: const Offset(2, 0),
-                    blurRadius: controller.hovers[index] ? 20 : 10,),
                 ]),
-            child: OtherStack(index: index)
-        ));
+            child: OtherStack(index: index)));
       },
     );
   }
