@@ -16,6 +16,7 @@ class FfmpegManager {
     CreateFFmpegParam(
       log: false,
       corePath: _ffmpegCoreSingleThreadCdn,
+      mainName: 'main',
     ),
   );
 
@@ -76,9 +77,7 @@ class FfmpegManager {
   }
 
   Future<void> _load(bool setLog) async {
-    ffmpeg = createFFmpeg(
-      CreateFFmpegParam(log: setLog, corePath: resolvedCorePath),
-    );
+    ffmpeg = createFFmpeg(_params(setLog));
     ffmpeg?.setProgress(_onProgressHandler);
     if (setLog) ffmpeg?.setLogger(_onLogHandler);
     await ffmpeg?.load();
@@ -90,10 +89,15 @@ class FfmpegManager {
     _loading = null;
     _isRunning = false;
     isLoaded = false;
-    ffmpeg = createFFmpeg(
-      CreateFFmpegParam(log: false, corePath: resolvedCorePath),
-    );
+    ffmpeg = createFFmpeg(_params(false));
   }
+
+  /// The single-thread core exports `main`; the multi-thread one `proxy_main`
+  /// (ffmpeg.wasm's default).
+  CreateFFmpegParam _params(bool log) => canUseMultiThreadCore
+      ? CreateFFmpegParam(log: log, corePath: resolvedCorePath)
+      : CreateFFmpegParam(
+          log: log, corePath: resolvedCorePath, mainName: 'main');
 
   void checkLoaded() {
     isLoaded = ffmpeg?.isLoaded() ?? false;

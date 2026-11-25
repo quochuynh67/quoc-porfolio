@@ -20,6 +20,13 @@ class _WebExporter implements EditorExporter {
   @override
   void cancel() {
     _cancelled = true;
+    _discardCore();
+  }
+
+  /// A failed FFmpeg run leaves the wasm runtime dead (later runs throw
+  /// "Cannot read properties of null (reading 'apply')"), so drop it and let
+  /// the next export load a fresh core.
+  void _discardCore() {
     final mgr = FfmpegManager.instance;
     try {
       mgr.ffmpeg?.exit();
@@ -55,20 +62,46 @@ class _WebExporter implements EditorExporter {
     _cancelled = false;
     final mgr = FfmpegManager.instance;
     final log = <String>[];
-    final written = <String>{};
     final fallbacks = <String>[];
+    // The single-thread core terminates its runtime after every command, so
+    // each command runs on a freshly loaded core. Files live in this store and
+    // are copied in/out around each command.
+    final store = <String, Uint8List>{};
+
+    Future<String?> exec(List<String> args) async {
+      try {
+        _discardCore();
+        await _load(mgr);
+        final ff = mgr.ffmpeg!;
+        ff.setLogger((l) {
+          // ignore: avoid_print
+          print('[ffmpeg] ${l.message}');
+          onLog?.call(l.message);
+          log.add(l.message);
+          if (log.length > 400) log.removeRange(0, 100);
+        });
+        for (final n in _neededFiles(args, store)) {
+          ff.writeFile(n, store[n]!);
+        }
+        String? error;
+        final ok = await mgr.runCommand(args, onFailed: (e) => error = e);
+        if (!ok) return error ?? 'FFmpeg failed';
+        final out = args.last;
+        if (out != '-' && out.contains('.')) {
+          try {
+            store[out] = Uint8List.fromList(ff.readFile(out));
+          } catch (e) {
+            return 'No output "$out" was produced ($e)';
+          }
+        }
+        return null;
+      } catch (e) {
+        return e.toString();
+      }
+    }
+
     try {
       onProgress('Loading FFmpeg…', 0);
-      await _load(mgr);
-      final ff = mgr.ffmpeg!;
-      ff.setLogger((l) {
-        // Also mirror FFmpeg's output to the browser console for debugging.
-        // ignore: avoid_print
-        print('[ffmpeg] ${l.message}');
-        onLog?.call(l.message);
-        log.add(l.message);
-        if (log.length > 400) log.removeRange(0, 100);
-      });
 
       // Probe which video clips carry an audio stream.
       final hasAudio = <String, bool>{};
@@ -77,11 +110,10 @@ class _WebExporter implements EditorExporter {
         final c = clips[i];
         if (c.type != EditorAssetType.video) continue;
         final name = sourceName(c, i);
-        ff.writeFile(name, c.bytes);
-        written.add(name);
+        store[name] = c.bytes;
         log.clear();
         onProgress('Inspecting ${c.name}…', 0);
-        await mgr.runCommand(['-i', name, '-frames:v', '1', '-f', 'null', '-']);
+        await exec(['-i', name, '-frames:v', '1', '-f', 'null', '-']);
         hasAudio[c.id] = log.any((l) => l.contains('Audio:'));
       }
       log.clear();
@@ -94,10 +126,7 @@ class _WebExporter implements EditorExporter {
         hasAudio: hasAudio,
         includeMusic: request.includeMusic,
       ));
-      for (final e in plan.inputs.entries) {
-        ff.writeFile(e.key, e.value);
-        written.add(e.key);
-      }
+      store.addAll(plan.inputs);
 
       final total = plan.steps.length;
       for (var i = 0; i < total; i++) {
@@ -106,42 +135,30 @@ class _WebExporter implements EditorExporter {
           return const ExportOutcome.failure('Export cancelled.', []);
         }
         onProgress(step.label, i / total);
-        String? error;
-        var ok = await mgr.runCommand(step.args, onFailed: (e) => error = e);
-        if (!ok && step.fallbackArgs != null && !_cancelled) {
+        var error = await exec(step.args);
+        if (error != null && step.fallbackArgs != null && !_cancelled) {
           fallbacks.add(step.label);
-          ok = await mgr.runCommand(step.fallbackArgs!,
-              onFailed: (e) => error = e);
+          final first = error;
+          error = await exec(step.fallbackArgs!);
+          if (error != null) error = '$error (first attempt: $first)';
         }
         if (_cancelled) {
           return const ExportOutcome.failure('Export cancelled.', []);
         }
-        if (!ok) {
+        if (error != null) {
+          _discardCore();
           return ExportOutcome.failure(
-              'FFmpeg failed at "${step.label}"'
-              '${error == null ? '' : ': $error'}',
+              'FFmpeg failed at "${step.label}": $error',
               log.length > 40 ? log.sublist(log.length - 40) : List.of(log),
               plan.warnings);
         }
-        // Track generated files so they can be freed afterwards.
-        for (final a in step.args) {
-          if (a.endsWith('.mp4') || a.endsWith('.png')) written.add(a);
-        }
       }
       onProgress('Reading result…', .98);
-      final bytes = Uint8List.fromList(ff.readFile(plan.output));
-      if (bytes.isEmpty) {
+      final bytes = store[plan.output];
+      _discardCore();
+      if (bytes == null || bytes.isEmpty) {
         return ExportOutcome.failure('The exported file is empty.', log);
       }
-      for (final f in written) {
-        if (f == plan.output) continue;
-        try {
-          ff.unlink(f);
-        } catch (_) {}
-      }
-      try {
-        ff.unlink(plan.output);
-      } catch (_) {}
       onProgress('Done', 1);
       return ExportOutcome.success(bytes, [
         ...plan.warnings,
@@ -150,8 +167,34 @@ class _WebExporter implements EditorExporter {
               'without the filter.',
       ]);
     } catch (e) {
+      _discardCore();
       return ExportOutcome.failure(
           e.toString(), log.length > 14 ? log.sublist(log.length - 14) : log);
     }
+  }
+
+  /// Files from [store] a command reads: exact names, `%04d` sequences, and
+  /// files listed in a concat list.
+  List<String> _neededFiles(List<String> args, Map<String, Uint8List> store) {
+    final needed = <String>{};
+    for (final a in args) {
+      if (store.containsKey(a)) {
+        needed.add(a);
+        if (a.endsWith('.txt')) {
+          final text = String.fromCharCodes(store[a]!);
+          for (final m in RegExp(r"file '([^']+)'").allMatches(text)) {
+            if (store.containsKey(m.group(1))) needed.add(m.group(1)!);
+          }
+        }
+      } else if (a.contains('%0')) {
+        final m = RegExp(r'%0(\d+)d').firstMatch(a);
+        if (m == null) continue;
+        final re = RegExp(
+            '^${RegExp.escape(a.substring(0, m.start))}\\d{${m.group(1)}}'
+            '${RegExp.escape(a.substring(m.end))}\$');
+        needed.addAll(store.keys.where(re.hasMatch));
+      }
+    }
+    return needed.toList();
   }
 }
