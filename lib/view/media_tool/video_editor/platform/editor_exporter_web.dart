@@ -56,11 +56,15 @@ class _WebExporter implements EditorExporter {
     final mgr = FfmpegManager.instance;
     final log = <String>[];
     final written = <String>{};
+    final fallbacks = <String>[];
     try {
       onProgress('Loading FFmpeg…', 0);
       await _load(mgr);
       final ff = mgr.ffmpeg!;
       ff.setLogger((l) {
+        // Also mirror FFmpeg's output to the browser console for debugging.
+        // ignore: avoid_print
+        print('[ffmpeg] ${l.message}');
         onLog?.call(l.message);
         log.add(l.message);
         if (log.length > 400) log.removeRange(0, 100);
@@ -102,17 +106,21 @@ class _WebExporter implements EditorExporter {
           return const ExportOutcome.failure('Export cancelled.', []);
         }
         onProgress(step.label, i / total);
-        var ok = await mgr.runCommand(step.args);
-        if (!ok && step.fallbackArgs != null) {
-          ok = await mgr.runCommand(step.fallbackArgs!);
+        String? error;
+        var ok = await mgr.runCommand(step.args, onFailed: (e) => error = e);
+        if (!ok && step.fallbackArgs != null && !_cancelled) {
+          fallbacks.add(step.label);
+          ok = await mgr.runCommand(step.fallbackArgs!,
+              onFailed: (e) => error = e);
         }
         if (_cancelled) {
           return const ExportOutcome.failure('Export cancelled.', []);
         }
         if (!ok) {
           return ExportOutcome.failure(
-              'FFmpeg failed at "${step.label}".',
-              log.length > 14 ? log.sublist(log.length - 14) : log,
+              'FFmpeg failed at "${step.label}"'
+              '${error == null ? '' : ': $error'}',
+              log.length > 40 ? log.sublist(log.length - 40) : List.of(log),
               plan.warnings);
         }
         // Track generated files so they can be freed afterwards.
@@ -135,7 +143,12 @@ class _WebExporter implements EditorExporter {
         ff.unlink(plan.output);
       } catch (_) {}
       onProgress('Done', 1);
-      return ExportOutcome.success(bytes, plan.warnings);
+      return ExportOutcome.success(bytes, [
+        ...plan.warnings,
+        for (final label in fallbacks)
+          '"$label" failed with its colour grade, so it was rendered '
+              'without the filter.',
+      ]);
     } catch (e) {
       return ExportOutcome.failure(
           e.toString(), log.length > 14 ? log.sublist(log.length - 14) : log);

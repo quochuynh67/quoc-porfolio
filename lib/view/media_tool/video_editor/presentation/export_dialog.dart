@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../application/export_plan.dart';
 import '../domain/video_editor_project.dart';
@@ -26,6 +28,9 @@ class _ExportDialogState extends State<ExportDialog> {
   String _logLine = '';
   double _fraction = 0;
   bool _cancelled = false;
+  Timer? _ticker;
+  final Stopwatch _clock = Stopwatch();
+  DateTime _lastOutput = DateTime.now();
   ExportOutcome? _outcome;
 
   VideoEditorProject get _project => widget.project;
@@ -47,7 +52,26 @@ class _ExportDialogState extends State<ExportDialog> {
     return notes;
   }
 
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  void _startClock() {
+    _clock
+      ..reset()
+      ..start();
+    _lastOutput = DateTime.now();
+    _ticker?.cancel();
+    // Repaint twice a second so elapsed time and FFmpeg output stay live.
+    _ticker = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (mounted && _phase == _Phase.running) setState(() {});
+    });
+  }
+
   Future<void> _start() async {
+    _startClock();
     setState(() {
       _phase = _Phase.running;
       _label = 'Preparing…';
@@ -97,9 +121,12 @@ class _ExportDialogState extends State<ExportDialog> {
         onLog: (line) {
           if (mounted && line.trim().isNotEmpty) {
             _logLine = line.trim();
+            _lastOutput = DateTime.now();
           }
         },
       );
+      _ticker?.cancel();
+      _clock.stop();
       if (!mounted || _cancelled) return;
       if (outcome.ok) _exporter.download(outcome.bytes!, 'vlog.mp4');
       setState(() {
@@ -130,6 +157,17 @@ class _ExportDialogState extends State<ExportDialog> {
         actions: _actions(),
       ),
     );
+  }
+
+  String _status() {
+    final e = _clock.elapsed;
+    final mm = e.inMinutes.toString().padLeft(2, '0');
+    final ss = (e.inSeconds % 60).toString().padLeft(2, '0');
+    final quiet = DateTime.now().difference(_lastOutput).inSeconds;
+    final hint = quiet > 45
+        ? ' • no FFmpeg output for ${quiet}s — it may be stuck, try Cancel + 480p'
+        : '';
+    return 'Elapsed $mm:$ss$hint';
   }
 
   Widget _body(int w, int h, int seconds) {
@@ -210,6 +248,9 @@ class _ExportDialogState extends State<ExportDialog> {
                       fontSize: 10,
                       color: Colors.white38)),
             ],
+            const SizedBox(height: 8),
+            Text(_status(),
+                style: const TextStyle(color: Colors.white54, fontSize: 11)),
             const SizedBox(height: 10),
             const Text('Do not close this tab while exporting.',
                 style: TextStyle(color: Colors.white54, fontSize: 11)),
@@ -246,7 +287,15 @@ class _ExportDialogState extends State<ExportDialog> {
               Expanded(child: Text(_outcome?.error ?? 'Export failed')),
             ]),
             if (_outcome != null && _outcome!.log.isNotEmpty) ...[
-              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => Clipboard.setData(ClipboardData(
+                      text: '${_outcome!.error}\n${_outcome!.log.join('\n')}')),
+                  icon: const Icon(Icons.copy_rounded, size: 14),
+                  label: const Text('Copy log', style: TextStyle(fontSize: 11)),
+                ),
+              ),
               Container(
                 padding: const EdgeInsets.all(8),
                 color: Colors.black38,

@@ -240,10 +240,33 @@ ExportPlan buildExportPlan(ExportRequest r) {
       final img = 'img$i.png';
       inputs[img] = r.imagePngs[c.id] ?? c.bytes;
       cleanup.add(img);
+      // Grade/scale ONE frame, then just repeat it: far cheaper than
+      // filtering 30 identical frames per second in WebAssembly.
+      final frame = 'p$i.png';
+      cleanup.add(frame);
+      List<String> frameArgs(bool graded) => [
+            '-i',
+            img,
+            '-vf',
+            [
+              fit,
+              'setsar=1',
+              if (graded && color != null) color,
+              'format=rgb24'
+            ].join(','),
+            '-frames:v',
+            '1',
+            frame,
+          ];
+      steps.add(ExportStep(
+        'Clip ${i + 1}/${clips.length}: frame',
+        frameArgs(true),
+        fallbackArgs: color == null ? null : frameArgs(false),
+      ));
       steps.add(ExportStep('Clip ${i + 1}/${clips.length}', [
-        '-loop', '1', '-framerate', '$_fps', '-t', dur, '-i', img, //
+        '-loop', '1', '-framerate', '$_fps', '-t', dur, '-i', frame, //
         '-i', 'silence.wav',
-        '-vf', vf, '-map', '0:v', '-map', '1:a',
+        '-vf', 'fps=$_fps,format=yuv420p', '-map', '0:v', '-map', '1:a',
         ..._encode, '-t', dur, out,
       ]));
     } else {
@@ -260,13 +283,20 @@ ExportPlan buildExportPlan(ExportRequest r) {
               'aresample=44100',
             ].join(',')
           : 'aresample=44100';
-      steps.add(ExportStep('Clip ${i + 1}/${clips.length}', [
-        '-ss', sec(c.trimStart), '-t', span, '-i', src, //
-        if (!audio) ...['-i', 'silence.wav'],
-        '-vf', vf, '-af', af,
-        '-map', '0:v:0', '-map', audio ? '0:a:0' : '1:a:0',
-        ..._encode, '-t', dur, out,
-      ]));
+      List<String> clipArgs(String filter) => [
+            '-ss', sec(c.trimStart), '-t', span, '-i', src, //
+            if (!audio) ...['-i', 'silence.wav'],
+            '-vf', filter, '-af', af,
+            '-map', '0:v:0', '-map', audio ? '0:a:0' : '1:a:0',
+            ..._encode, '-t', dur, out,
+          ];
+      steps.add(ExportStep(
+        'Clip ${i + 1}/${clips.length}',
+        clipArgs(vf),
+        fallbackArgs: color == null
+            ? null
+            : clipArgs(vfParts.where((p) => p != color).join(',')),
+      ));
     }
     cleanup.add(out);
   }
