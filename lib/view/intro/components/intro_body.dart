@@ -20,8 +20,12 @@ class IntroBody extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (compact) ...[
-              const Center(
-                  child: AnimatedImageContainer(width: 150, height: 200)),
+              const AspectRatio(
+                aspectRatio: 1.5,
+                child: AnimatedImageContainer(
+                  width: double.infinity,
+                ),
+              ),
               const SizedBox(height: 32),
             ],
             const Responsive(
@@ -63,8 +67,9 @@ class IntroBody extends StatelessWidget {
                       Expanded(flex: 3, child: text),
                       const SizedBox(width: 32),
                       const Expanded(
-                          flex: 2,
-                          child: Center(child: AnimatedImageContainer())),
+                        flex: 2,
+                        child: Center(child: AnimatedImageContainer()),
+                      ),
                     ],
                   ),
           ),
