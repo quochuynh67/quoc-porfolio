@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../domain/editor_catalog.dart';
 import '../domain/video_editor_project.dart';
 import 'editor_visuals.dart';
+import 'gl_transition_view.dart';
 
 /// Composes the [outgoing] and [incoming] layers for a transition at
 /// progress [t] (0..1). Pure function so the preview and the gallery
@@ -17,6 +18,7 @@ Widget buildTransitionFrame({
   required Widget outgoing,
   required Widget incoming,
   Widget? fxOverlay,
+  bool staticContent = false,
 }) {
   final p = Curves.easeInOutCubic.transform(t.clamp(0.0, 1.0));
   return LayoutBuilder(
@@ -154,6 +156,21 @@ Widget buildTransitionFrame({
             outgoing,
             ClipPath(clipper: _MosaicClipper(p), child: incoming),
           ]);
+        case EditorTransition.glCrosswarp:
+        case EditorTransition.glRipple:
+        case EditorTransition.glSwirl:
+        case EditorTransition.glWarp:
+        case EditorTransition.glDreamy:
+        case EditorTransition.glKaleido:
+        case EditorTransition.glPinwheel:
+        case EditorTransition.glDots:
+          frame = GlTransitionView(
+            type: type,
+            t: t,
+            outgoing: outgoing,
+            incoming: incoming,
+            staticContent: staticContent,
+          );
         case EditorTransition.fx:
           frame = p < .5 ? outgoing : incoming;
       }
@@ -332,6 +349,7 @@ class _TransitionThumbState extends State<TransitionThumb>
             outgoing: a,
             incoming: b,
             fxOverlay: overlay,
+            staticContent: true,
           );
         },
       ),

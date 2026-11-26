@@ -60,7 +60,8 @@ class DialogManager {
                                 listen: false)
                             .startGame();
                       },
-                      child: Image.asset('assets/images/projects/bounce/red_retry.png')),
+                      child: Image.asset(
+                          'assets/images/projects/bounce/red_retry.png')),
                 ],
               ),
             ],
@@ -107,7 +108,8 @@ class DialogManager {
                     ),
                     Row(
                       children: [
-                        Image.asset('assets/images/projects/bounce/blue_menu.png'),
+                        Image.asset(
+                            'assets/images/projects/bounce/blue_menu.png'),
                         const SizedBox(
                           width: 8,
                         ),
@@ -115,11 +117,13 @@ class DialogManager {
                           splashColor: Colors.white,
                           onTap: () {
                             Navigator.pop(navigatorKey.currentContext!);
-                            Provider.of<MyProvider>(navigatorKey.currentContext!,
+                            Provider.of<MyProvider>(
+                                    navigatorKey.currentContext!,
                                     listen: false)
                                 .startGame();
                           },
-                          child: Image.asset('assets/images/projects/bounce/blue_retry.png'),
+                          child: Image.asset(
+                              'assets/images/projects/bounce/blue_retry.png'),
                         ),
                       ],
                     )
@@ -148,14 +152,14 @@ class DialogManager {
                             Row(
                               children: List.generate(
                                   3,
-                                  (index) =>
-                                      Image.asset('assets/images/projects/bounce/grey_star.png')),
+                                  (index) => Image.asset(
+                                      'assets/images/projects/bounce/grey_star.png')),
                             ),
                             Row(
                               children: List.generate(
                                   lives,
-                                  (index) =>
-                                      Image.asset('assets/images/projects/bounce/yellow_star.png')),
+                                  (index) => Image.asset(
+                                      'assets/images/projects/bounce/yellow_star.png')),
                             ),
                           ],
                         ),

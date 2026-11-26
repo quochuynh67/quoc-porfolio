@@ -428,7 +428,7 @@ class _Toolbar extends StatelessWidget {
                 color: Colors.indigoAccent),
             if (showTitle) ...[
               const SizedBox(width: 8),
-              const Text('Video Studio',
+              const Text('Quoc67K1 Studio',
                   style: TextStyle(
                       color: Colors.white, fontWeight: FontWeight.w700)),
             ],

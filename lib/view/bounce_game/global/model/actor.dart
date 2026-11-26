@@ -24,7 +24,9 @@ abstract class Actor {
 
 class Ball extends Actor {
   Ball(
-      {double dx = -1.0, double dy = 1.0, String url = 'assets/images/projects/bounce/ball_small.png'})
+      {double dx = -1.0,
+      double dy = 1.0,
+      String url = 'assets/images/projects/bounce/ball_small.png'})
       : super(dx: dx, dy: dy, url: url);
 
   @override
@@ -107,6 +109,6 @@ class Finish extends Actor {
 
   @override
   void reset([double? toDx, double? toDy]) {
-    this.dx = toDx??7.0;
+    this.dx = toDx ?? 7.0;
   }
 }

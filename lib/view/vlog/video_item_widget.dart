@@ -65,7 +65,10 @@ class VideoItem extends StatefulWidget {
 }
 
 class _VideoItemState extends State<VideoItem>
-    with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin, WidgetsBindingObserver {
+    with
+        AutomaticKeepAliveClientMixin,
+        SingleTickerProviderStateMixin,
+        WidgetsBindingObserver {
   static VideoPlayerController? _activeController;
   static String? _activeVideoKey;
 
@@ -241,7 +244,9 @@ class _VideoItemState extends State<VideoItem>
   void _syncPlaybackState() {
     final controller = videoController;
     if (controller == null || !videoInitialized) return;
-    if (!_isAppInForeground || !_isVisibleEnoughToPlay || !widget.isCurrentPage) {
+    if (!_isAppInForeground ||
+        !_isVisibleEnoughToPlay ||
+        !widget.isCurrentPage) {
       controller.pause();
       return;
     }
@@ -250,35 +255,36 @@ class _VideoItemState extends State<VideoItem>
 
   void _initVideoController() {
     videoController = VideoPlayerController.networkUrl(
-            Uri.parse(widget.video.url),
-            videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true))
-          ..initialize().then((_) {
-            if (!mounted || disposed) return;
-            setState(() {});
-            videoController?.setLooping(!widget.autoPlayNext);
-            videoInitialized = true;
-            videoController?.addListener(_listenVideoValue);
-            setState(() {});
-            _syncPlaybackState();
-          }).onError((error, stackTrace) {
-            js.context.callMethod('logger', [
-              'VideoPlayerController.onError ===> Playing ${widget.video.url}, e $error, stackTrace $stackTrace'
-            ]);
-            _setLogger(
-                'VideoPlayerController.onError ===> Playing ${widget.video.url}, e $error, stackTrace $stackTrace');
-          }).catchError((e) {
-            js.context.callMethod('logger', [
-              'VideoPlayerController.catchError ===> Playing ${widget.video.url}, e $e'
-            ]);
-            _setLogger(
-                'VideoPlayerController.catchError ===> Playing ${widget.video.url}, e $e');
-          });
+        Uri.parse(widget.video.url),
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true))
+      ..initialize().then((_) {
+        if (!mounted || disposed) return;
+        setState(() {});
+        videoController?.setLooping(!widget.autoPlayNext);
+        videoInitialized = true;
+        videoController?.addListener(_listenVideoValue);
+        setState(() {});
+        _syncPlaybackState();
+      }).onError((error, stackTrace) {
+        js.context.callMethod('logger', [
+          'VideoPlayerController.onError ===> Playing ${widget.video.url}, e $error, stackTrace $stackTrace'
+        ]);
+        _setLogger(
+            'VideoPlayerController.onError ===> Playing ${widget.video.url}, e $error, stackTrace $stackTrace');
+      }).catchError((e) {
+        js.context.callMethod('logger', [
+          'VideoPlayerController.catchError ===> Playing ${widget.video.url}, e $e'
+        ]);
+        _setLogger(
+            'VideoPlayerController.catchError ===> Playing ${widget.video.url}, e $e');
+      });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    if (identical(_activeController, videoController) || _activeVideoKey == _videoKey) {
+    if (identical(_activeController, videoController) ||
+        _activeVideoKey == _videoKey) {
       _activeController = null;
       _activeVideoKey = null;
     }
@@ -567,211 +573,221 @@ class _VideoItemState extends State<VideoItem>
                   ),
                   padding: const EdgeInsets.all(12),
                   child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (widget.showAddVideoButton) ...[
-                    ElevatedButton.icon(
-                      onPressed: (widget.canAddVideo && !widget.isAddVideoLoading)
-                          ? widget.onAddVideoTap
-                          : null,
-                      style: _panelButtonStyle(
-                        Colors.cyanAccent.withValues(alpha: 0.95),
-                        foregroundColor: Colors.black,
-                      ),
-                      icon: widget.isAddVideoLoading
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.video_call),
-                      label: Text(widget.addVideoLabel,
-                          style: const TextStyle(fontWeight: FontWeight.w800)),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (widget.showAddVideoButton) ...[
+                        ElevatedButton.icon(
+                          onPressed:
+                              (widget.canAddVideo && !widget.isAddVideoLoading)
+                                  ? widget.onAddVideoTap
+                                  : null,
+                          style: _panelButtonStyle(
+                            Colors.cyanAccent.withValues(alpha: 0.95),
+                            foregroundColor: Colors.black,
+                          ),
+                          icon: widget.isAddVideoLoading
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.video_call),
+                          label: Text(widget.addVideoLabel,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w800)),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
 
-                  /// Logger output
-                  StreamBuilder<String>(
-                    stream: _loggerStream,
-                    builder: (context, snapshot) {
-                      String log = snapshot.data ?? '';
-                      return debugTapCount == 10
-                          ? GestureDetector(
-                              onDoubleTapDown: (_) {
-                                debugTapCount = 0;
-                                setState(() {});
-                              },
-                              child: Container(
-                                color: Colors.black.withValues(alpha: 0.5),
-                                child: Text(
-                                  log,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white),
-                                ),
-                              ),
-                            )
-                          : const SizedBox();
-                    },
-                  ),
-
-                  /// Volume button
-                  StreamBuilder<bool>(
-                    stream: _volumeStream,
-                    builder: (context, snapshot) {
-                      bool soundOn = snapshot.data ?? false;
-                      return ElevatedButton.icon(
-                        onPressed: () {
-                          soundOn ? disableSound() : enableSound();
+                      /// Logger output
+                      StreamBuilder<String>(
+                        stream: _loggerStream,
+                        builder: (context, snapshot) {
+                          String log = snapshot.data ?? '';
+                          return debugTapCount == 10
+                              ? GestureDetector(
+                                  onDoubleTapDown: (_) {
+                                    debugTapCount = 0;
+                                    setState(() {});
+                                  },
+                                  child: Container(
+                                    color: Colors.black.withValues(alpha: 0.5),
+                                    child: Text(
+                                      log,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white),
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox();
                         },
-                        style: _panelButtonStyle(Colors.green),
-                        icon: Icon(soundOn ? Icons.volume_up : Icons.volume_off,
-                            color: Colors.white),
-                        label: Text(soundOn ? 'Tắt âm thanh' : 'Mở âm thanh',
-                            style: _panelButtonTextStyle),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 8),
+                      ),
 
-                  /// Find hotel
-                  StreamBuilder<bool>(
-                      stream: _isFetchingHotel,
-                      builder: (context, snapshot) {
-                        bool isFetching = snapshot.data ?? false;
-                        return ElevatedButton.icon(
-                          onPressed: () {
-                            if (isFetching) return;
-                            _isFetchingHotel.add(true);
-                            FeedService.fetchHotelByVideoId(widget.video.id)
-                                .then((response) {
-                              if (context.mounted) {
-                                if (response != null) {
-                                  _hotelResponse.add(response);
-                                  showModalBottomSheet(
-                                    context: context,
-                                    useRootNavigator: true,
-                                    backgroundColor: Colors.white,
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.vertical(
-                                          top: Radius.circular(16)),
-                                    ),
-                                    builder: (_) => _buildHotelSheet(context),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Không tìm thấy khách sạn'),
-                                    ),
-                                  );
-                                }
-                              }
-                              _isFetchingHotel.add(false);
-                            }).whenComplete(() {
-                              _isFetchingHotel.add(false);
-                            });
-                          },
-                          style: _panelButtonStyle(Colors.green),
-                          icon: isFetching
-                              ? const CircularProgressIndicator()
-                              : const Icon(Icons.home, color: Colors.white),
-                          label: Text(
-                              isFetching
-                                  ? 'Đang tìm kiếm '
-                                  : 'Tìm chỗ ở gần video',
-                              style: _panelButtonTextStyle),
-                        );
-                      }),
-                  const SizedBox(height: 8),
+                      /// Volume button
+                      StreamBuilder<bool>(
+                        stream: _volumeStream,
+                        builder: (context, snapshot) {
+                          bool soundOn = snapshot.data ?? false;
+                          return ElevatedButton.icon(
+                            onPressed: () {
+                              soundOn ? disableSound() : enableSound();
+                            },
+                            style: _panelButtonStyle(Colors.green),
+                            icon: Icon(
+                                soundOn ? Icons.volume_up : Icons.volume_off,
+                                color: Colors.white),
+                            label: Text(
+                                soundOn ? 'Tắt âm thanh' : 'Mở âm thanh',
+                                style: _panelButtonTextStyle),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 8),
 
-                  /// Name desc
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      showModalBottomSheet(
-                        context: context,
-                        useRootNavigator: true,
-                        backgroundColor: Colors.white,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.vertical(top: Radius.circular(16)),
+                      /// Find hotel
+                      StreamBuilder<bool>(
+                          stream: _isFetchingHotel,
+                          builder: (context, snapshot) {
+                            bool isFetching = snapshot.data ?? false;
+                            return ElevatedButton.icon(
+                              onPressed: () {
+                                if (isFetching) return;
+                                _isFetchingHotel.add(true);
+                                FeedService.fetchHotelByVideoId(widget.video.id)
+                                    .then((response) {
+                                  if (context.mounted) {
+                                    if (response != null) {
+                                      _hotelResponse.add(response);
+                                      showModalBottomSheet(
+                                        context: context,
+                                        useRootNavigator: true,
+                                        backgroundColor: Colors.white,
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.vertical(
+                                              top: Radius.circular(16)),
+                                        ),
+                                        builder: (_) =>
+                                            _buildHotelSheet(context),
+                                      );
+                                    } else {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content:
+                                              Text('Không tìm thấy khách sạn'),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                  _isFetchingHotel.add(false);
+                                }).whenComplete(() {
+                                  _isFetchingHotel.add(false);
+                                });
+                              },
+                              style: _panelButtonStyle(Colors.green),
+                              icon: isFetching
+                                  ? const CircularProgressIndicator()
+                                  : const Icon(Icons.home, color: Colors.white),
+                              label: Text(
+                                  isFetching
+                                      ? 'Đang tìm kiếm '
+                                      : 'Tìm chỗ ở gần video',
+                                  style: _panelButtonTextStyle),
+                            );
+                          }),
+                      const SizedBox(height: 8),
+
+                      /// Name desc
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          showModalBottomSheet(
+                            context: context,
+                            useRootNavigator: true,
+                            backgroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(16)),
+                            ),
+                            builder: (_) => _buildVideoNameDescSheet(context),
+                          );
+                        },
+                        style: _panelButtonStyle(Colors.blueAccent.shade700),
+                        icon: const Icon(Icons.perm_media, color: Colors.white),
+                        label: Text(
+                          'Mô tả về video',
+                          style: _panelButtonTextStyle,
                         ),
-                        builder: (_) => _buildVideoNameDescSheet(context),
-                      );
-                    },
-                    style: _panelButtonStyle(Colors.blueAccent.shade700),
-                    icon: const Icon(Icons.perm_media, color: Colors.white),
-                    label: Text(
-                      'Mô tả về video',
-                      style: _panelButtonTextStyle,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                      ),
+                      const SizedBox(height: 8),
 
-                  /// Show spots
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      showModalBottomSheet(
-                        context: context,
-                        useRootNavigator: true,
-                        backgroundColor: Colors.white,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.vertical(top: Radius.circular(16)),
+                      /// Show spots
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          showModalBottomSheet(
+                            context: context,
+                            useRootNavigator: true,
+                            backgroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(16)),
+                            ),
+                            builder: (_) => _buildSpotSheet(context),
+                          );
+                        },
+                        style: _panelButtonStyle(Colors.amber.shade700),
+                        icon: const Icon(Icons.map, color: Colors.white),
+                        label: Text(
+                          'Hiển thị vị trí trong vlog',
+                          style: _panelButtonTextStyle,
                         ),
-                        builder: (_) => _buildSpotSheet(context),
-                      );
-                    },
-                    style: _panelButtonStyle(Colors.amber.shade700),
-                    icon: const Icon(Icons.map, color: Colors.white),
-                    label: Text(
-                      'Hiển thị vị trí trong vlog',
-                      style: _panelButtonTextStyle,
-                    ),
-                  ),
+                      ),
 
-                  // const SizedBox(height: 8),
-                  //
-                  // /// Open VIIV
-                  // ElevatedButton.icon(
-                  //   onPressed: () {
-                  //     js.context.callMethod(
-                  //         'openBrowser', ['https://viiv.app']);
-                  //   },
-                  //   style: ElevatedButton.styleFrom(
-                  //     backgroundColor: Colors.pinkAccent,
-                  //     shape: RoundedRectangleBorder(
-                  //         borderRadius: BorderRadius.circular(10)),
-                  //     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  //   ),
-                  //   icon: const Icon(Icons.open_in_new),
-                  //   label: const Text('Xem nhiều vlog hơn tại ViiV'),
-                  // ),
-                  const SizedBox(height: 8),
+                      // const SizedBox(height: 8),
+                      //
+                      // /// Open VIIV
+                      // ElevatedButton.icon(
+                      //   onPressed: () {
+                      //     js.context.callMethod(
+                      //         'openBrowser', ['https://viiv.app']);
+                      //   },
+                      //   style: ElevatedButton.styleFrom(
+                      //     backgroundColor: Colors.pinkAccent,
+                      //     shape: RoundedRectangleBorder(
+                      //         borderRadius: BorderRadius.circular(10)),
+                      //     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      //   ),
+                      //   icon: const Icon(Icons.open_in_new),
+                      //   label: const Text('Xem nhiều vlog hơn tại ViiV'),
+                      // ),
+                      const SizedBox(height: 8),
 
-                  /// Request feature
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      html.window.parent?.postMessage({
-                        'type': 'CONTACT_CALLBACK', // You can customize this
-                        'data': 'Flutter iframe button pressed',
-                      }, '*'); // Replace '*' with the parent origin for security
-                    },
-                    style: _panelButtonStyle(
-                      Colors.greenAccent.shade400,
-                      foregroundColor: Colors.black,
-                    ),
-                    icon: const Icon(Icons.quick_contacts_dialer_outlined),
-                    label: Text(
-                      'Liện hệ khi gặp lỗi',
-                      style: _panelButtonTextStyle.copyWith(color: Colors.black87),
-                    ),
+                      /// Request feature
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          html.window.parent?.postMessage({
+                            'type':
+                                'CONTACT_CALLBACK', // You can customize this
+                            'data': 'Flutter iframe button pressed',
+                          }, '*'); // Replace '*' with the parent origin for security
+                        },
+                        style: _panelButtonStyle(
+                          Colors.greenAccent.shade400,
+                          foregroundColor: Colors.black,
+                        ),
+                        icon: const Icon(Icons.quick_contacts_dialer_outlined),
+                        label: Text(
+                          'Liện hệ khi gặp lỗi',
+                          style: _panelButtonTextStyle.copyWith(
+                              color: Colors.black87),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
                 ),
               ),
             ),

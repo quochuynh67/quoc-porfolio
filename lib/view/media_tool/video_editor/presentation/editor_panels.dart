@@ -730,8 +730,10 @@ class _TransitionPanel extends StatelessWidget {
     final clips = controller.project.clips;
     final index = clip == null ? -1 : clips.indexWhere((c) => c.id == clip.id);
     final canApply = clip != null && index > 0;
-    final basics =
-        EditorTransition.values.where((t) => t != EditorTransition.fx).toList();
+    final basics = EditorTransition.values
+        .where((t) => t != EditorTransition.fx && !t.isShader)
+        .toList();
+    final shaders = EditorTransition.values.where((t) => t.isShader).toList();
     final fxPacks = [
       for (final s in builtinSprites.take(3))
         EditorFx(id: 'builtin_${s.name}', name: s.name, sprite: s),
@@ -781,6 +783,28 @@ class _TransitionPanel extends StatelessWidget {
             return _TransitionTile(
               label: type.label,
               selected: selected,
+              enabled: canApply,
+              onTap: () => controller.updateSelectedTransition(type),
+              thumb: TransitionThumb(type: type),
+            );
+          },
+        ),
+        const _Label('SHADERS (gl-transitions)'),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 96,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: .78,
+          ),
+          itemCount: shaders.length,
+          itemBuilder: (context, i) {
+            final type = shaders[i];
+            return _TransitionTile(
+              label: type.label,
+              selected: canApply && clip.transition == type,
               enabled: canApply,
               onTap: () => controller.updateSelectedTransition(type),
               thumb: TransitionThumb(type: type),

@@ -121,6 +121,16 @@ flutter:
     - assets/ffmpeg/
   #   - images/a_dot_ham.jpeg
 
+  shaders:
+    - shaders/transitions/crosswarp.frag
+    - shaders/transitions/ripple.frag
+    - shaders/transitions/swirl.frag
+    - shaders/transitions/warp.frag
+    - shaders/transitions/dreamy.frag
+    - shaders/transitions/kaleido.frag
+    - shaders/transitions/pinwheel.frag
+    - shaders/transitions/dots.frag
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
 

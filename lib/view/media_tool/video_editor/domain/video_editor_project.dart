@@ -103,6 +103,16 @@ enum EditorTransition {
   blinds,
   pixelate,
 
+  /// GPU shader transitions ported from gl-transitions.com.
+  glCrosswarp,
+  glRipple,
+  glSwirl,
+  glWarp,
+  glDreamy,
+  glKaleido,
+  glPinwheel,
+  glDots,
+
   /// Dip transition with an effect pack (sprite sheet or WebM/MP4 overlay)
   /// drawn on top; see [EditorClip.fx].
   fx,
@@ -125,6 +135,10 @@ class EditorFx {
 }
 
 extension EditorTransitionMeta on EditorTransition {
+  bool get isShader =>
+      index >= EditorTransition.glCrosswarp.index &&
+      index <= EditorTransition.glDots.index;
+
   String get label => switch (this) {
         EditorTransition.none => 'Cut',
         EditorTransition.fade => 'Cross fade',
@@ -143,6 +157,14 @@ extension EditorTransitionMeta on EditorTransition {
         EditorTransition.circle => 'Circle reveal',
         EditorTransition.blinds => 'Blinds',
         EditorTransition.pixelate => 'Mosaic',
+        EditorTransition.glCrosswarp => 'Crosswarp',
+        EditorTransition.glRipple => 'Ripple',
+        EditorTransition.glSwirl => 'Swirl',
+        EditorTransition.glWarp => 'Dir. warp',
+        EditorTransition.glDreamy => 'Dreamy',
+        EditorTransition.glKaleido => 'Kaleido',
+        EditorTransition.glPinwheel => 'Pinwheel',
+        EditorTransition.glDots => 'Polka dots',
         EditorTransition.fx => 'FX pack',
       };
 
@@ -164,6 +186,14 @@ extension EditorTransitionMeta on EditorTransition {
         EditorTransition.circle => Icons.radio_button_unchecked_rounded,
         EditorTransition.blinds => Icons.view_week_rounded,
         EditorTransition.pixelate => Icons.grid_view_rounded,
+        EditorTransition.glCrosswarp => Icons.compare_arrows_rounded,
+        EditorTransition.glRipple => Icons.waves_rounded,
+        EditorTransition.glSwirl => Icons.cyclone_rounded,
+        EditorTransition.glWarp => Icons.north_east_rounded,
+        EditorTransition.glDreamy => Icons.cloud_rounded,
+        EditorTransition.glKaleido => Icons.filter_vintage_rounded,
+        EditorTransition.glPinwheel => Icons.toys_rounded,
+        EditorTransition.glDots => Icons.blur_circular_rounded,
         EditorTransition.fx => Icons.movie_filter_rounded,
       };
 }

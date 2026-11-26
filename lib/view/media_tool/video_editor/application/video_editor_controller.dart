@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../domain/editor_catalog.dart';
 import '../domain/editor_template.dart';
 import '../domain/video_editor_project.dart';
+import '../domain/ids.dart';
 
 /// Describes a transition that is currently playing at the playhead.
 class ActiveTransition {
@@ -139,7 +140,7 @@ class VideoEditorController extends ChangeNotifier {
   }) {
     final newClipStart = _project.duration;
     final clip = EditorClip(
-      id: 'clip_${DateTime.now().microsecondsSinceEpoch}',
+      id: 'clip_${nextStamp()}',
       name: name,
       type: type,
       bytes: bytes,
@@ -157,7 +158,7 @@ class VideoEditorController extends ChangeNotifier {
     _commit(_project.copyWith(audioTracks: [
       ..._project.audioTracks,
       EditorAudioTrack(
-        id: 'audio_${DateTime.now().microsecondsSinceEpoch}',
+        id: 'audio_${nextStamp()}',
         name: name,
         bytes: bytes,
       ),
@@ -264,7 +265,7 @@ class VideoEditorController extends ChangeNotifier {
       }
     }
     final overlay = EditorOverlay(
-      id: 'overlay_${DateTime.now().microsecondsSinceEpoch}',
+      id: 'overlay_${nextStamp()}',
       type: type,
       label: label,
       start: start,
@@ -495,10 +496,7 @@ class VideoEditorController extends ChangeNotifier {
   final List<SpriteSpec> userSprites = [];
 
   void addFxVideo(String name, Uint8List bytes) {
-    fxLibrary.add(EditorFx(
-        id: 'fx_${DateTime.now().microsecondsSinceEpoch}',
-        name: name,
-        video: bytes));
+    fxLibrary.add(EditorFx(id: 'fx_${nextStamp()}', name: name, video: bytes));
     notifyListeners();
   }
 
@@ -553,7 +551,7 @@ class VideoEditorController extends ChangeNotifier {
           }(),
       ];
     }
-    final stamp = DateTime.now().microsecondsSinceEpoch;
+    final stamp = nextStamp();
     final added = <EditorOverlay>[];
     var n = 0;
     for (final raw in (d['overlays'] as List?) ?? const []) {
@@ -643,7 +641,7 @@ class VideoEditorController extends ChangeNotifier {
       if (local.inMilliseconds < 300 || remaining.inMilliseconds < 300) {
         clips.add(clip);
       } else {
-        final stamp = DateTime.now().microsecondsSinceEpoch;
+        final stamp = nextStamp();
         clips.add(clip.copyWith(
           id: '${clip.id}_a_$stamp',
           name: '${clip.name} A',

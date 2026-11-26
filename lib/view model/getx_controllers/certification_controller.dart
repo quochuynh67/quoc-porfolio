@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 
-class OtherController extends GetxController{
-  RxList<bool> hovers=[
+class OtherController extends GetxController {
+  RxList<bool> hovers = [
     false,
     false,
     false,
@@ -16,7 +16,7 @@ class OtherController extends GetxController{
     false,
     false,
   ].obs;
-  onHover(int index,bool value){
-    hovers[index]=value;
+  onHover(int index, bool value) {
+    hovers[index] = value;
   }
 }

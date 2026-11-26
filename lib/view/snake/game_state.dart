@@ -168,8 +168,8 @@ class GameState with ChangeNotifier {
           return configDialog(context, saveTitle, saveOptions);
         });
     if (saveOptions[confirm] == 1) {
-      var jsonString = await rootBundle.loadString(
-          'assets/images/projects/snake/cfg/default.json');
+      var jsonString = await rootBundle
+          .loadString('assets/images/projects/snake/cfg/default.json');
       var config = jsonDecode(jsonString);
       _appBkColor = int.parse(config['appBk']);
       _leftPlayerColor = int.parse(config['leftPlayer']);
@@ -945,17 +945,59 @@ class GameState with ChangeNotifier {
     var size = _initSize;
     _data = List.generate(size, (_) => List.generate(size, (_) => 0));
     _zeroData(size);
-    var snakePoint = [[0,0],[0,1],[0,2],[0,3],[0,4],[0,8],[0,9],[0,10],[0,11],[0,12],
-      [0,16],[1,0],[1,4],[1,8],[1,12],[1,16],[2,0],[2,4],[2,8],[2,12],[2,16],
-      [3,0],[3,4],[3,8],[3,12],[3,16],[4,0],[4,4],[4,5],[4,6],[4,7],[4,8],
-      [4,12],[4,13],[4,14],[4,15],[4,16],[5,0],[6,0],[7,0],[7,1],[7,2],[7,3],[7,4]];
+    var snakePoint = [
+      [0, 0],
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [0, 4],
+      [0, 8],
+      [0, 9],
+      [0, 10],
+      [0, 11],
+      [0, 12],
+      [0, 16],
+      [1, 0],
+      [1, 4],
+      [1, 8],
+      [1, 12],
+      [1, 16],
+      [2, 0],
+      [2, 4],
+      [2, 8],
+      [2, 12],
+      [2, 16],
+      [3, 0],
+      [3, 4],
+      [3, 8],
+      [3, 12],
+      [3, 16],
+      [4, 0],
+      [4, 4],
+      [4, 5],
+      [4, 6],
+      [4, 7],
+      [4, 8],
+      [4, 12],
+      [4, 13],
+      [4, 14],
+      [4, 15],
+      [4, 16],
+      [5, 0],
+      [6, 0],
+      [7, 0],
+      [7, 1],
+      [7, 2],
+      [7, 3],
+      [7, 4]
+    ];
     List<List<int>> reverse = [];
-    for (var i in snakePoint){
-      reverse.add([size-1-i[0],size-1-i[1]]);
+    for (var i in snakePoint) {
+      reverse.add([size - 1 - i[0], size - 1 - i[1]]);
     }
-    _setChar(snakePoint, [2,2], 0xFFFFEB3B);
-    _setChar(reverse, [-2,-2], 0xFF69F0AE);
-    _data[size~/2][size~/2] = 0xDD000000; 
+    _setChar(snakePoint, [2, 2], 0xFFFFEB3B);
+    _setChar(reverse, [-2, -2], 0xFF69F0AE);
+    _data[size ~/ 2][size ~/ 2] = 0xDD000000;
     notifyListeners();
 
     _initFlag = true;

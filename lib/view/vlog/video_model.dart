@@ -10,7 +10,10 @@ class VideoModel {
   String? description;
   int? like;
   int? view;
-  VideoModel(this.url, this.thumbnail, this.spots, {
+  VideoModel(
+    this.url,
+    this.thumbnail,
+    this.spots, {
     this.user,
     this.name,
     this.description,
@@ -20,7 +23,4 @@ class VideoModel {
   });
 }
 
-
-class HotelModel {
-  
-}
+class HotelModel {}

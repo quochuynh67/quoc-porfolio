@@ -43,7 +43,7 @@ List<OtherModel> otherList = [
     name: 'Media Tools',
     type: 'Flutter tools',
     date: 'Portfolio app',
-    skills: ['FFmpeg', 'Video processing', 'Vlog maker', 'Quote maker'],
+    skills: ['FFmpeg', 'Video processing', 'Vlog editor', 'Quoc67K1 Studio'],
     pageIndex: 3,
   ),
   OtherModel(

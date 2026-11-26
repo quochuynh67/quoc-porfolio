@@ -60,6 +60,103 @@ const _articles = <JournalArticle>[
     ],
   ),
   JournalArticle(
+    title: 'Superpowers: biến AI coding thành một quy trình kỹ thuật',
+    summary:
+        'Ghi chép học Superpowers từ con số 0: cách bắt đầu dự án mới, feature mới và một bài thực hành cụ thể với 67Talk.',
+    category: 'Vibe Coding',
+    tags: ['Superpowers', 'Agent Skills', 'TDD', 'Planning', '67Talk'],
+    readTime: '36 phút đọc',
+    date: '26 Thg 11, 2026',
+    icon: Icons.bolt_rounded,
+    featured: true,
+    content: [
+      (
+        'Superpowers là gì?',
+        'Superpowers không phải model AI mới hay bộ prompt để “code nhanh hơn”. Đây là framework agent skills kết hợp một phương pháp phát triển phần mềm. Nó yêu cầu coding agent khám phá nhu cầu, trình bày thiết kế, lập kế hoạch, dùng TDD, review và xác minh thay vì nhận yêu cầu rồi viết code ngay.\n\nWorkflow chính thức gồm brainstorming → worktree → writing plans → executing plans hoặc subagent-driven development → TDD → code review → finishing branch. Triết lý xuyên suốt là hệ thống thay cho ứng biến, đơn giản thay cho phức tạp và bằng chứng thay cho tuyên bố.\n\nNguồn chính thức: [obra/superpowers](https://github.com/obra/superpowers) và [Basic workflow](https://github.com/obra/superpowers#the-basic-workflow).'
+      ),
+      (
+        'Vì sao vibe coding thường thất bại?',
+        'AI có thể tạo một màn hình đẹp trong vài phút nhưng bỏ sót những câu quyết định chất lượng: ai sử dụng, lỗi được phục hồi thế nào, dữ liệu thuộc tenant nào, hành động nào cần xác nhận và test nào chứng minh feature đúng. Khi prompt mơ hồ, agent tự lấp khoảng trống bằng giả định.\n\nSuperpowers đặt các gates rõ ràng: chưa hiểu nhu cầu thì chưa design; chưa duyệt design thì chưa plan; chưa thấy failing test thì chưa viết production code; chưa có fresh verification thì chưa tuyên bố hoàn thành. Quy trình chậm hơn vài phút đầu nhưng giảm rất nhiều vòng lặp sửa sai.'
+      ),
+      (
+        'Một ghi chú trung thực trước khi bắt đầu',
+        'Tại thời điểm viết bài, tôi đang học Superpowers và chưa áp dụng toàn bộ workflow này vào một dự án production hoàn chỉnh. Những phần về workflow được tổng hợp từ repository/tài liệu chính thức; ví dụ 67Talk là bài thực hành đề xuất dựa trên cấu trúc dự án hiện có, không phải case study tuyên bố đã triển khai thành công.\n\nTôi chọn cách ghi lại quá trình học vì nó giúp phân biệt ba thứ: điều dự án Superpowers thực sự yêu cầu, điều tôi hiểu sau khi đọc, và điều chỉ có thể kết luận sau khi tự áp dụng. Người đọc nên xem bài này như một lab có hướng dẫn, rồi kiểm chứng bằng feature nhỏ của chính mình.'
+      ),
+      (
+        'Cài đặt và kiểm tra lần đầu',
+        'Trong Codex App, Superpowers có trên plugin marketplace: mở Plugins ở sidebar, tìm Superpowers trong nhóm Coding và cài đặt. Mỗi coding harness có cơ chế cài riêng; cài trong Codex không tự động cài cho Claude Code hay Cursor. Sau khi cài, nên mở một chat mới để bootstrap/skills được nạp đầy đủ.\n\nBài test đơn giản không phải “hãy viết app todo”, mà là yêu cầu agent bắt đầu một sản phẩm còn mơ hồ. Nếu plugin hoạt động đúng, agent phải kích hoạt brainstorming trước khi viết code. Ví dụ: “Tôi muốn làm app ghi chi tiêu cho gia đình.” Agent nên hỏi mục tiêu/người dùng hoặc đề xuất design để duyệt, không lập tức tạo Flutter project.\n\nHướng dẫn cài đặt luôn có thể thay đổi, vì vậy hãy kiểm tra mục [Codex App installation](https://github.com/obra/superpowers#codex-app) trong repository chính thức.'
+      ),
+      (
+        'Start from scratch — Dự án mới bắt đầu thế nào?',
+        'Giả sử ta bắt đầu ứng dụng Flutter “Pocket Expense”: nhập khoản chi, phân loại và xem tổng theo tháng. Đừng chạy `flutter create` ngay. Hãy đi theo các artefacts sau:\n\n1. Product intent: ai dùng, vấn đề gì, thành công được đo thế nào.\n2. Brainstorming conversation: scope MVP, dữ liệu, offline/online, platform, privacy.\n3. Approved design: user flow, screens, state, storage, error cases và non-goals.\n4. Implementation plan: task nhỏ, file/interface/test/command rõ ràng.\n5. Isolated worktree và baseline verification.\n6. TDD từng vertical slice.\n7. Review, full verification và quyết định merge/deploy.\n\n```text\nTôi muốn bắt đầu một ứng dụng Flutter quản lý chi tiêu gia đình từ con số 0.\nMục tiêu MVP: thêm khoản chi trong dưới 10 giây và xem tổng theo tháng.\nHãy dùng brainstorming. Đừng tạo project hay code trước khi chúng ta duyệt design.\nSau khi hiểu nhu cầu, hãy đề xuất 2 kiến trúc phù hợp cho offline-first, nêu trade-off và đề xuất một lựa chọn.\n```\n\nKết thúc brainstorming, bạn nên có design document chứ chưa cần code. Sau khi duyệt design, yêu cầu writing-plans tạo plan. Chỉ đến bước execution mới tạo Flutter project, dependencies và test đầu tiên.'
+      ),
+      (
+        'Ví dụ vertical slice đầu tiên cho dự án mới',
+        'Vertical slice đầu tiên nên nhỏ nhưng chạy end-to-end: người dùng nhập số tiền + danh mục, bấm Save, dữ liệu được validate và xuất hiện trong danh sách. Chưa cần đăng nhập, cloud sync, chart, AI phân loại hay 20 theme.\n\nTDD có thể bắt đầu từ domain thay vì UI:\n\n```dart\ntest(\'rejects an expense with a non-positive amount\', () {\n  expect(\n    () => Expense.create(amount: 0, category: "Food"),\n    throwsA(isA<InvalidExpense>()),\n  );\n});\n```\n\nSau khi test fail đúng lý do, tạo model tối thiểu để pass. Tiếp theo test repository local, controller state rồi widget form. Mỗi vòng Red–Green–Refactor tạo một phần behavior có bằng chứng. Khi slice chạy được trên thiết bị, mới chọn slice kế tiếp như monthly total.'
+      ),
+      (
+        'Feature mới trong dự án có sẵn bắt đầu thế nào?',
+        'Khác biệt lớn nhất là phải đọc trước khi hỏi. Agent cần map code hiện tại, test pattern, data flow và recent changes; không được dùng sở thích kiến trúc chung để thay convention của dự án.\n\n```text\nTrong 67Talk, tôi muốn thêm AI handoff summary.\nTrước tiên chỉ đọc và giải thích luồng handoff hiện tại từ widget → backend → queue → agent workspace.\nLiệt kê file, event và database object liên quan; chỉ ra test hiện có gần nhất.\nSau đó dùng brainstorming để xác định behavior còn thiếu. Chưa sửa code.\n```\n\nSau khi agent trình bày current state, bạn sửa các hiểu lầm trước. Rồi duyệt design, lập plan, tạo worktree và chạy baseline tests. Quy tắc quan trọng: feature mới phải khớp hệ thống đang tồn tại; dự án không nên bị “viết lại âm thầm” chỉ vì agent quen framework khác.'
+      ),
+      (
+        'Superpowers mang lại lợi ích gì?',
+        '- Giảm xây sai thứ: brainstorming làm rõ outcome và non-goals trước khi tốn code.\n- Giảm context drift: design/spec/plan là bộ nhớ bên ngoài để agent không đổi hướng giữa chừng.\n- Dễ review: task nhỏ, interface rõ và commit thường xuyên giúp biết thay đổi nào gây lỗi.\n- Test đáng tin hơn: bắt buộc nhìn test fail trước, tránh test viết sau chỉ xác nhận implementation.\n- Debug ít đoán: root cause, evidence và hypothesis thay cho nhiều bản vá cùng lúc.\n- Dễ giao việc: subagent nhận task self-contained, không cần toàn bộ lịch sử chat.\n- Handoff tốt hơn: người khác có thể đọc spec, plan, tests và tiếp tục công việc.\n- Báo cáo trung thực hơn: verification output hỗ trợ tuyên bố thay vì “có vẻ đã ổn”.\n\nLợi ích lớn nhất không phải nhiều code hơn mỗi giờ. Đó là tăng tỷ lệ thay đổi đúng, có thể giải thích và có thể kiểm chứng.'
+      ),
+      (
+        'Chi phí và giới hạn cần biết',
+        'Quy trình tạo thêm design docs, plans, tests, review rounds và token usage. Với thay đổi nhỏ, dùng toàn bộ ceremony sẽ chậm và gây mệt. Subagents cũng có thể lặp context hoặc tạo conflict nếu task boundaries kém. TDD không giúp nếu test sai; review không giúp nếu reviewer chỉ lặp lại giả định của implementer.\n\nCách học phù hợp là bắt đầu với một feature 1–2 giờ, không phải dự án lớn. Áp dụng bốn skill trước: brainstorming, writing-plans, TDD và verification. Khi đã quen mới thêm worktrees, systematic debugging và subagent-driven development.'
+      ),
+      (
+        'Lộ trình học 7 ngày thực tế',
+        '- Ngày 1: cài plugin, đọc Basic Workflow và chạy một brainstorming không code.\n- Ngày 2: viết design cho app nhỏ, tập nói rõ non-goals và failure cases.\n- Ngày 3: chuyển design thành plan có file/interface/test/command.\n- Ngày 4: làm một domain behavior bằng Red–Green–Refactor.\n- Ngày 5: cố tình tạo bug nhỏ và dùng bốn phase systematic debugging.\n- Ngày 6: chạy verification ladder, ghi evidence và limitation.\n- Ngày 7: làm lại một feature nhỏ trong dự án thật, so sánh số lần rework với cách cũ.\n\nSau tuần đầu, câu hỏi không còn là “Superpowers có hay không?” mà là: gate nào thực sự giảm lỗi cho loại công việc của bạn, gate nào cần rút gọn, và evidence nào team của bạn cần trước khi merge.'
+      ),
+      (
+        'Dự án xuyên suốt: AI handoff summary cho 67Talk',
+        'Ta xây một feature cụ thể: khi AI Agent chuyển conversation cho human agent, hệ thống tạo summary gồm vấn đề của visitor, facts đã xác minh, tools đã gọi và bước đề xuất tiếp theo. Nhân viên nhận chat không phải đọc lại toàn bộ lịch sử.\n\nAcceptance criteria:\n\n- Summary chỉ đọc message của đúng company và conversation.\n- Không đưa internal note hoặc secret tool result ra ngoài.\n- Provider lỗi không được chặn handoff; UI dùng fallback summary.\n- Message mới tới khi đang generate không được publish summary cũ.\n- Nhân viên xem được nguồn facts và transcript gốc.\n- Audit log ghi model, config version, latency và token usage.'
+      ),
+      (
+        'Beginner — Brainstorming trước khi code',
+        'Skill brainstorming yêu cầu đọc context/code hiện tại trước, sau đó chỉ hỏi điều thật sự thay đổi sản phẩm. Với feature này, agent phải đọc handoff flow, conversation store, Supabase Edge Function và realtime events của 67Talk trước khi hỏi.\n\nCâu hỏi tốt: “Summary được tạo trước khi conversation vào queue hay sau khi nhân viên nhận?” Câu trả lời thay đổi latency và ownership. Câu hỏi kém: “Dùng React hay Flutter?” vì codebase đã trả lời React/TypeScript.\n\nThiết kế hợp lý: handoff không chờ AI; database tạo summary job bất đồng bộ; UI hiển thị Preparing summary; realtime event cập nhật khi xong. Provider chậm sẽ không cản visitor gặp người thật. Đọc thêm [brainstorming skill](https://github.com/obra/superpowers/blob/main/skills/brainstorming/SKILL.md).'
+      ),
+      (
+        'Beginner — Prompt thực hành và design gate',
+        '```text\nTôi muốn thêm AI handoff summary vào 67Talk.\nTrước khi code, hãy đọc handoff flow, ai_reply_outbox, conversation store và realtime subscription.\nDùng brainstorming để nêu các quyết định còn thiếu, đề xuất hai phương án kèm trade-off, rồi viết design ngắn để tôi duyệt.\nKhông triển khai trước khi design được chấp thuận.\n```\n\nOutput cần kiểm chứng được: user journey, data flow, state, failure modes, security boundary và quyết định đã duyệt. Một đoạn mô tả “thêm API rồi gọi từ UI” chưa phải design.'
+      ),
+      (
+        'Beginner — Writing Plans đủ chi tiết để thi hành',
+        'Plan không phải checklist “làm backend, làm UI, test”. Nó phải đủ rõ cho engineer chưa biết codebase: file chính xác, interface, failing test, command chạy và expected result. Mỗi task là deliverable có thể review độc lập.\n\n```markdown\n### Task 1: Create handoff summary job\nFiles:\n- Create: supabase/migrations/..._handoff_summary_jobs.sql\n- Test: supabase/tests/handoff_summary_jobs.test.sql\nInterface:\n- Produces: enqueue_handoff_summary(conversation_id bigint)\nSteps:\n1. Write a failing tenant-isolation test.\n2. Run it and verify the expected failure.\n3. Add table, RLS and enqueue function.\n4. Run focused test, then full database suite.\n5. Commit.\n```\n\nSuperpowers đề xuất plan có Goal, Architecture, Tech Stack, Spec, global constraints và review focus. Xem [writing-plans](https://github.com/obra/superpowers/blob/main/skills/writing-plans/SKILL.md).'
+      ),
+      (
+        'Intermediate — TDD Red–Green–Refactor',
+        'Luật cứng của skill TDD là không có production code trước failing test. RED phải được chạy và fail đúng lý do. Nếu test pass ngay, nó đang kiểm behavior cũ hoặc không kiểm điều bạn tưởng. GREEN là implementation tối thiểu; REFACTOR chỉ bắt đầu khi test xanh.\n\n```typescript\nit(\'excludes internal notes from handoff context\', () => {\n  const messages = [\n    visitor(\'My order is late\'),\n    internalNote(\'VIP; offer voucher\'),\n    agent(\'I am checking it now\'),\n  ];\n  const context = buildHandoffContext(messages);\n  expect(context).toContain(\'My order is late\');\n  expect(context).not.toContain(\'offer voucher\');\n});\n```\n\nSau khi thấy test fail vì internal note bị đưa vào context, code tối thiểu là filter đúng visibility. Không tiện tay thêm caching, retry hay abstraction chưa được test yêu cầu. Đó là YAGNI. Xem [TDD skill](https://github.com/obra/superpowers/blob/main/skills/test-driven-development/SKILL.md).'
+      ),
+      (
+        'Intermediate — Debugging dựa trên bằng chứng',
+        'Giả sử cùng một handoff summary xuất hiện hai lần. Cách sửa triệu chứng là debounce UI. Systematic debugging bắt đầu bằng root cause investigation.\n\n- Investigation: tái hiện; log job id tại trigger, Edge Function claim và realtime publish.\n- Pattern analysis: so với ai_reply_outbox đang giới hạn một active job mỗi conversation.\n- Hypothesis: hai trigger cùng enqueue khi handoff đổi status và assigned_agent_id.\n- Implementation: failing integration test; unique active-job constraint/idempotency key tại nguồn; chạy focused và full suite.\n\n> Debounce UI không ngăn hai provider calls, không hoàn token và không bảo vệ client khác.\n\nNếu ba lần fix thất bại, skill yêu cầu dừng và xem lại kiến trúc thay vì chồng bản vá thứ tư. Xem [systematic-debugging](https://github.com/obra/superpowers/blob/main/skills/systematic-debugging/SKILL.md).'
+      ),
+      (
+        'Intermediate — Verification trước khi nói “đã xong”',
+        'Fresh evidence phải nằm trong phiên làm việc hiện tại. Verification ladder cho feature ví dụ:\n\n- Unit test cho context builder.\n- Database/RLS test cho tenant isolation và idempotency.\n- Edge Function integration test cho provider failure và stale job.\n- Frontend test cho loading, completed và fallback state.\n- Full npm test, lint và production build.\n- Manual flow visitor → AI → handoff → queue → agent opens conversation.\n\nNếu full suite có test đỏ không liên quan, phải báo rõ tên test. Không được im lặng và tuyên bố toàn bộ xanh. Đọc [verification-before-completion](https://github.com/obra/superpowers/blob/main/skills/verification-before-completion/SKILL.md).'
+      ),
+      (
+        'Advanced — Worktree và Subagent-driven Development',
+        'Worktree cô lập feature khỏi nhánh chính và giữ baseline tests rõ ràng. Sau khi spec/plan ổn, mỗi task có thể giao một subagent mới để tránh context pollution. Mỗi task qua hai gate: spec compliance trước, code quality sau.\n\n```bash\ngit worktree add ../67talk-handoff-summary -b feature/handoff-summary\ncd ../67talk-handoff-summary\nnpm install\nnpm test\n```\n\nTask decomposition hợp lý:\n\n1. Database: schema, RLS, enqueue/idempotency.\n2. AI runtime: context, prompt, settlement, stale protection.\n3. Realtime contract: event schema/publication.\n4. Agent UI: summary card, citations, fallback/loading.\n5. E2E/evals: golden conversations, provider failure, race conditions.\n\nKhông chạy song song tasks cùng sửa một file hoặc dùng interface chưa chốt. Xem [subagent-driven-development](https://github.com/obra/superpowers/blob/main/skills/subagent-driven-development/SKILL.md).'
+      ),
+      (
+        'Advanced — Evals cho feature AI',
+        'TDD kiểm code; evals kiểm chất lượng model. Với handoff summary, tạo dataset conversation đã ẩn danh cùng expected facts và forbidden facts. Đo factual coverage, hallucination, PII/internal-note leakage, latency, token cost và tỷ lệ human phải sửa.\n\n```yaml\ncase: delayed_order_urgent\nexpected_facts:\n  - order NS1042 is delayed\n  - visitor needs it tomorrow\nforbidden:\n  - internal VIP note\n  - full phone number\nexpected_next_action: check urgent pickup or replacement\n```\n\nMỗi incident production trở thành regression case. Prompt/model mới chỉ rollout khi code suite và eval suite cùng đạt threshold.'
+      ),
+      (
+        'Khi nào không dùng toàn bộ quy trình?',
+        'Sửa typo không cần design document dài. Brainstorming cũng phân biệt task nhỏ đã đủ thông tin với task còn thiếu quyết định. Quy trình nên tỷ lệ thuận rủi ro: migration, authentication, AI tool ghi dữ liệu và payment cần gates chặt; chỉnh spacing có thể dùng design ngắn và verification trực quan.\n\nSuperpowers không thay thế tư duy. Spec sai thì plan chi tiết chỉ giúp xây sai thứ nhanh hơn. Test chỉ kiểm mock thì TDD không bảo vệ behavior thật. Reviewer dùng cùng giả định với implementer thì hai agent vẫn có thể cùng sai.'
+      ),
+      (
+        'Checklist áp dụng ngay',
+        '- Trước feature: đọc code, viết user outcome và failure modes.\n- Brainstorm: chỉ hỏi quyết định làm thay đổi kiến trúc hoặc UX.\n- Design: data flow, state, security boundary, error/recovery.\n- Plan: file, interface, failing test, command, expected result.\n- Implement: RED → verify fail → GREEN → verify pass → REFACTOR.\n- Debug: root cause trước, một hypothesis mỗi lần.\n- Review: spec compliance trước, code quality sau.\n- Verify: focused tests, full suite, build và user journey thật.\n- Finish: báo evidence, limitation và lựa chọn merge/deploy.'
+      ),
+    ],
+  ),
+  JournalArticle(
     title: '67Talk: xây AI Customer Service có Chat Widget nhúng website',
     summary:
         'Case study từ 67Talk: cấu hình AI Agent, knowledge retrieval, widget visitor, realtime, quota token và hành trình handoff.',

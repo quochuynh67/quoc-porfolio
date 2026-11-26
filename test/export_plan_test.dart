@@ -74,8 +74,14 @@ void main() {
       '1',
     ]);
     final fxVideo = await gen('fx.mp4', [
-      '-f', 'lavfi', '-i', 'testsrc=size=160x90:rate=24:duration=1',
-      '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
+      '-f',
+      'lavfi',
+      '-i',
+      'testsrc=size=160x90:rate=24:duration=1',
+      '-c:v',
+      'libx264',
+      '-pix_fmt',
+      'yuv420p',
     ]);
     final music = await gen('m.mp3', [
       '-f',
@@ -114,13 +120,10 @@ void main() {
             .copyWith(
                 transition: EditorTransition.fx,
                 fx: EditorFx(id: 'f', name: 'WebM', video: fxVideo)),
-        clip('c4', EditorAssetType.image, png, 1500)
-            .copyWith(
-                transition: EditorTransition.fx,
-                fx: const EditorFx(
-                    id: 's',
-                    name: 'Boom',
-                    sprite: SpriteSpec(cols: 2, rows: 2))),
+        clip('c4', EditorAssetType.image, png, 1500).copyWith(
+            transition: EditorTransition.fx,
+            fx: const EditorFx(
+                id: 's', name: 'Boom', sprite: SpriteSpec(cols: 2, rows: 2))),
       ],
       overlays: [
         const EditorOverlay(

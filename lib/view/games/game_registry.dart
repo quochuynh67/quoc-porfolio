@@ -47,5 +47,3 @@ class GameRegistry {
     return null;
   }
 }
-
-

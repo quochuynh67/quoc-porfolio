@@ -5,6 +5,7 @@ import '../../../../res/constants.dart';
 import 'knowledges.dart';
 import 'about.dart';
 import 'my_skill.dart';
+
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
   @override
@@ -18,18 +19,20 @@ class CustomDrawer extends StatelessWidget {
             Container(
               color: bgColor,
               child: const Padding(
-              padding: EdgeInsets.all(defaultPadding/2),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  PersonalInfo(),
-                  MySKills(),
-                  Knowledges(),
-                  Divider(),
-                  SizedBox(height: defaultPadding,),
-                  ContactIcon(),
-                ],
-              ),
+                padding: EdgeInsets.all(defaultPadding / 2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    PersonalInfo(),
+                    MySKills(),
+                    Knowledges(),
+                    Divider(),
+                    SizedBox(
+                      height: defaultPadding,
+                    ),
+                    ContactIcon(),
+                  ],
+                ),
               ),
             )
           ],
@@ -38,7 +41,3 @@ class CustomDrawer extends StatelessWidget {
     );
   }
 }
-
-
-
-

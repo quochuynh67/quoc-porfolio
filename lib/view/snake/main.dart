@@ -133,7 +133,7 @@ class SnakeHomeState extends State<SnakeHome>
             Card(
               child: ListTile(
                 leading:
-                colorOptionLeading(gameState.brickOnePlayerColor, 30.0),
+                    colorOptionLeading(gameState.brickOnePlayerColor, 30.0),
                 title: Text('Màu rắn (1 người chơi)'),
                 onTap: () {
                   Navigator.pop(context);
@@ -232,7 +232,7 @@ class SnakeHomeState extends State<SnakeHome>
 
   Container colorOptionLeading(int colorValue, double size) {
     return Container(
-      //color: Color(colorValue),
+        //color: Color(colorValue),
         width: size,
         height: size,
         decoration: BoxDecoration(
@@ -450,7 +450,7 @@ class SnakeHomeState extends State<SnakeHome>
       child: IconButton(
         icon: Icon(
           icon,
-          size: size/2,
+          size: size / 2,
         ),
         style: ElevatedButton.styleFrom(backgroundColor: bkColor),
         onPressed: () {

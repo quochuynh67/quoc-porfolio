@@ -35,8 +35,9 @@ class StorageService {
     final email = currentUserEmail?.toLowerCase();
 
     final byId = ownerUserId.isNotEmpty && uid != null && uid == ownerUserId;
-    final byEmail =
-        ownerEmail.isNotEmpty && email != null && email == ownerEmail.toLowerCase();
+    final byEmail = ownerEmail.isNotEmpty &&
+        email != null &&
+        email == ownerEmail.toLowerCase();
 
     return byId || byEmail;
   }
@@ -50,9 +51,7 @@ class StorageService {
       final supabase = _supabase;
       if (supabase == null) return [];
       // List files in the bucket
-      final response = await supabase.storage
-          .from(bucketName)
-          .list(
+      final response = await supabase.storage.from(bucketName).list(
             path: path,
             searchOptions: SearchOptions(limit: limit, offset: offset),
           );
@@ -84,16 +83,13 @@ class StorageService {
             searchOptions: SearchOptions(limit: limit, offset: offset),
           );
 
-      return response
-          .where((file) => file.name.contains('.'))
-          .map((file) {
-            final uploader = _extractUploaderName(file.name);
-            return StorageVideoEntry(
-              publicUrl: supabase.storage.from(bucketName).getPublicUrl(file.name),
-              uploaderName: uploader,
-            );
-          })
-          .toList();
+      return response.where((file) => file.name.contains('.')).map((file) {
+        final uploader = _extractUploaderName(file.name);
+        return StorageVideoEntry(
+          publicUrl: supabase.storage.from(bucketName).getPublicUrl(file.name),
+          uploaderName: uploader,
+        );
+      }).toList();
     } on StorageException catch (e) {
       print('Error retrieving storage entries: ${e.message}');
       return [];
@@ -165,9 +161,9 @@ class StorageService {
   // Optional: Get signed URLs for private files
   Future<List<String>> listSignedUrls(
       {required String bucketName,
-        String path = '',
-        int limit = 100,
-        Duration expiresIn = const Duration(hours: 1)}) async {
+      String path = '',
+      int limit = 100,
+      Duration expiresIn = const Duration(hours: 1)}) async {
     try {
       final supabase = _supabase;
       if (supabase == null) return [];

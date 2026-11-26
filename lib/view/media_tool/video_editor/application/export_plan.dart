@@ -159,6 +159,14 @@ String xfadeFor(EditorTransition t) => switch (t) {
       EditorTransition.circle => 'circleopen',
       EditorTransition.blinds => 'vertopen',
       EditorTransition.pixelate => 'pixelize',
+      EditorTransition.glCrosswarp => 'smoothleft',
+      EditorTransition.glRipple => 'dissolve',
+      EditorTransition.glSwirl => 'radial',
+      EditorTransition.glWarp => 'diagtl',
+      EditorTransition.glDreamy => 'fade',
+      EditorTransition.glKaleido => 'distance',
+      EditorTransition.glPinwheel => 'radial',
+      EditorTransition.glDots => 'circleopen',
       EditorTransition.fx => 'fadewhite',
       EditorTransition.none => 'fade',
     };
@@ -206,6 +214,10 @@ ExportPlan buildExportPlan(ExportRequest r) {
   final steps = <ExportStep>[];
   final cleanup = <String>[];
   final warnings = <String>[];
+  if (r.project.clips.any((c) => c.transition.isShader)) {
+    warnings.add('Shader transitions (gl-transitions) are previewed with GPU '
+        'shaders; the export uses the closest FFmpeg transition instead.');
+  }
   final parts = <String>[];
 
   final fit = project.fitContain

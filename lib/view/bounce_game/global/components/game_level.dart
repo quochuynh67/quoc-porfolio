@@ -1,4 +1,3 @@
-
 import '../model/actor.dart';
 import 'barrier.dart';
 

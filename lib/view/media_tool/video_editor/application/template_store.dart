@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/editor_template.dart';
+import '../domain/ids.dart';
 
 /// Built-in recipes plus the user's saved templates (persisted locally).
 class TemplateStore extends ChangeNotifier {
@@ -66,7 +67,7 @@ class TemplateStore extends ChangeNotifier {
     final t = EditorTemplate.tryDecode(source.trim());
     if (t == null) return false;
     add(EditorTemplate(
-      id: 'user_${DateTime.now().microsecondsSinceEpoch}',
+      id: 'user_${nextStamp()}',
       name: t.name,
       kind: t.kind,
       data: t.data,

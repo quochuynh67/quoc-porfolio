@@ -4,11 +4,11 @@ import 'package:photo_view/photo_view.dart';
 
 class ImageViewer {
   ImageViewer(
-      BuildContext context, {
-        required List<String> images,
-        int initialIndex = 0,
-        bool isAsset = true,
-      }) {
+    BuildContext context, {
+    required List<String> images,
+    int initialIndex = 0,
+    bool isAsset = true,
+  }) {
     showGeneralDialog(
       context: context,
       barrierColor: Colors.black,
@@ -108,7 +108,7 @@ class _ImageViewerDialogState extends State<_ImageViewerDialog> {
                     tag: 'IMAGEVIEW_$index',
                     child: PhotoView(
                       backgroundDecoration:
-                      const BoxDecoration(color: Colors.black),
+                          const BoxDecoration(color: Colors.black),
                       loadingBuilder: (_, __) => const Center(
                           child: CircularProgressIndicator(
                               color: Colors.cyanAccent)),
@@ -129,9 +129,7 @@ class _ImageViewerDialogState extends State<_ImageViewerDialog> {
               left: 16,
               child: IconButton(
                 icon: Icon(Icons.arrow_back_ios,
-                    color: _currentIndex == 0
-                        ? Colors.white38
-                        : Colors.white),
+                    color: _currentIndex == 0 ? Colors.white38 : Colors.white),
                 onPressed: _currentIndex == 0 ? null : _previousImage,
               ),
             ),
@@ -164,8 +162,8 @@ class _ImageViewerDialogState extends State<_ImageViewerDialog> {
             Positioned(
               bottom: 30,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                    vertical: 6, horizontal: 12),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                 decoration: BoxDecoration(
                   color: Colors.black87,
                   borderRadius: BorderRadius.circular(12),

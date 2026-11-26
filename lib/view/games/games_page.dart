@@ -31,7 +31,8 @@ class _GamesPageState extends State<GamesPage> {
           ..style.border = '0'
           ..style.width = '100%'
           ..style.height = '100%'
-          ..allow = 'autoplay; fullscreen; gamepad; clipboard-read; clipboard-write';
+          ..allow =
+              'autoplay; fullscreen; gamepad; clipboard-read; clipboard-write';
 
         return iframe;
       });
@@ -77,13 +78,14 @@ class _GamesPageState extends State<GamesPage> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
-            const Text('Examples: /games?game=bounce, /games?game=snake, /games?game=tuoitho'),
+            const Text(
+                'Examples: /games?game=bounce, /games?game=snake, /games?game=tuoitho'),
             const SizedBox(height: 12),
-            ...GameRegistry.games.map((game) => Text('- ${game.id}: ${game.label}')),
+            ...GameRegistry.games
+                .map((game) => Text('- ${game.id}: ${game.label}')),
           ],
         ),
       ),
     );
   }
 }
-

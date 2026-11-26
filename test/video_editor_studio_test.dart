@@ -9,6 +9,7 @@ import 'package:flutter_portfolio/view/media_tool/video_editor/domain/editor_cat
 import 'package:flutter_portfolio/view/media_tool/video_editor/domain/editor_template.dart';
 import 'package:flutter_portfolio/view/media_tool/video_editor/presentation/editor_motion.dart';
 import 'package:flutter_portfolio/view/media_tool/video_editor/domain/video_editor_project.dart';
+import 'package:flutter_portfolio/view/media_tool/video_editor/presentation/editor_timeline.dart';
 import 'package:flutter_portfolio/view/media_tool/video_editor/presentation/video_editor_studio_screen.dart';
 
 // 1x1 transparent PNG.
@@ -47,6 +48,8 @@ void main() {
 
   logicTests();
   visibilityTests();
+  timelineDragTests();
+  clipTests();
 
   for (final size in const [
     Size(390, 780),
@@ -201,5 +204,76 @@ void visibilityTests() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(controller.activeTransition?.type, EditorTransition.slideLeft);
     expect(find.text('Slide left'), findsWidgets);
+  });
+}
+
+void timelineDragTests() {
+  testWidgets('dragging an overlay block moves it; its right edge resizes it',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final controller = _seeded();
+    controller.seek(Duration.zero);
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+          body: VideoEditorStudioScreen(
+              controller: controller, store: TemplateStore(persist: false))),
+    ));
+    await tester.pump(const Duration(milliseconds: 100));
+    final overlay = controller.project.overlays
+        .firstWhere((o) => o.type == EditorOverlayType.text);
+    final block = find.descendant(
+        of: find.byType(EditorTimeline), matching: find.text(overlay.label));
+    expect(block, findsOneWidget);
+    controller.selectOverlay(overlay.id);
+    await tester.pump();
+
+    final startBefore = controller.selectedOverlay!.start;
+    await tester.drag(block, const Offset(80, 0));
+    await tester.pump();
+    final moved = controller.selectedOverlay!.start;
+    expect(moved, greaterThan(startBefore));
+
+    final lenBefore = controller.selectedOverlay!.duration;
+    final rect = tester.getRect(
+        find.ancestor(of: block, matching: find.byType(Positioned)).first);
+    await tester.dragFrom(
+        rect.centerRight - const Offset(4, 0), const Offset(60, 0));
+    await tester.pump();
+    expect(controller.selectedOverlay!.duration, greaterThan(lenBefore));
+    expect(controller.selectedOverlay!.start, moved);
+  });
+}
+
+void clipTests() {
+  test('clips added in the same instant get distinct ids', () {
+    final c = VideoEditorController();
+    for (var i = 0; i < 6; i++) {
+      c.addClip(name: 'p$i.png', type: EditorAssetType.image, bytes: _png);
+    }
+    final ids = c.project.clips.map((e) => e.id).toSet();
+    expect(ids.length, 6);
+  });
+
+  testWidgets('dragging a clip past its neighbour reorders it', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = VideoEditorController();
+    for (var i = 0; i < 3; i++) {
+      c.addClip(name: 'p$i.png', type: EditorAssetType.image, bytes: _png);
+    }
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+          body: VideoEditorStudioScreen(
+              controller: c, store: TemplateStore(persist: false))),
+    ));
+    await tester.pump(const Duration(milliseconds: 100));
+    final first = find.descendant(
+        of: find.byType(EditorTimeline), matching: find.text('p0.png'));
+    await tester.drag(first, const Offset(300, 0));
+    await tester.pump();
+    expect(c.project.clips.map((e) => e.name).toList()[0], isNot('p0.png'));
   });
 }

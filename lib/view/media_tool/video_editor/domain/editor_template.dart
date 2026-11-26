@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'editor_catalog.dart';
 import 'video_editor_project.dart';
+import 'ids.dart';
 
 enum EditorTemplateKind { text, project }
 
@@ -53,7 +54,7 @@ class EditorTemplate {
 
   static EditorTemplate fromText(String name, EditorOverlay overlay) =>
       EditorTemplate(
-        id: 'user_${DateTime.now().microsecondsSinceEpoch}',
+        id: 'user_${nextStamp()}',
         name: name,
         kind: EditorTemplateKind.text,
         data: overlayToJson(overlay),
@@ -61,7 +62,7 @@ class EditorTemplate {
 
   static EditorTemplate fromProject(String name, VideoEditorProject project) {
     return EditorTemplate(
-      id: 'user_${DateTime.now().microsecondsSinceEpoch}',
+      id: 'user_${nextStamp()}',
       name: name,
       kind: EditorTemplateKind.project,
       data: {
