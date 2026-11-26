@@ -65,7 +65,7 @@ const _articles = <JournalArticle>[
         'Ghi chép học Superpowers từ con số 0: cách bắt đầu dự án mới, feature mới và một bài thực hành cụ thể với 67Talk.',
     category: 'Vibe Coding',
     tags: ['Superpowers', 'Agent Skills', 'TDD', 'Planning', '67Talk'],
-    readTime: '36 phút đọc',
+    readTime: '48 phút đọc',
     date: '26 Thg 11, 2026',
     icon: Icons.bolt_rounded,
     featured: true,
@@ -154,6 +154,201 @@ const _articles = <JournalArticle>[
         'Checklist áp dụng ngay',
         '- Trước feature: đọc code, viết user outcome và failure modes.\n- Brainstorm: chỉ hỏi quyết định làm thay đổi kiến trúc hoặc UX.\n- Design: data flow, state, security boundary, error/recovery.\n- Plan: file, interface, failing test, command, expected result.\n- Implement: RED → verify fail → GREEN → verify pass → REFACTOR.\n- Debug: root cause trước, một hypothesis mỗi lần.\n- Review: spec compliance trước, code quality sau.\n- Verify: focused tests, full suite, build và user journey thật.\n- Finish: báo evidence, limitation và lựa chọn merge/deploy.'
       ),
+      (
+        'Case study cuối bài — First Response SLA Report cho 67Talk',
+        '''Bây giờ áp dụng toàn bộ quy trình vào một feature có thể xây thật trong 67Talk. Product owner nói: “Tôi muốn có report để biết nhân viên nào trả lời khách chậm.” Đây chưa phải requirement đủ để code. “Chậm” có thể là thời gian từ lúc visitor nhắn tới lần phản hồi đầu tiên, thời gian trung bình của mọi reply, hay thời gian chỉ tính trong giờ làm việc.
+
+Sau brainstorming, ta chốt MVP: admin chọn khoảng ngày, website và agent; xem tỷ lệ conversation được human trả lời lần đầu trong SLA 5 phút, median response time, P90 response time, số breached conversations và bảng chi tiết. Click một dòng mở conversation gốc. CSV export dùng đúng filter. AI Agent không được tính như human agent.
+
+Non-goals của MVP: chưa cấu hình nhiều SLA theo team, chưa trừ thời gian ngoài giờ làm việc, chưa gửi cảnh báo realtime và chưa dùng AI để đánh giá chất lượng câu trả lời. Viết rõ non-goals ngăn agent tự mở rộng feature.'''
+      ),
+      (
+        'Bước 1 — Prompt brainstorming có thể copy nguyên văn',
+        '''```text
+Trong dự án 67Talk, tôi muốn thêm First Response SLA Report.
+
+Trước khi code:
+1. Đọc cấu trúc Report hiện tại, đặc biệt TotalChat và AgentPerformance.
+2. Đọc report_request trong Supabase migrations và cách API / store parse dữ liệu.
+3. Map chính xác cách conversation, message và human agent được nhận diện.
+4. Chỉ ra những định nghĩa còn mơ hồ của “first response” và “SLA breach”.
+5. Hỏi tôi từng câu một, ưu tiên câu làm thay đổi dữ liệu hoặc UX.
+6. Đề xuất 2 phương án kiến trúc kèm trade-off.
+
+Chưa sửa code. Kết thúc bằng design document để tôi duyệt.
+```
+
+Output tốt không phải một danh sách thư viện. Agent phải phát hiện các câu hỏi như: message hệ thống có tính không; visitor gửi ba tin liên tiếp thì clock bắt đầu ở tin nào; conversation reopen có tạo SLA mới không; response bằng automation có tính không; timezone của filter là company timezone hay browser timezone; agent chuyển giao thì attribution cho ai.'''
+      ),
+      (
+        'Bước 2 — Design đã duyệt trông như thế nào?',
+        '''Định nghĩa nghiệp vụ:
+
+- Một SLA sample tương ứng một conversation được human xử lý trong khoảng lọc.
+- `started_at` là visitor message đầu tiên khiến conversation vào trạng thái chờ human.
+- `responded_at` là human-authored public message đầu tiên sau `started_at`.
+- Internal note, system message, bot reply và AI Agent reply không kết thúc SLA clock.
+- `response_seconds = responded_at - started_at`; chưa trả lời thì dùng thời điểm cuối range để hiển thị pending, nhưng không trộn pending vào median/P90.
+- Agent attribution thuộc về tác giả của first human response, không phải người đang được assign ở thời điểm xem report.
+- Breach khi `response_seconds > 300`; đúng 300 giây vẫn đạt.
+
+User journey: admin mở Reports → First Response SLA, mặc định 7 ngày gần nhất → xem bốn KPI cards → chart theo ngày → lọc website/agent → mở bảng breach → click conversation để điều tra → export CSV.
+
+Data flow: React board phát filter → Zustand store hủy request cũ và phát request mới → API adapter serialize ISO date/IDs → backend gọi report RPC với company lấy từ auth context → PostgreSQL aggregate tenant-scoped rows → adapter parse wire format → store cập nhật overview/chart/details → UI render loading, empty, error hoặc data.
+
+Security boundary: browser không được truyền một `company_id` tùy ý. Server lấy company từ authenticated membership hoặc kiểm membership trước khi gọi RPC. Query luôn scope tenant trước khi aggregate. Agent role chỉ xem report nếu permission hiện tại cho phép; CSV áp dụng cùng policy và filter như màn hình.'''
+      ),
+      (
+        'Bước 3 — Contract dữ liệu và API tường minh',
+        '''Thay vì để UI đoán field, design chốt contract trước:
+
+```typescript
+type FirstResponseSlaOverview = {
+  totalConversations: number;
+  answeredConversations: number;
+  withinSlaConversations: number;
+  breachedConversations: number;
+  complianceRate: number | null;
+  medianSeconds: number | null;
+  p90Seconds: number | null;
+};
+
+type FirstResponseSlaRow = {
+  conversationId: number;
+  visitorName: string;
+  websiteName: string;
+  agentId: number | null;
+  agentName: string | null;
+  startedAt: string;
+  respondedAt: string | null;
+  responseSeconds: number | null;
+  status: 'within_sla' | 'breached' | 'pending';
+};
+```
+
+Endpoints dự kiến theo convention hiện tại:
+
+- `GET /backend/cs-agent/v1/report/first-response-sla-view`
+- `GET /backend/cs-agent/v1/report/first-response-sla-chart`
+- `GET /backend/cs-agent/v1/report/first-response-sla-details?page=1&limit=20`
+- `GET /backend/cs-agent/v1/report/export-first-response-sla`
+
+Tất cả nhận `from_date`, `to_date`, `website_ids`, `agent_ids`, `sla_seconds`. Response dùng snake_case ở wire layer; `firstResponseSlaReportApi.ts` là nơi duy nhất đổi sang camelCase. UI không đọc JSON backend trực tiếp.'''
+      ),
+      (
+        'Bước 4 — Plan file-by-file bám source 67Talk',
+        '''```markdown
+### Task 1: Database report contract
+- Create: supabase/migrations/..._first_response_sla_report.sql
+- Test: Supabase SQL test cho tenant isolation, bot exclusion và boundary 300s
+- Change: report_request chỉ nếu tiếp tục convention RPC hiện tại
+
+### Task 2: Frontend types và adapter
+- Create: src/types/firstResponseSlaReport.ts
+- Create: src/api/firstResponseSlaReportApi.ts
+- Test: parse snake_case, null values và query serialization
+
+### Task 3: State
+- Create: src/store/firstResponseSlaReportStore.ts
+- Reuse: src/utils/reportAgentOptions.ts
+- Test: stale request không overwrite filter mới; pagination reset khi đổi filter
+
+### Task 4: UI
+- Create: src/components/Report/FirstResponseSla/FirstResponseSlaReportBoard.tsx
+- Create: Overview, Chart, Filters, Grid và module CSS trong cùng folder
+- Reuse: src/components/Report/shared/ReportDateRangePicker.tsx
+- Test: loading, empty, error, data, breached row và mobile layout
+
+### Task 5: Navigation và i18n
+- Modify: src/App.tsx
+- Modify: src/components/Sidebar/SidebarNav.tsx
+- Modify: locale keys; English/Vietnamese trước, fallback được xác minh cho locale khác
+
+### Task 6: Export và end-to-end verification
+- CSV dùng cùng date/website/agent/SLA filters
+- Click row mở đúng conversation
+- Chạy focused tests, full suite, lint và production build
+```
+
+Mỗi task có test fail trước, implementation tối thiểu, review spec rồi review quality. Không giao Task 3 và Task 4 song song trước khi type/API contract được chốt.'''
+      ),
+      (
+        'Bước 5 — TDD: test nào phải đỏ trước?',
+        '''Test quan trọng nhất nằm ở nghiệp vụ, không phải snapshot màu chart:
+
+```sql
+-- Given: visitor nhắn lúc 10:00:00
+-- AI trả lời lúc 10:00:10 (không kết thúc human SLA)
+-- internal note lúc 10:02:00 (không kết thúc SLA)
+-- human public reply lúc 10:06:01
+-- Then: response_seconds = 361 và status = breached
+```
+
+Các boundary tests bắt buộc:
+
+- Human trả lời đúng 300 giây → within_sla.
+- Company B có dữ liệu giống hệt → company A không thấy.
+- Conversation chưa có human reply → pending, không làm sai median.
+- Bot/AI/automation reply → không được tính là human response.
+- Agent filter dùng tác giả first response.
+- Date range và timezone không làm mất record ở 00:00.
+- Hai request filter liên tiếp → response cũ về sau không overwrite màn hình mới.
+
+Ví dụ frontend test:
+
+```typescript
+it('ignores a stale response after filters change', async () => {
+  const first = deferredResponse();
+  api.getOverview.mockReturnValueOnce(first.promise);
+  store.getState().applyDateRange(lastMonth);
+  store.getState().applyDateRange(thisMonth);
+  first.resolve(lastMonthData);
+  expect(store.getState().overview).not.toEqual(lastMonthData);
+});
+```
+
+RED phải fail vì behavior chưa tồn tại, không phải vì import sai. GREEN chỉ làm đủ để test pass; sau đó mới refactor query hoặc chia component.'''
+      ),
+      (
+        'Bước 6 — UI states và responsive không được bỏ quên',
+        '''Desktop: filter bar nằm trên, bốn KPI cards trong một hàng, chart toàn chiều rộng, bảng chi tiết bên dưới. Tablet: KPI thành lưới 2×2. Mobile: filter mở bottom sheet; KPI xếp một cột hoặc carousel có snap; bảng đổi thành cards vì ép 8 cột vào 360px sẽ không đọc được.
+
+Mọi vùng có đủ trạng thái:
+
+- Initial loading: skeleton giữ ổn định layout, không spinner toàn trang.
+- Refetch: giữ data cũ và hiển thị progress nhỏ để tránh màn hình trắng.
+- Empty: giải thích không có conversation trong filter và có nút reset.
+- Partial failure: overview vẫn hiện nếu details lỗi; mỗi section retry riêng.
+- Permission denied: không dùng chung message “network error”.
+- Exporting: disable đúng nút export, không khóa toàn report.
+
+Accessibility: chart có bảng dữ liệu tương đương; status không chỉ phân biệt bằng màu; filter có label; keyboard mở được date picker; số giây hiển thị thành `6m 01s` nhưng CSV giữ raw seconds để phân tích.'''
+      ),
+      (
+        'Bước 7 — Verification và định nghĩa “đã xong”',
+        '''Feature chỉ hoàn thành khi có evidence theo ladder:
+
+1. SQL/domain tests chứng minh định nghĩa SLA, tenant isolation và boundaries.
+2. API adapter tests chứng minh serialize/parse đúng contract.
+3. Store tests chứng minh loading/error, pagination và race cancellation.
+4. Component tests chứng minh mọi UI state.
+5. Full test suite, lint và production build đều có output mới.
+6. Manual journey trên desktop và mobile: đổi filter, mở breach conversation, back về report vẫn giữ filter, export CSV khớp số liệu.
+7. So sánh thủ công 5 conversations với timestamps trong database.
+8. Kiểm tra query plan trên dataset lớn; không scan toàn bộ messages ngoài tenant/date range.
+
+Acceptance demo cụ thể: seed 10 conversations, trong đó 6 within SLA, 2 breached, 1 pending, 1 chỉ được AI trả lời. Overview phải cho `answered = 8`, `within = 6`, `breached = 2`, `compliance = 75%`; pending và AI-only được giải thích nhất quán theo design. CSV và detail grid phải dẫn về cùng 10 records theo quy tắc đã chốt.
+
+Báo cáo hoàn thành tốt sẽ viết: command nào đã chạy, bao nhiêu test pass, build nào thành công, flow nào đã kiểm tra tay và limitation nào còn lại. Không viết đơn giản “đã implement và hoạt động”.'''
+      ),
+      (
+        'Bước 8 — Nhìn lại: Superpowers đã giúp ở đâu?',
+        '''Nếu code ngay từ câu “report nhân viên trả lời chậm”, agent rất dễ chọn average response time, tính cả AI reply, dùng assigned agent hiện tại và aggregate ở browser. Màn hình vẫn đẹp nhưng số liệu sai về nghiệp vụ, tenant và attribution.
+
+Brainstorming biến từ “chậm” thành định nghĩa đo được. Design khóa data flow và security. Plan nối mỗi behavior với file thật trong 67Talk. TDD bảo vệ bot exclusion, tenant isolation và boundary 300 giây. Review tách “đúng spec” khỏi “code đẹp”. Verification buộc UI, CSV và database cùng một sự thật.
+
+Đây là lợi ích thực tế nhất của Superpowers: không làm AI thông minh tuyệt đối, mà tạo các điểm dừng để con người phát hiện giả định sai trước khi chúng biến thành code production. Bạn có thể dùng chính case study này làm bài lab đầu tiên, nhưng nên triển khai một vertical slice nhỏ trước: overview API + một KPI card + tenant test. Khi slice đó đúng, mới mở rộng chart, details và export.'''
+      ),
     ],
   ),
   JournalArticle(
@@ -230,6 +425,235 @@ const _articles = <JournalArticle>[
       (
         '15. Lộ trình MVP hợp lý',
         'Giai đoạn 1: một tenant thử nghiệm, widget iframe, FAQ/RAG có citation, inbox cho nhân viên và handoff thủ công. Giai đoạn 2: agent config có version, crawl website, analytics và một tool đọc như check_order. Giai đoạn 3: skill-based routing, CRM integrations, tool ghi có approval, multilingual và eval tự động. Giai đoạn 4: tối ưu model routing, caching, proactive message và copilot cho nhân viên.\n\nĐừng bắt đầu bằng agent tự hoàn tiền hoặc hàng chục integration. Hãy chứng minh ba việc trước: visitor nhận câu trả lời đúng nguồn, nhân viên tiếp quản không mất context và mỗi tenant được cô lập dữ liệu tuyệt đối.'
+      ),
+    ],
+  ),
+  JournalArticle(
+    title: 'Preview transition realtime giữa 2 ảnh hoặc 2 video',
+    summary:
+        'Giải thích gl-transitions, GPU shader, progress, video clock và cách dựng preview realtime mà không render file tạm.',
+    category: 'Media Engineering',
+    tags: ['GLSL', 'gl-transitions', 'Realtime Preview', 'Flutter', 'WebGL'],
+    readTime: '24 phút đọc',
+    date: '26 Thg 11, 2026',
+    icon: Icons.blur_on_rounded,
+    featured: true,
+    content: [
+      (
+        'Bài toán thật sự là gì?',
+        '''Ta có media A và B — mỗi media có thể là ảnh hoặc video — cùng một transition dài 800 ms. Khi người dùng kéo playhead vào vùng giao nhau, preview phải xuất hiện ngay tại đúng thời điểm: đầu vùng chỉ thấy A, giữa vùng thấy hiệu ứng pha A/B, cuối vùng chỉ thấy B. Không được chạy FFmpeg, ghi MP4 rồi chờ phát lại sau mỗi lần kéo.
+
+Realtime preview là bài toán render frame, không phải export file. Ở mỗi frame, engine chỉ cần lấy texture A, texture B, tính `progress`, chạy một fragment shader trên GPU và đưa kết quả lên màn hình. Export về sau lặp lại cùng phép tính cho từng timestamp ở chất lượng đầy đủ.'''
+      ),
+      (
+        'gl-transitions cung cấp phần nào?',
+        '''[gl-transitions](https://github.com/gl-transitions/gl-transitions) là collection hơn 100 transition do cộng đồng viết dưới dạng các hàm GLSL nhỏ. Theo specification v1, mỗi transition chỉ cần implement `vec4 transition(vec2 uv)`. Runtime bên ngoài cung cấp hai nguồn ảnh qua `getFromColor(uv)`, `getToColor(uv)`, cùng `progress` từ 0 đến 1 và `ratio = width / height`.
+
+Repository không phải một video player hoàn chỉnh. Nó cung cấp công thức GPU và metadata/parameters. Ứng dụng của ta vẫn phải decode video, tạo texture, quản lý clock, aspect ratio, compile shader và render output. Package hiện còn phát hành bản dịch GLSL ES 3.00, SkSL, WGSL, Metal và AGSL; `compatibility.json` cho biết transition nào hoạt động trên target nào.
+
+Nguồn: [GL Transition Specification](https://github.com/gl-transitions/gl-transitions#gl-transition-specification-v1) và [package formats](https://github.com/gl-transitions/gl-transitions/tree/master/packages/gl-transitions).'''
+      ),
+      (
+        'Mô hình tối giản: 2 textures + 1 progress',
+        '''Transition đơn giản nhất là fade:
+
+```glsl
+vec4 transition(vec2 uv) {
+  return mix(
+    getFromColor(uv),
+    getToColor(uv),
+    progress
+  );
+}
+```
+
+`uv` là tọa độ chuẩn hóa của pixel output. Với mỗi pixel, GPU đọc màu A và B rồi nội suy theo progress. `progress = 0.0` phải trả đúng A; `progress = 1.0` phải trả đúng B. Các hiệu ứng như wipe, cube, ripple hay dreamy vẫn dùng contract đó nhưng biến đổi UV, hình học hoặc màu trước khi chọn pixel.
+
+Không gọi `texture2D` trực tiếp trong transition của collection. Dùng `getFromColor` và `getToColor` để host có thể xử lý contain/cover, crop, out-of-bounds và khác biệt orientation một cách thống nhất.'''
+      ),
+      (
+        'Timeline biến thời gian thành progress ra sao?',
+        '''Giả sử clip A kết thúc ở giây 5.0, transition dài 0.8 giây và vùng transition bắt đầu tại 4.2. Với playhead `t`:
+
+```text
+transitionStart = 4.2
+transitionEnd   = 5.0
+progress = clamp((t - transitionStart) / 0.8, 0, 1)
+```
+
+Tại 4.2s, progress bằng 0. Tại 4.6s, progress bằng 0.5. Tại 5.0s, progress bằng 1. Timeline time phải map riêng sang source time của từng clip:
+
+```text
+sourceTimeA = trimInA + (t - timelineStartA) × speedA
+sourceTimeB = trimInB + (t - timelineStartB) × speedB
+```
+
+Transition chỉ đẹp nếu engine lấy đúng hai frame tương ứng. Dùng cùng một frame B đứng yên trong suốt 800 ms có thể trông đúng với ảnh, nhưng sẽ làm video B bị “đóng băng” rồi nhảy khi transition kết thúc.'''
+      ),
+      (
+        'Hai ảnh: pipeline đơn giản nhất',
+        '''Với hai ảnh, decode mỗi ảnh một lần, sửa EXIF orientation, resize gần kích thước preview rồi upload thành hai GPU textures. Mỗi lần user kéo slider, chỉ cập nhật uniform `progress` và yêu cầu vẽ lại; không decode và không upload ảnh lại.
+
+```text
+Image A ─ decode ─ textureFrom ┐
+                               ├─ fragment shader ─ preview surface
+Image B ─ decode ─ textureTo   ┘          ↑
+                                      progress
+```
+
+Đây là prototype tốt nhất để chứng minh renderer: slider 0–1, dropdown chọn Fade/Dreamy/Circle, parameter controls và canvas output. Nếu slider vẫn giật với hai texture tĩnh, lỗi nằm ở shader compilation, rebuild UI hoặc texture lifecycle — chưa cần đổ lỗi cho video decoder.'''
+      ),
+      (
+        'Hai video: decoder và clock mới là phần khó',
+        '''Với video, `textureFrom` và `textureTo` thay đổi ở mỗi frame. Trong vùng transition, engine cần hai decoder hoạt động đồng thời. Decoder A lấy frame tại `sourceTimeA`; decoder B lấy frame tại `sourceTimeB`; GPU blend hai texture; audio mixer crossfade hai audio stream nếu design yêu cầu.
+
+Khi playback, audio clock hoặc monotonic render clock nên là master. Mỗi display tick, renderer tính timeline time, yêu cầu frame gần timestamp đó và bỏ frame trễ thay vì làm UI chậm dần. Trước cut point khoảng 300–800 ms, warm decoder B để frame đầu tiên đã sẵn sàng khi transition bắt đầu.
+
+Khi scrub, không cố phát tuần tự mọi frame user lướt qua. Coalesce seek requests, giữ timestamp mới nhất, seek tới keyframe gần nhất rồi decode tới target. Trong lúc ngón tay còn di chuyển có thể dùng proxy 540p/720p; khi dừng thì render lại một frame chính xác, chất lượng cao hơn.'''
+      ),
+      (
+        'Render loop realtime mẫu',
+        '''```typescript
+function renderAt(timelineUs: number) {
+  const region = timeline.resolve(timelineUs);
+
+  if (region.kind === 'single') {
+    return compositor.drawSingle(
+      decoder(region.clip).frameAt(region.sourceUs)
+    );
+  }
+
+  const frameA = decoder(region.from).frameAt(region.fromSourceUs);
+  const frameB = decoder(region.to).frameAt(region.toSourceUs);
+  const progress = clamp(
+    (timelineUs - region.startUs) / region.durationUs,
+    0,
+    1,
+  );
+
+  compositor.drawTransition({
+    from: frameA.texture,
+    to: frameB.texture,
+    progress,
+    ratio: viewport.width / viewport.height,
+    params: selectedTransition.params,
+  });
+}
+```
+
+Code thật cần async frame availability và frame queue, nhưng nguyên tắc không đổi: project/timeline quyết định timestamp; decoder cung cấp pixels; transition shader chỉ compose. Không để shader tự sở hữu playback time vì lúc seek, pause hoặc đổi speed nó sẽ lệch timeline.'''
+      ),
+      (
+        'WebGL host shader hoạt động thế nào?',
+        '''Trên web, runtime ghép source transition vào một wrapper có vertex shader fullscreen và fragment shader. Wrapper khai báo hai samplers cùng uniforms:
+
+```glsl
+precision highp float;
+varying vec2 vUv;
+uniform sampler2D from;
+uniform sampler2D to;
+uniform float progress;
+uniform float ratio;
+
+vec4 getFromColor(vec2 uv) { return texture2D(from, uv); }
+vec4 getToColor(vec2 uv)   { return texture2D(to, uv); }
+
+// Chèn source của transition tại đây.
+
+void main() {
+  gl_FragColor = transition(vUv);
+}
+```
+
+Ảnh được upload bằng `texImage2D` một lần. Video có thể upload frame từ `HTMLVideoElement`, nhưng copy video → texture mỗi frame có chi phí; WebCodecs + WebGL/WebGPU cho quyền kiểm soát timestamp tốt hơn ở editor nghiêm túc. Chỉ compile/link shader khi chọn transition, không compile lại mỗi animation frame. Uniform progress được update bằng một lệnh rất rẻ.'''
+      ),
+      (
+        'Áp dụng vào Flutter Mobile',
+        '''Có hai mức triển khai. Prototype ảnh có thể dùng Flutter fragment shader/SkSL asset: đưa hai images vào shader, cập nhật progress từ AnimationController và paint bằng CustomPainter. Collection phát hành SkSL cho renderer dựa trên Skia, nhưng cần dùng đúng source/contract tương thích target thay vì copy mù file GLSL ES 1.00.
+
+Với video editor production, Flutter nên sở hữu UI/timeline còn native media engine sở hữu decode và GPU compositor. Plugin trả một `textureId`; Flutter hiển thị bằng `Texture`. Android dùng MediaCodec/Media3 + OpenGL ES hoặc Vulkan. iOS dùng AVFoundation + Metal/Core Image. Engine nhận `seekTo`, `play`, `pause`, project diff và transition parameters.
+
+```dart
+Texture(textureId: session.previewTextureId)
+
+await session.setTransition(
+  clipA: first.id,
+  clipB: second.id,
+  name: 'Dreamy',
+  duration: const Duration(milliseconds: 800),
+);
+await session.seekTo(const Duration(milliseconds: 4600));
+```
+
+Không đặt hai `VideoPlayer` widgets rồi dùng `AnimatedOpacity` nếu muốn hỗ trợ ripple/cube/warp và frame-accurate export. Cách đó chỉ mô phỏng crossfade ở UI, không tạo một composition surface thống nhất.'''
+      ),
+      (
+        'Contain, cover và orientation phải giải quyết trước shader',
+        '''Hai media thường khác tỷ lệ: ảnh dọc 9:16 và video ngang 16:9. Nếu sample cùng UV mà không có layout transform, một nguồn sẽ bị kéo méo. Project cần lưu fit mode, crop rect, rotation và transform cho từng clip. Host implementation của `getFromColor/getToColor` map output UV về source UV đã transform.
+
+Thứ tự hợp lý:
+
+1. Chuẩn hóa orientation theo metadata.
+2. Map source vào canvas bằng contain/cover/crop.
+3. Chuyển màu về working color space thống nhất.
+4. Cung cấp hai logical textures cho transition.
+5. Composite overlay text/sticker theo quyết định layer: trước hoặc sau transition.
+
+Thông thường text thuộc toàn timeline nên vẽ sau transition. Sticker gắn riêng clip A phải được compose vào A trước khi A đi vào transition.'''
+      ),
+      (
+        'Preview mượt: cache, proxy và degradation',
+        '''Mục tiêu preview là phản hồi, không phải encode chất lượng cuối. Các tối ưu quan trọng:
+
+- Compile shader trước hoặc khi user hover/chọn thumbnail transition.
+- Giữ textures và decoder sessions sống qua nhiều frames.
+- Warm clip kế tiếp trước transition.
+- Dùng proxy 720p cho 4K/HEVC; export quay về source gốc.
+- Giới hạn preview 30 fps nếu thiết bị không giữ 60 fps.
+- Giảm resolution tạm thời trong lúc scrub.
+- Cache frame gần playhead và hủy seek cũ.
+- Kiểm tra `compatibility.json` trước khi đưa một transition vào catalog của target.
+
+Nếu frame budget ở 60 fps là 16,67 ms mà hai decoder + upload + shader mất 25 ms, thêm isolate Dart không tự giải quyết. Cần đo riêng decode time, texture upload, GPU render và UI scheduling để tìm bottleneck thật.'''
+      ),
+      (
+        'Preview và export phải dùng cùng một sự thật',
+        '''Project model lưu transition name, duration, parameters và timing — không lưu “ảnh preview đã render”. Preview compiler biến model thành GPU graph; export compiler biến cùng model thành offline render graph. Cả hai dùng cùng công thức progress và crop transforms.
+
+```json
+{
+  "fromClipId": "clip-a",
+  "toClipId": "clip-b",
+  "startUs": 4200000,
+  "durationUs": 800000,
+  "transition": "Dreamy",
+  "params": {}
+}
+```
+
+FFmpeg built-in `xfade` chỉ có một tập effect riêng. Muốn dùng đúng GLSL của collection có thể cần `ffmpeg-gl-transition`, vốn yêu cầu FFmpeg build kèm filter và OpenGL context; đây không phải lúc nào cũng phù hợp mobile/store. Một hướng đáng tin hơn là engine GPU dùng cùng shader cho preview và offline export, rồi đưa raw frames sang encoder. Xem ghi chú chính thức về [video integrations](https://github.com/gl-transitions/gl-transitions/blob/master/skills/gl-transitions/references/video.md).'''
+      ),
+      (
+        'Test để biết realtime preview thực sự đúng',
+        '''Tạo hai clip test dễ nhìn: A đỏ có timecode, B xanh có timecode. Render tại progress 0, 0.25, 0.5, 0.75 và 1. Với fade, pixel trung tâm có thể kiểm gần đúng bằng toán học. Với effect phức tạp, dùng golden images có tolerance theo GPU.
+
+Test thêm:
+
+- `progress = 0` chỉ có A; `progress = 1` chỉ có B.
+- Scrub tiến/lùi qua boundary không giữ stale frame.
+- Pause ở giữa transition rồi đổi parameter phải repaint ngay.
+- Ảnh transparent không bị biến thành nền đen ngoài ý muốn.
+- Video rotation 90° và hai aspect ratio khác nhau không méo.
+- Preview timestamp và exported frame tại cùng thời điểm khớp thị giác.
+- Decoder B chưa sẵn sàng hiển thị fallback có chủ đích, không flash frame cũ.
+
+Telemetry nên đo time-to-first-frame, seek latency p50/p95, dropped frames, decoder misses và shader compile time. “Nhìn có vẻ mượt trên máy dev” chưa phải tiêu chí production.'''
+      ),
+      (
+        'Lộ trình làm MVP không bị quá sức',
+        '''Giai đoạn 1: hai ảnh + Fade shader + slider progress. Giai đoạn 2: catalog 5 transition đã kiểm compatibility, fit/crop đúng và shader parameters. Giai đoạn 3: một video + một ảnh, exact seek khi pause. Giai đoạn 4: hai video, decoder warm-up và playback 30 fps. Giai đoạn 5: proxy, audio crossfade, overlays và offline export parity.
+
+Đừng bắt đầu bằng 100 transition. Một renderer có Fade, Wipe và Dreamy nhưng scrub đúng, không méo ảnh và export khớp preview có giá trị hơn catalog lớn nhưng frame B sai timestamp. Contract cốt lõi cần giữ là: tại mỗi timeline time, engine chọn đúng hai frames, tính đúng progress và chạy đúng shader.'''
       ),
     ],
   ),
