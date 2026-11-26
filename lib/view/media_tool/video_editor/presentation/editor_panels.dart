@@ -8,7 +8,9 @@ import '../application/video_editor_controller.dart';
 import '../domain/editor_catalog.dart';
 import '../domain/editor_template.dart';
 import '../domain/video_editor_project.dart';
+import '../domain/shader_catalog.dart';
 import 'editor_transitions.dart';
+import 'shader_browser.dart';
 import 'editor_visuals.dart';
 
 enum EditorTool {
@@ -733,7 +735,10 @@ class _TransitionPanel extends StatelessWidget {
     final basics = EditorTransition.values
         .where((t) => t != EditorTransition.fx && !t.isShader)
         .toList();
-    final shaders = EditorTransition.values.where((t) => t.isShader).toList();
+    final featured = [
+      for (final id in featuredShaderIds)
+        if (shaderById(id) != null) shaderById(id)!,
+    ];
     final fxPacks = [
       for (final s in builtinSprites.take(3))
         EditorFx(id: 'builtin_${s.name}', name: s.name, sprite: s),
@@ -751,7 +756,8 @@ class _TransitionPanel extends StatelessWidget {
               ? TextButton(
                   onPressed: clip == null
                       ? null
-                      : () => controller.applyTransitionToAll(clip.transition),
+                      : () => controller.applyTransitionToAll(clip.transition,
+                          shaderId: clip.shaderId),
                   child: const Text('Apply to all',
                       style: TextStyle(fontSize: 11)),
                 )
@@ -789,27 +795,48 @@ class _TransitionPanel extends StatelessWidget {
             );
           },
         ),
-        const _Label('SHADERS (gl-transitions)'),
+        _Label('SHADERS · ${shaderCatalog.length} (gl-transitions + flags)'),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 96,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: .78,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.4,
           ),
-          itemCount: shaders.length,
+          itemCount: featured.length,
           itemBuilder: (context, i) {
-            final type = shaders[i];
-            return _TransitionTile(
-              label: type.label,
-              selected: canApply && clip.transition == type,
+            final info = featured[i];
+            return ShaderTile(
+              info: info,
+              selected: canApply &&
+                  clip.transition == EditorTransition.shader &&
+                  clip.shaderId == info.id,
               enabled: canApply,
-              onTap: () => controller.updateSelectedTransition(type),
-              thumb: TransitionThumb(type: type),
+              onTap: () => controller.updateSelectedTransition(
+                  EditorTransition.shader,
+                  shaderId: info.id),
             );
           },
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: () async {
+            final id = await showShaderBrowser(
+              context,
+              selectedId: canApply && clip.transition == EditorTransition.shader
+                  ? clip.shaderId
+                  : null,
+              enabled: canApply,
+            );
+            if (id != null) {
+              controller.updateSelectedTransition(EditorTransition.shader,
+                  shaderId: id);
+            }
+          },
+          icon: const Icon(Icons.travel_explore_rounded, size: 18),
+          label: Text('Browse all ${shaderCatalog.length} shaders'),
         ),
         const _Label('EFFECT PACKS (sprite & WebM)'),
         GridView.builder(
@@ -930,9 +957,18 @@ class _TransitionTile extends StatelessWidget {
 
 // --------------------------------------------------------------- filters
 
-class _FilterPanel extends StatelessWidget {
+class _FilterPanel extends StatefulWidget {
   const _FilterPanel({required this.controller});
   final VideoEditorController controller;
+
+  @override
+  State<_FilterPanel> createState() => _FilterPanelState();
+}
+
+class _FilterPanelState extends State<_FilterPanel> {
+  String _category = 'All';
+
+  VideoEditorController get controller => widget.controller;
 
   @override
   Widget build(BuildContext context) {
@@ -950,6 +986,10 @@ class _FilterPanel extends StatelessWidget {
       );
     }
     final filter = clip.filter;
+    final shown = [
+      for (final p in filterPresets)
+        if (_category == 'All' || p.category == _category) p,
+    ];
     return ListView(
       padding: const EdgeInsets.all(14),
       children: [
@@ -960,18 +1000,32 @@ class _FilterPanel extends StatelessWidget {
             child: const Text('Apply to all', style: TextStyle(fontSize: 11)),
           ),
         ),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final c in ['All', ...filterCategories])
+              ChoiceChip(
+                label: Text(c, style: const TextStyle(fontSize: 11)),
+                selected: _category == c,
+                visualDensity: VisualDensity.compact,
+                onSelected: (_) => setState(() => _category = c),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 84,
+            maxCrossAxisExtent: 104,
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
-            childAspectRatio: .8,
+            childAspectRatio: .78,
           ),
-          itemCount: filterPresets.length,
+          itemCount: shown.length,
           itemBuilder: (context, i) {
-            final p = filterPresets[i];
+            final p = shown[i];
             final selected = filter.preset == p.id;
             return InkWell(
               borderRadius: BorderRadius.circular(10),
@@ -994,7 +1048,9 @@ class _FilterPanel extends StatelessWidget {
                           filter: EditorFilter(preset: p.id),
                           child: clip.type == EditorAssetType.image
                               ? Image.memory(clip.bytes, fit: BoxFit.cover)
-                              : const _Swatch(),
+                              : Image.asset(
+                                  'assets/images/transitions/demo_a.jpg',
+                                  fit: BoxFit.cover),
                         ),
                       ),
                     ),
@@ -1010,7 +1066,24 @@ class _FilterPanel extends StatelessWidget {
             );
           },
         ),
+        if (filterPresetById(filter.preset).isLut)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Text(
+                'LUT look: the preview is an approximation, the export applies '
+                'the full 3D LUT (lut3d).',
+                style: TextStyle(color: Colors.white38, fontSize: 10)),
+          ),
         const SizedBox(height: 12),
+        if (filter.preset != 'none')
+          _slider(
+            'Intensity ${(filter.intensity * 100).round()}%',
+            filter.intensity,
+            0,
+            1,
+            (v) =>
+                controller.setSelectedClipFilter(filter.copyWith(intensity: v)),
+          ),
         _slider(
           'Brightness ${(filter.brightness * 100).round()}',
           filter.brightness,
@@ -1047,26 +1120,6 @@ class _FilterPanel extends StatelessWidget {
       ],
     );
   }
-}
-
-class _Swatch extends StatelessWidget {
-  const _Swatch();
-  @override
-  Widget build(BuildContext context) => const DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFFFF5E62),
-              Color(0xFFFFC371),
-              Color(0xFF3DDC97),
-              Color(0xFF4DA3FF),
-              Color(0xFFB66DFF),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-      );
 }
 
 // ------------------------------------------------------------- templates
@@ -1344,7 +1397,7 @@ class _EditPanel extends StatelessWidget {
       const SizedBox(height: 14),
       Text(
         index > 0
-            ? 'Transition in: ${clip.transition.label}. Open the Transitions tab to change it. '
+            ? 'Transition in: ${clip.transition.isShader ? (shaderById(clip.shaderId)?.name ?? 'Shader') : clip.transition.label}. Open the Transitions tab to change it. '
                 'Filter: ${filterPresets.firstWhere((p) => p.id == clip.filter.preset, orElse: () => filterPresets.first).name}.'
             : 'First clip — transitions apply from the 2nd clip on.',
         style:

@@ -103,15 +103,8 @@ enum EditorTransition {
   blinds,
   pixelate,
 
-  /// GPU shader transitions ported from gl-transitions.com.
-  glCrosswarp,
-  glRipple,
-  glSwirl,
-  glWarp,
-  glDreamy,
-  glKaleido,
-  glPinwheel,
-  glDots,
+  /// GPU shader transition (gl-transitions.com); see [EditorClip.shaderId].
+  shader,
 
   /// Dip transition with an effect pack (sprite sheet or WebM/MP4 overlay)
   /// drawn on top; see [EditorClip.fx].
@@ -135,9 +128,7 @@ class EditorFx {
 }
 
 extension EditorTransitionMeta on EditorTransition {
-  bool get isShader =>
-      index >= EditorTransition.glCrosswarp.index &&
-      index <= EditorTransition.glDots.index;
+  bool get isShader => this == EditorTransition.shader;
 
   String get label => switch (this) {
         EditorTransition.none => 'Cut',
@@ -154,17 +145,11 @@ extension EditorTransitionMeta on EditorTransition {
         EditorTransition.blur => 'Blur',
         EditorTransition.flash => 'Flash',
         EditorTransition.glitch => 'Glitch',
+        EditorTransition.shader => 'Shader',
         EditorTransition.circle => 'Circle reveal',
         EditorTransition.blinds => 'Blinds',
         EditorTransition.pixelate => 'Mosaic',
-        EditorTransition.glCrosswarp => 'Crosswarp',
-        EditorTransition.glRipple => 'Ripple',
-        EditorTransition.glSwirl => 'Swirl',
-        EditorTransition.glWarp => 'Dir. warp',
-        EditorTransition.glDreamy => 'Dreamy',
-        EditorTransition.glKaleido => 'Kaleido',
-        EditorTransition.glPinwheel => 'Pinwheel',
-        EditorTransition.glDots => 'Polka dots',
+        EditorTransition.shader => 'Shader',
         EditorTransition.fx => 'FX pack',
       };
 
@@ -183,17 +168,11 @@ extension EditorTransitionMeta on EditorTransition {
         EditorTransition.blur => Icons.lens_blur_rounded,
         EditorTransition.flash => Icons.flash_on_rounded,
         EditorTransition.glitch => Icons.broken_image_rounded,
+        EditorTransition.shader => Icons.auto_awesome_rounded,
         EditorTransition.circle => Icons.radio_button_unchecked_rounded,
         EditorTransition.blinds => Icons.view_week_rounded,
         EditorTransition.pixelate => Icons.grid_view_rounded,
-        EditorTransition.glCrosswarp => Icons.compare_arrows_rounded,
-        EditorTransition.glRipple => Icons.waves_rounded,
-        EditorTransition.glSwirl => Icons.cyclone_rounded,
-        EditorTransition.glWarp => Icons.north_east_rounded,
-        EditorTransition.glDreamy => Icons.cloud_rounded,
-        EditorTransition.glKaleido => Icons.filter_vintage_rounded,
-        EditorTransition.glPinwheel => Icons.toys_rounded,
-        EditorTransition.glDots => Icons.blur_circular_rounded,
+        EditorTransition.shader => Icons.auto_awesome_rounded,
         EditorTransition.fx => Icons.movie_filter_rounded,
       };
 }
@@ -206,9 +185,13 @@ class EditorFilter {
     this.brightness = 0,
     this.contrast = 0,
     this.saturation = 0,
+    this.intensity = 1,
   });
 
   final String preset;
+
+  /// 0..1 – strength of the preset (1 = full).
+  final double intensity;
 
   /// All adjustments are -1..1 (0 = unchanged).
   final double brightness;
@@ -223,12 +206,14 @@ class EditorFilter {
     double? brightness,
     double? contrast,
     double? saturation,
+    double? intensity,
   }) =>
       EditorFilter(
         preset: preset ?? this.preset,
         brightness: brightness ?? this.brightness,
         contrast: contrast ?? this.contrast,
         saturation: saturation ?? this.saturation,
+        intensity: intensity ?? this.intensity,
       );
 }
 
@@ -243,6 +228,7 @@ class EditorClip {
     this.transition = EditorTransition.fade,
     this.transitionDuration = const Duration(milliseconds: 800),
     this.fx,
+    this.shaderId,
     this.trimStart = Duration.zero,
     this.sourceDuration,
     this.speed = 1,
@@ -262,6 +248,9 @@ class EditorClip {
   final EditorTransition transition;
   final Duration transitionDuration;
   final EditorFx? fx;
+
+  /// Which shader runs when [transition] is [EditorTransition.shader].
+  final String? shaderId;
 
   /// Offset into the source media where this clip starts (video only).
   final Duration trimStart;
@@ -284,6 +273,7 @@ class EditorClip {
     EditorTransition? transition,
     Duration? transitionDuration,
     Object? fx = _keep,
+    Object? shaderId = _keep,
     Duration? trimStart,
     Duration? sourceDuration,
     double? speed,
@@ -299,6 +289,8 @@ class EditorClip {
       transition: transition ?? this.transition,
       transitionDuration: transitionDuration ?? this.transitionDuration,
       fx: identical(fx, _keep) ? this.fx : fx as EditorFx?,
+      shaderId:
+          identical(shaderId, _keep) ? this.shaderId : shaderId as String?,
       trimStart: trimStart ?? this.trimStart,
       sourceDuration: sourceDuration ?? this.sourceDuration,
       speed: speed ?? this.speed,

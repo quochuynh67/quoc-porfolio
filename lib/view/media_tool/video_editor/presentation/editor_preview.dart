@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import '../../screen/widget/media_ui.dart';
 import '../application/video_editor_controller.dart';
 import '../domain/editor_catalog.dart';
+import '../domain/shader_catalog.dart';
 import '../domain/video_editor_project.dart';
 import '../platform/video_source.dart';
 import 'editor_transitions.dart';
@@ -36,6 +37,7 @@ class _EditorPreviewState extends State<EditorPreview> {
   final Set<String> _opening = {};
   final Set<String> _failed = {};
   bool _syncing = false;
+  bool _syncAgain = false;
 
   VideoEditorController get _editor => widget.controller;
 
@@ -96,10 +98,19 @@ class _EditorPreviewState extends State<EditorPreview> {
   }
 
   Future<void> _sync() async {
-    if (!mounted || _syncing) return;
+    if (!mounted) return;
+    if (_syncing) {
+      // A state change (e.g. playback reaching the end) arrived mid-sync:
+      // run again so the latest state is never lost.
+      _syncAgain = true;
+      return;
+    }
     _syncing = true;
     try {
-      await _syncInner();
+      do {
+        _syncAgain = false;
+        await _syncInner();
+      } while (_syncAgain && mounted);
     } finally {
       _syncing = false;
     }
@@ -201,7 +212,9 @@ class _EditorPreviewState extends State<EditorPreview> {
         final track = project.audioTracks.where((t) => t.id == id).firstOrNull;
         if (track == null) continue;
         source.setVolume(track.volume);
-        final inRange = position < source.duration;
+        // Music never outlives the video: stop at the end of the last clip.
+        final inRange =
+            position < source.duration && position < project.duration;
         if (playing && inRange) {
           if ((source.position - position).inMilliseconds.abs() > 350) {
             source.seek(position);
@@ -381,6 +394,7 @@ class _EditorPreviewState extends State<EditorPreview> {
                                     ? _clipLayer(active)
                                     : buildTransitionFrame(
                                         type: transition.type,
+                                        shaderId: transition.shaderId,
                                         t: transition.progress,
                                         outgoing:
                                             _clipLayer(transition.outgoing),
@@ -392,7 +406,11 @@ class _EditorPreviewState extends State<EditorPreview> {
                                 ? null
                                 : transition.type == EditorTransition.fx
                                     ? transition.incoming.fx?.name ?? 'FX'
-                                    : transition.type.label,
+                                    : transition.type.isShader
+                                        ? shaderById(transition.shaderId)
+                                                ?.name ??
+                                            'Shader'
+                                        : transition.type.label,
                           ),
                         ),
                       ),

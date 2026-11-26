@@ -4,21 +4,9 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
-import '../domain/video_editor_project.dart';
-
-/// Fragment-shader asset (ported from https://gl-transitions.com) per type.
-String? glShaderAsset(EditorTransition t) => switch (t) {
-      EditorTransition.glCrosswarp => 'shaders/transitions/crosswarp.frag',
-      EditorTransition.glRipple => 'shaders/transitions/ripple.frag',
-      EditorTransition.glSwirl => 'shaders/transitions/swirl.frag',
-      EditorTransition.glWarp => 'shaders/transitions/warp.frag',
-      EditorTransition.glDreamy => 'shaders/transitions/dreamy.frag',
-      EditorTransition.glKaleido => 'shaders/transitions/kaleido.frag',
-      EditorTransition.glPinwheel => 'shaders/transitions/pinwheel.frag',
-      EditorTransition.glDots => 'shaders/transitions/dots.frag',
-      _ => null,
-    };
+import '../domain/shader_catalog.dart';
 
 final _programs = <String, Future<ui.FragmentProgram?>>{};
 
@@ -40,14 +28,14 @@ Future<ui.FragmentProgram?> _loadProgram(String asset) =>
 class GlTransitionView extends StatefulWidget {
   const GlTransitionView({
     super.key,
-    required this.type,
+    required this.shaderId,
     required this.t,
     required this.outgoing,
     required this.incoming,
     this.staticContent = false,
   });
 
-  final EditorTransition type;
+  final String shaderId;
   final double t;
   final Widget outgoing;
   final Widget incoming;
@@ -74,14 +62,18 @@ class _GlTransitionViewState extends State<GlTransitionView> {
   @override
   void didUpdateWidget(covariant GlTransitionView old) {
     super.didUpdateWidget(old);
-    if (old.type != widget.type) _loadShader();
+    if (old.shaderId != widget.shaderId) {
+      _program = null;
+      _loadShader();
+    }
   }
 
   Future<void> _loadShader() async {
-    final asset = glShaderAsset(widget.type);
-    if (asset == null) return;
-    final program = await _loadProgram(asset);
-    if (mounted) setState(() => _program = program);
+    final info = shaderById(widget.shaderId);
+    if (info == null) return;
+    final id = widget.shaderId;
+    final program = await _loadProgram(info.asset);
+    if (mounted && id == widget.shaderId) setState(() => _program = program);
   }
 
   @override
@@ -175,4 +167,192 @@ class _ShaderPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ShaderPainter old) =>
       old.progress != progress || old.from != from || old.to != to;
+}
+
+Future<(ui.Image, ui.Image)>? _demoPhotos;
+
+Future<ui.Image> _decodeAsset(String path) async {
+  final data = await rootBundle.load(path);
+  final codec = await ui.instantiateImageCodec(data.buffer.asUint8List(),
+      targetWidth: 480);
+  return (await codec.getNextFrame()).image;
+}
+
+/// Two real photos decoded once and shared by every gallery thumbnail.
+Future<(ui.Image, ui.Image)> demoPhotos() => _demoPhotos ??= () async {
+      final a = await _decodeAsset('assets/images/transitions/demo_a.jpg');
+      final b = await _decodeAsset('assets/images/transitions/demo_b.jpg');
+      return (a, b);
+    }();
+
+/// Cheap gallery thumbnail: paints the shader straight onto the shared demo
+/// photos, with no widget capture per tile.
+class ShaderPhotoThumb extends StatefulWidget {
+  const ShaderPhotoThumb({super.key, required this.shaderId, required this.t});
+  final String shaderId;
+  final double t;
+
+  @override
+  State<ShaderPhotoThumb> createState() => _ShaderPhotoThumbState();
+}
+
+class _ShaderPhotoThumbState extends State<ShaderPhotoThumb> {
+  ui.FragmentProgram? _program;
+  (ui.Image, ui.Image)? _photos;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant ShaderPhotoThumb old) {
+    super.didUpdateWidget(old);
+    if (old.shaderId != widget.shaderId) _load();
+  }
+
+  Future<void> _load() async {
+    final info = shaderById(widget.shaderId);
+    if (info == null) return;
+    final id = widget.shaderId;
+    final program = await _loadProgram(info.asset);
+    final photos = await demoPhotos().catchError((_) {
+      _demoPhotos = null;
+      return Future<(ui.Image, ui.Image)>.error('photos');
+    }).then<(ui.Image, ui.Image)?>((v) => v, onError: (_) => null);
+    if (photos == null) return;
+    if (mounted && id == widget.shaderId) {
+      setState(() {
+        _program = program;
+        _photos = photos;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final photos = _photos;
+    if (photos == null) return const ColoredBox(color: Color(0xFF1B1F2A));
+    final program = _program;
+    return RepaintBoundary(
+      child: CustomPaint(
+        size: Size.infinite,
+        painter: program == null
+            ? _FadePainter(photos.$1, photos.$2, widget.t)
+            : _ShaderPainter(program, photos.$1, photos.$2, widget.t),
+      ),
+    );
+  }
+}
+
+class _FadePainter extends CustomPainter {
+  _FadePainter(this.a, this.b, this.t);
+  final ui.Image a;
+  final ui.Image b;
+  final double t;
+
+  void _draw(Canvas c, Size size, ui.Image im, Paint p) => c.drawImageRect(
+      im,
+      Rect.fromLTWH(0, 0, im.width.toDouble(), im.height.toDouble()),
+      Offset.zero & size,
+      p);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    _draw(canvas, size, a, Paint());
+    _draw(canvas, size, b, Paint()..color = Colors.white.withValues(alpha: t));
+  }
+
+  @override
+  bool shouldRepaint(covariant _FadePainter old) => old.t != t;
+}
+
+/// gl-transitions.com style tile: shows the first photo until the pointer
+/// hovers; then the pointer's x position scrubs the transition and a slider
+/// shows the progress. Only the hovered tile runs its shader, so a big grid
+/// stays cheap. [restProgress] pins a frame when not hovered (selected tile).
+class ShaderScrubThumb extends StatefulWidget {
+  const ShaderScrubThumb(
+      {super.key, required this.shaderId, this.restProgress});
+  final String shaderId;
+  final double? restProgress;
+
+  @override
+  State<ShaderScrubThumb> createState() => _ShaderScrubThumbState();
+}
+
+class _ShaderScrubThumbState extends State<ShaderScrubThumb> {
+  double? _t;
+
+  void _set(Offset p, double height) {
+    if (height <= 0) return;
+    setState(() => _t = (p.dy / height).clamp(0.0, 1.0));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _t ?? widget.restProgress;
+    return LayoutBuilder(
+      builder: (context, box) => MouseRegion(
+        onHover: (e) => _set(e.localPosition, box.maxHeight),
+        onExit: (_) => setState(() => _t = null),
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onVerticalDragUpdate: (d) => _set(d.localPosition, box.maxHeight),
+          onVerticalDragEnd: (_) => setState(() => _t = null),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                const Image(
+                  image: AssetImage('assets/images/transitions/demo_a.jpg'),
+                  fit: BoxFit.cover,
+                  gaplessPlayback: true,
+                ),
+                if (t != null)
+                  ShaderPhotoThumb(shaderId: widget.shaderId, t: t),
+                if (t != null)
+                  Positioned(
+                    top: 8,
+                    bottom: 8,
+                    right: 6,
+                    width: 10,
+                    child: IgnorePointer(
+                      child: CustomPaint(painter: _SliderPainter(t)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SliderPainter extends CustomPainter {
+  _SliderPainter(this.t);
+  final double t;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final x = size.width / 2;
+    final track = Paint()
+      ..color = Colors.black54
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+    final fill = Paint()
+      ..color = Colors.cyanAccent
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+    final y = size.height * t;
+    canvas.drawLine(Offset(x, 0), Offset(x, size.height), track);
+    canvas.drawLine(Offset(x, 0), Offset(x, y), fill);
+    canvas.drawCircle(Offset(x, y), 4.5, Paint()..color = Colors.white);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SliderPainter old) => old.t != t;
 }

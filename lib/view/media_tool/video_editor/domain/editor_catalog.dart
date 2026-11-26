@@ -1,3 +1,4 @@
+export 'filter_catalog.dart';
 import 'package:flutter/material.dart';
 
 import 'video_editor_project.dart';
@@ -629,77 +630,6 @@ const particleStickers = <String, String>{
 };
 
 // --------------------------------------------------------------- filters
-
-@immutable
-class FilterPreset {
-  const FilterPreset(this.id, this.name, this.matrix);
-  final String id;
-  final String name;
-  final List<double> matrix; // 4x5 colour matrix
-}
-
-const filterPresets = <FilterPreset>[
-  FilterPreset('none', 'Original', [
-    1, 0, 0, 0, 0, //
-    0, 1, 0, 0, 0,
-    0, 0, 1, 0, 0,
-    0, 0, 0, 1, 0,
-  ]),
-  FilterPreset('vivid', 'Vivid', [
-    1.25, -.1, -.1, 0, 0, //
-    -.1, 1.25, -.1, 0, 0,
-    -.1, -.1, 1.25, 0, 0,
-    0, 0, 0, 1, 0,
-  ]),
-  FilterPreset('warm', 'Warm', [
-    1.1, 0, 0, 0, 12, //
-    0, 1.0, 0, 0, 4,
-    0, 0, .85, 0, -8,
-    0, 0, 0, 1, 0,
-  ]),
-  FilterPreset('cool', 'Cool', [
-    .9, 0, 0, 0, -6, //
-    0, 1.0, 0, 0, 2,
-    0, 0, 1.15, 0, 14,
-    0, 0, 0, 1, 0,
-  ]),
-  FilterPreset('mono', 'Mono', [
-    .33, .59, .11, 0, 0, //
-    .33, .59, .11, 0, 0,
-    .33, .59, .11, 0, 0,
-    0, 0, 0, 1, 0,
-  ]),
-  FilterPreset('noir', 'Noir', [
-    .5, .9, .2, 0, -30, //
-    .5, .9, .2, 0, -30,
-    .5, .9, .2, 0, -30,
-    0, 0, 0, 1, 0,
-  ]),
-  FilterPreset('sepia', 'Sepia', [
-    .393, .769, .189, 0, 0, //
-    .349, .686, .168, 0, 0,
-    .272, .534, .131, 0, 0,
-    0, 0, 0, 1, 0,
-  ]),
-  FilterPreset('fade', 'Fade', [
-    .85, 0, 0, 0, 30, //
-    0, .85, 0, 0, 30,
-    0, 0, .85, 0, 30,
-    0, 0, 0, 1, 0,
-  ]),
-  FilterPreset('vintage', 'Vintage', [
-    .9, .15, .05, 0, 10, //
-    .1, .85, .05, 0, 6,
-    .1, .1, .7, 0, 0,
-    0, 0, 0, 1, 0,
-  ]),
-  FilterPreset('drama', 'Drama', [
-    1.4, 0, 0, 0, -45, //
-    0, 1.4, 0, 0, -45,
-    0, 0, 1.4, 0, -45,
-    0, 0, 0, 1, 0,
-  ]),
-];
 
 const aspectPresets = <(String, double)>[
   ('9:16', 9 / 16),

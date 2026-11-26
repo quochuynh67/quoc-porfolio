@@ -12,12 +12,14 @@ import '../domain/ids.dart';
 class ActiveTransition {
   const ActiveTransition({
     required this.type,
+    this.shaderId,
     required this.outgoing,
     required this.incoming,
     required this.progress,
   });
 
   final EditorTransition type;
+  final String? shaderId;
   final EditorClip outgoing;
   final EditorClip incoming;
 
@@ -113,6 +115,7 @@ class VideoEditorController extends ChangeNotifier {
     if (local >= window) return null;
     return ActiveTransition(
       type: incoming.transition,
+      shaderId: incoming.shaderId,
       outgoing: outgoing,
       incoming: incoming,
       progress: local.inMicroseconds / window.inMicroseconds,
@@ -542,6 +545,7 @@ class VideoEditorController extends ChangeNotifier {
                 recipes[math.min(i, recipes.length - 1)] as Map);
             return clips[i].copyWith(
               transition: transitionFromName(r['transition']),
+              shaderId: r['shader'] as String?,
               transitionDuration: Duration(
                   milliseconds: ((r['transitionMs'] ?? 800) as num).toInt()),
               filter: filterFromJson(r['filter'] == null
@@ -573,6 +577,7 @@ class VideoEditorController extends ChangeNotifier {
 
   void updateSelectedTransition(
     EditorTransition transition, {
+    String? shaderId,
     Duration? duration,
   }) {
     final id = _selectedClipId;
@@ -583,6 +588,9 @@ class VideoEditorController extends ChangeNotifier {
             .map((clip) => clip.id == id
                 ? clip.copyWith(
                     transition: transition,
+                    shaderId: transition == EditorTransition.shader
+                        ? (shaderId ?? clip.shaderId)
+                        : null,
                     transitionDuration: duration,
                   )
                 : clip)
@@ -593,10 +601,11 @@ class VideoEditorController extends ChangeNotifier {
     if (duration == null) _previewTransition(id);
   }
 
-  void applyTransitionToAll(EditorTransition transition) {
+  void applyTransitionToAll(EditorTransition transition, {String? shaderId}) {
     _commit(_project.copyWith(
       clips: _project.clips
-          .map((clip) => clip.copyWith(transition: transition))
+          .map((clip) =>
+              clip.copyWith(transition: transition, shaderId: shaderId))
           .toList(),
     ));
   }

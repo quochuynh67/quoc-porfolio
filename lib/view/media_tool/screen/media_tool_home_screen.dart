@@ -85,7 +85,7 @@ class _MediaToolHomeScreenState extends State<MediaToolHomeScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Media Studio',
+                            Text('Quốc Media Tools',
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleLarge
@@ -121,7 +121,7 @@ class _MediaToolHomeScreenState extends State<MediaToolHomeScreen> {
                       Tab(icon: Icon(Icons.bolt), text: 'Quick tools'),
                       Tab(
                           icon: Icon(Icons.video_camera_back_rounded),
-                          text: 'Quoc67K1 Studio'),
+                          text: 'Studio'),
                     ],
                   ),
                 ),

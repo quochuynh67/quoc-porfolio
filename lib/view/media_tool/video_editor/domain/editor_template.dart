@@ -76,6 +76,7 @@ class EditorTemplate {
           for (final c in project.clips)
             {
               'transition': c.transition.name,
+              if (c.shaderId != null) 'shader': c.shaderId,
               'transitionMs': c.transitionDuration.inMilliseconds,
               'filter': filterToJson(c.filter),
             },
@@ -129,6 +130,7 @@ Map<String, dynamic> filterToJson(EditorFilter f) => {
       'b': f.brightness,
       'c': f.contrast,
       's': f.saturation,
+      if (f.intensity != 1) 'i': f.intensity,
     };
 
 EditorFilter filterFromJson(Map<String, dynamic>? j) => j == null
@@ -138,6 +140,7 @@ EditorFilter filterFromJson(Map<String, dynamic>? j) => j == null
         brightness: ((j['b'] ?? 0) as num).toDouble(),
         contrast: ((j['c'] ?? 0) as num).toDouble(),
         saturation: ((j['s'] ?? 0) as num).toDouble(),
+        intensity: ((j['i'] ?? 1) as num).toDouble(),
       );
 
 Map<String, dynamic> overlayToJson(EditorOverlay o) => {

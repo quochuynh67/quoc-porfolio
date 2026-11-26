@@ -428,7 +428,7 @@ class _Toolbar extends StatelessWidget {
                 color: Colors.indigoAccent),
             if (showTitle) ...[
               const SizedBox(width: 8),
-              const Text('Quoc67K1 Studio',
+              const Text('Quốc Media Tools',
                   style: TextStyle(
                       color: Colors.white, fontWeight: FontWeight.w700)),
             ],

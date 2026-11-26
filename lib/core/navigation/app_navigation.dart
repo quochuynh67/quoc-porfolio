@@ -38,7 +38,7 @@ const Map<int, String> pageTitles = {
   0: 'Home',
   1: 'Projects',
   2: 'Others',
-  3: 'Media Tools',
+  3: 'Quốc Media Tools',
   4: 'Vlogs',
   5: 'Chat With Me',
   6: 'Games',

@@ -5,7 +5,7 @@ class VideoBreakdownService {
 
   String buildVideoMarkdown(VideoEditorProject project) {
     final buffer = StringBuffer()
-      ..writeln('# VIDEO.md — Media Studio Project')
+      ..writeln('# VIDEO.md — Quốc Media Tools Project')
       ..writeln()
       ..writeln('> Generated from the editable project model using the '
           'rea-video breakdown structure. This is deterministic project '

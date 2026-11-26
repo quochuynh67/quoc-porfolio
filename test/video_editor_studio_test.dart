@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_portfolio/view/media_tool/video_editor/application/video_editor_controller.dart';
 import 'package:flutter_portfolio/view/media_tool/video_editor/application/template_store.dart';
+import 'dart:io';
+import 'package:flutter_portfolio/view/media_tool/video_editor/domain/shader_catalog.dart';
 import 'package:flutter_portfolio/view/media_tool/video_editor/domain/editor_catalog.dart';
 import 'package:flutter_portfolio/view/media_tool/video_editor/domain/editor_template.dart';
 import 'package:flutter_portfolio/view/media_tool/video_editor/presentation/editor_motion.dart';
@@ -50,6 +52,7 @@ void main() {
   visibilityTests();
   timelineDragTests();
   clipTests();
+  shaderTests();
 
   for (final size in const [
     Size(390, 780),
@@ -275,5 +278,68 @@ void clipTests() {
     await tester.drag(first, const Offset(300, 0));
     await tester.pump();
     expect(c.project.clips.map((e) => e.name).toList()[0], isNot('p0.png'));
+  });
+}
+
+void shaderTests() {
+  test('every catalogued shader has its source file and ids are unique', () {
+    final ids = <String>{};
+    for (final s in shaderCatalog) {
+      expect(ids.add(s.id), isTrue, reason: 'duplicate ${s.id}');
+      expect(File(s.asset).existsSync(), isTrue, reason: s.asset);
+    }
+    expect(shaderById('flag_vn')?.name, 'Việt Nam');
+    expect(shaderCatalog.first.category, flagsCategory);
+    for (final id in featuredShaderIds) {
+      expect(shaderById(id), isNotNull, reason: id);
+    }
+  });
+
+  test('a shader transition keeps its shader id and exports via xfade', () {
+    final c = _seeded();
+    c.selectClip(c.project.clips[1].id);
+    c.updateSelectedTransition(EditorTransition.shader, shaderId: 'flag_vn');
+    expect(c.project.clips[1].shaderId, 'flag_vn');
+    c.seek(const Duration(seconds: 5, milliseconds: 300));
+    expect(c.activeTransition!.shaderId, 'flag_vn');
+    c.updateSelectedTransition(EditorTransition.fade);
+    expect(c.project.clips[1].shaderId, isNull);
+  });
+
+  testWidgets('shader browser lists flags and selects Viet Nam',
+      (tester) async {
+    tester.view.physicalSize = const Size(1400, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = _seeded();
+    c.selectClip(c.project.clips[1].id);
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+          body: VideoEditorStudioScreen(
+              controller: c, store: TemplateStore(persist: false))),
+    ));
+    await tester.pump(const Duration(milliseconds: 100));
+    final tab = find.text('Transitions').first;
+    await tester.ensureVisible(tab);
+    await tester.tap(tab, warnIfMissed: false);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.textContaining('Applies to the cut into'), findsOneWidget);
+    final browse = find.textContaining('Browse all');
+    final anchor =
+        tester.getCenter(find.textContaining('Applies to the cut into'));
+    for (var i = 0; i < 12 && browse.evaluate().isEmpty; i++) {
+      await tester.dragFrom(anchor, const Offset(0, -250));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(browse);
+    await tester.tap(browse);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.textContaining('Shader transitions'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, 'vi');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Việt Nam').last);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(c.project.clips[1].transition, EditorTransition.shader);
+    expect(c.project.clips[1].shaderId, 'flag_vn');
   });
 }

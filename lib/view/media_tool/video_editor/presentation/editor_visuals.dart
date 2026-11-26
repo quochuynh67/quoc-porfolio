@@ -576,10 +576,26 @@ List<double> _mul(List<double> a, List<double> b) {
   return out;
 }
 
-List<double> filterMatrix(EditorFilter f) {
-  final preset = filterPresets.firstWhere((p) => p.id == f.preset,
-      orElse: () => filterPresets.first);
-  var m = List<double>.from(preset.matrix);
+/// Preset colour matrix blended towards identity by [EditorFilter.intensity].
+List<double> presetMatrix(EditorFilter f) {
+  final preset = filterPresetById(f.preset);
+  final k = f.intensity.clamp(0.0, 1.0);
+  final base = preset.matrix;
+  if (k >= 1) return List<double>.from(base);
+  return [
+    for (var i = 0; i < 20; i++)
+      identityMatrix[i] + (base[i] - identityMatrix[i]) * k,
+  ];
+}
+
+/// Brightness / contrast / saturation only (no preset).
+List<double> adjustMatrix(EditorFilter f) =>
+    _adjust(f, List<double>.from(identityMatrix));
+
+List<double> filterMatrix(EditorFilter f) => _adjust(f, presetMatrix(f));
+
+List<double> _adjust(EditorFilter f, List<double> start) {
+  var m = start;
   if (f.saturation != 0) {
     final s = 1 + f.saturation;
     const lr = .2126, lg = .7152, lb = .0722;

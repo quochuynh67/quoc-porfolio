@@ -1,5 +1,5 @@
 #version 460 core
-// Ported from gl-transitions (https://gl-transitions.com), MIT licensed.
+// gl-transitions (https://gl-transitions.com) — Swirl by Sergey Kosarevsky, MIT.
 #include <flutter/runtime_effect.glsl>
 
 uniform vec2 uSize;
@@ -9,29 +9,75 @@ uniform sampler2D uTo;
 
 out vec4 fragColor;
 
-const float progressEps = 0.0;
+float progress = 0.0;
+float ratio = 1.0;
 vec4 getFromColor(vec2 uv) { return texture(uFrom, vec2(uv.x, 1.0 - uv.y)); }
 vec4 getToColor(vec2 uv) { return texture(uTo, vec2(uv.x, 1.0 - uv.y)); }
 
-vec4 transition(vec2 uv) {
-  float radius = 1.0;
-  float t = uProgress;
-  vec2 p = uv - vec2(0.5);
-  float dist = length(p);
-  if (dist < radius) {
-    float percent = (radius - dist) / radius;
-    float a = (t <= 0.5) ? mix(0.0, 1.0, t / 0.5) : mix(1.0, 0.0, (t - 0.5) / 0.5);
-    float theta = percent * percent * a * 8.0 * 3.14159265;
-    float s = sin(theta);
-    float c = cos(theta);
-    p = vec2(dot(p, vec2(c, -s)), dot(p, vec2(s, c)));
-  }
-  p += vec2(0.5);
-  return mix(getFromColor(p), getToColor(p), t);
+// License: MIT
+// Author: Sergey Kosarevsky
+// Description: The image twists into a round swirl around the center that peaks mid-way, where the outgoing image dissolves into the incoming one, then untwists
+// Tags: swirl, rotate, blend
+// ( http://www.linderdaum.com )
+// ported by gre from https://gist.github.com/corporateshark/cacfedb8cca0f5ce3f7c
+
+// @range(-3, 3) Turns of the swirl at its center at the peak (negative turns clockwise)
+const float strength = 1.0;
+// @range(0.1, 2) Radius of the swirl, in frame heights
+const float radius = 0.9;
+// Center of the swirl
+const vec2 center = vec2(0.5, 0.5);
+
+const float PI = 3.141592653589793;
+const float TAU = 6.283185307179586;
+const float ZOOM = 0.12;
+// spread of the motion blur, as a fraction of the swirl's speed
+const float BLUR = 0.05;
+const int TAPS = 12;
+
+// fold the coordinates back into the frame, so the image stays filled without smearing its border
+vec2 mirrored(vec2 v) {
+  vec2 m = mod(v, 2.0);
+  return mix(m, 2.0 - m, step(1.0, m));
 }
+
+vec4 transition(vec2 uv) {
+  // the swirl eases in and out, and is exactly 0 at both ends
+  float s = sin(PI * progress);
+  float amount = s * s;
+  // its speed, used for the motion blur, also 0 at both ends
+  float speed = PI * sin(TAU * progress);
+  float reveal = smoothstep(0.3, 0.7, progress);
+
+  vec2 aspect = vec2(ratio, 1.0);
+  vec2 d = (uv - center) * aspect;
+  float x = clamp(length(d) / max(radius, 1e-3), 0.0, 1.0);
+  float falloff = (1.0 - x) * (1.0 - x);
+  float twist = strength * TAU * falloff;
+  float angle = twist * amount;
+  // capped so the blur taps never spread apart into visible streaks
+  float spread = clamp(twist * speed * BLUR, -1.2, 1.2);
+  d *= 1.0 - ZOOM * amount * falloff;
+
+  vec4 col = vec4(0.0);
+  float total = 0.0;
+  for (int i = 0; i < TAPS; i++) {
+    float k = float(i) / float(TAPS - 1) - 0.5;
+    float w = 1.0 - abs(k);
+    float a = angle + spread * k;
+    float c = cos(a);
+    float sn = sin(a);
+    vec2 q = mirrored(center + vec2(c * d.x - sn * d.y, sn * d.x + c * d.y) / aspect);
+    col += mix(getFromColor(q), getToColor(q), reveal) * w;
+    total += w;
+  }
+  return col / total;
+}
+
 
 void main() {
   vec2 frag = FlutterFragCoord().xy / uSize;
-  vec2 uv = vec2(frag.x, 1.0 - frag.y);
-  fragColor = transition(uv);
+  progress = uProgress;
+  ratio = uSize.x / uSize.y;
+  fragColor = transition(vec2(frag.x, 1.0 - frag.y));
 }

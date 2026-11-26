@@ -178,6 +178,10 @@ class _WebExporter implements EditorExporter {
   List<String> _neededFiles(List<String> args, Map<String, Uint8List> store) {
     final needed = <String>{};
     for (final a in args) {
+      if (a.contains('.cube')) {
+        needed.addAll(
+            store.keys.where((k) => k.endsWith('.cube') && a.contains(k)));
+      }
       if (store.containsKey(a)) {
         needed.add(a);
         if (a.endsWith('.txt')) {

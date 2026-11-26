@@ -18,6 +18,7 @@ Widget buildTransitionFrame({
   required Widget outgoing,
   required Widget incoming,
   Widget? fxOverlay,
+  String? shaderId,
   bool staticContent = false,
 }) {
   final p = Curves.easeInOutCubic.transform(t.clamp(0.0, 1.0));
@@ -156,16 +157,9 @@ Widget buildTransitionFrame({
             outgoing,
             ClipPath(clipper: _MosaicClipper(p), child: incoming),
           ]);
-        case EditorTransition.glCrosswarp:
-        case EditorTransition.glRipple:
-        case EditorTransition.glSwirl:
-        case EditorTransition.glWarp:
-        case EditorTransition.glDreamy:
-        case EditorTransition.glKaleido:
-        case EditorTransition.glPinwheel:
-        case EditorTransition.glDots:
+        case EditorTransition.shader:
           frame = GlTransitionView(
-            type: type,
+            shaderId: shaderId ?? 'crosswarp',
             t: t,
             outgoing: outgoing,
             incoming: incoming,
@@ -276,9 +270,19 @@ class _MosaicClipper extends CustomClipper<Path> {
 
 /// Looping A→B preview of a transition used in the gallery.
 class TransitionThumb extends StatefulWidget {
-  const TransitionThumb({super.key, required this.type, this.fx});
+  const TransitionThumb({
+    super.key,
+    required this.type,
+    this.fx,
+    this.shaderId,
+    this.animate = true,
+  });
   final EditorTransition type;
   final EditorFx? fx;
+  final String? shaderId;
+
+  /// When false the thumbnail shows a still mid-transition frame.
+  final bool animate;
 
   @override
   State<TransitionThumb> createState() => _TransitionThumbState();
@@ -289,7 +293,17 @@ class _TransitionThumbState extends State<TransitionThumb>
   late final AnimationController _anim = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1800),
-  )..repeat();
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.animate) {
+      _anim.repeat();
+    } else {
+      _anim.value = .55;
+    }
+  }
 
   @override
   void dispose() {
@@ -297,27 +311,47 @@ class _TransitionThumbState extends State<TransitionThumb>
     super.dispose();
   }
 
-  Widget _face(String letter, List<Color> colors) => DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: colors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Center(
-          child: Text(letter,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900)),
-        ),
+  static const _photoA = AssetImage('assets/images/transitions/demo_a.jpg');
+  static const _photoB = AssetImage('assets/images/transitions/demo_b.jpg');
+  static bool _photosReady = false;
+  static Future<void>? _photosLoading;
+
+  bool get _ready => _photosReady;
+
+  Future<void> _loadPhotos() {
+    return _photosLoading ??= Future.wait([
+      precacheImage(_photoA, context),
+      precacheImage(_photoB, context),
+    ]).then((_) => _photosReady = true);
+  }
+
+  Widget _face(AssetImage photo) => Image(
+        image: photo,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        gaplessPlayback: true,
       );
 
   @override
   Widget build(BuildContext context) {
-    final a = _face('A', const [Color(0xFF2E5BFF), Color(0xFF1B2A6B)]);
-    final b = _face('B', const [Color(0xFFFF7A59), Color(0xFFB0306A)]);
+    if (widget.type == EditorTransition.shader && widget.shaderId != null) {
+      return ShaderScrubThumb(
+        shaderId: widget.shaderId!,
+        restProgress: widget.animate ? .5 : null,
+      );
+    }
+    if (!_ready) {
+      _loadPhotos().then((_) {
+        if (mounted) setState(() {});
+      });
+      return const ClipRRect(
+        borderRadius: BorderRadius.all(Radius.circular(8)),
+        child: ColoredBox(color: Color(0xFF1B1F2A)),
+      );
+    }
+    final a = _face(_photoA);
+    final b = _face(_photoB);
     final sprite = widget.fx?.sprite ??
         (widget.type == EditorTransition.fx ? builtinSprites.first : null);
     return ClipRRect(
@@ -325,7 +359,8 @@ class _TransitionThumbState extends State<TransitionThumb>
       child: AnimatedBuilder(
         animation: _anim,
         builder: (context, _) {
-          final raw = ((_anim.value - .2) / .5).clamp(0.0, 1.0);
+          final raw =
+              widget.animate ? ((_anim.value - .2) / .5).clamp(0.0, 1.0) : .5;
           Widget? overlay;
           if (widget.type == EditorTransition.fx) {
             overlay = sprite == null
@@ -349,6 +384,7 @@ class _TransitionThumbState extends State<TransitionThumb>
             outgoing: a,
             incoming: b,
             fxOverlay: overlay,
+            shaderId: widget.shaderId,
             staticContent: true,
           );
         },

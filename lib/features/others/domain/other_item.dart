@@ -40,13 +40,6 @@ List<OtherModel> otherList = [
     pageIndex: 8,
   ),
   OtherModel(
-    name: 'Media Tools',
-    type: 'Flutter tools',
-    date: 'Portfolio app',
-    skills: ['FFmpeg', 'Video processing', 'Vlog editor', 'Quoc67K1 Studio'],
-    pageIndex: 3,
-  ),
-  OtherModel(
     name: 'Jx2 Web 2D & 3D',
     type: 'Legendary MMORPG web experience',
     date: 'Web game',

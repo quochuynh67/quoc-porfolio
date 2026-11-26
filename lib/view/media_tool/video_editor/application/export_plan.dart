@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
+import '../domain/filter_catalog.dart';
+import '../domain/shader_catalog.dart';
 import '../domain/video_editor_project.dart';
-import '../presentation/editor_visuals.dart' show filterMatrix;
+import '../presentation/editor_visuals.dart' show adjustMatrix, filterMatrix;
 import '../platform/video_source.dart' show sniffMime;
 
 /// One FFmpeg invocation.
@@ -142,7 +145,8 @@ String audioName(EditorAudioTrack track, int index) {
 }
 
 /// Best-effort mapping from editor transitions to FFmpeg `xfade` names.
-String xfadeFor(EditorTransition t) => switch (t) {
+String xfadeFor(EditorTransition t, [String? shaderId]) => switch (t) {
+      EditorTransition.shader => shaderById(shaderId)?.xfade ?? 'fade',
       EditorTransition.fade => 'fade',
       EditorTransition.dipBlack => 'fadeblack',
       EditorTransition.slideLeft => 'slideleft',
@@ -155,18 +159,10 @@ String xfadeFor(EditorTransition t) => switch (t) {
       EditorTransition.spin => 'radial',
       EditorTransition.blur => 'dissolve',
       EditorTransition.flash => 'fadewhite',
-      EditorTransition.glitch => 'pixelize',
       EditorTransition.circle => 'circleopen',
       EditorTransition.blinds => 'vertopen',
       EditorTransition.pixelate => 'pixelize',
-      EditorTransition.glCrosswarp => 'smoothleft',
-      EditorTransition.glRipple => 'dissolve',
-      EditorTransition.glSwirl => 'radial',
-      EditorTransition.glWarp => 'diagtl',
-      EditorTransition.glDreamy => 'fade',
-      EditorTransition.glKaleido => 'distance',
-      EditorTransition.glPinwheel => 'radial',
-      EditorTransition.glDots => 'circleopen',
+      EditorTransition.glitch => 'pixelize',
       EditorTransition.fx => 'fadewhite',
       EditorTransition.none => 'fade',
     };
@@ -188,15 +184,39 @@ String _atempo(double speed) {
 
 String _fmt(double v) => v.toStringAsFixed(4);
 
-String? _colorFilter(EditorFilter f) {
-  if (f.isIdentity) return null;
-  final m = filterMatrix(f);
+String _matrixFilter(List<double> m) {
   final mix = 'colorchannelmixer='
       'rr=${_fmt(m[0])}:rg=${_fmt(m[1])}:rb=${_fmt(m[2])}:'
       'gr=${_fmt(m[5])}:gg=${_fmt(m[6])}:gb=${_fmt(m[7])}:'
       'br=${_fmt(m[10])}:bg=${_fmt(m[11])}:bb=${_fmt(m[12])}';
   final offset = ((m[4] + m[9] + m[14]) / 3 / 255).clamp(-1.0, 1.0);
   return offset.abs() < .005 ? mix : '$mix,eq=brightness=${_fmt(offset)}';
+}
+
+bool _isIdentityMatrix(List<double> m) {
+  for (var i = 0; i < 20; i++) {
+    if ((m[i] - identityMatrix[i]).abs() > 1e-6) return false;
+  }
+  return true;
+}
+
+/// FFmpeg filter chain for a clip's grade. LUT looks are baked to a `.cube`
+/// file (registered through [addFile]) and applied with `lut3d`.
+String? _colorFilter(EditorFilter f, void Function(String, Uint8List) addFile) {
+  if (f.isIdentity) return null;
+  final preset = filterPresetById(f.preset);
+  if (preset.isLut && f.intensity > 0) {
+    final name = 'look_${preset.id}_${(f.intensity * 100).round()}.cube';
+    addFile(
+        name,
+        Uint8List.fromList(utf8.encode(
+            bakeCube(preset.name, preset.look!, intensity: f.intensity))));
+    final adj = adjustMatrix(f);
+    return _isIdentityMatrix(adj)
+        ? 'lut3d=file=$name'
+        : 'lut3d=file=$name,${_matrixFilter(adj)}';
+  }
+  return _matrixFilter(filterMatrix(f));
 }
 
 Duration transitionWindowFor(List<EditorClip> clips, int index) {
@@ -236,7 +256,10 @@ ExportPlan buildExportPlan(ExportRequest r) {
     final c = clips[i];
     final out = 'c$i.mp4';
     final dur = sec(c.duration);
-    final color = _colorFilter(c.filter);
+    final color = _colorFilter(c.filter, (name, bytes) {
+      inputs[name] = bytes;
+      if (!cleanup.contains(name)) cleanup.add(name);
+    });
     final vfParts = [
       if (c.type == EditorAssetType.video && c.speed != 1)
         'setpts=PTS/${c.speed.toStringAsFixed(4)}',
@@ -355,7 +378,7 @@ ExportPlan buildExportPlan(ExportRequest r) {
         ];
     steps.add(ExportStep(
       'Transition $i: ${c.transition.label}',
-      trArgs(xfadeFor(c.transition)),
+      trArgs(xfadeFor(c.transition, c.shaderId)),
       fallbackArgs: trArgs('fade'),
     ));
     // Effect pack (sprite sheet frames or WebM/MP4) on top of the transition.
