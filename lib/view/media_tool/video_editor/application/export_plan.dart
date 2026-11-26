@@ -207,10 +207,10 @@ String? _colorFilter(EditorFilter f, void Function(String, Uint8List) addFile) {
   final preset = filterPresetById(f.preset);
   if (preset.isLut && f.intensity > 0) {
     final name = 'look_${preset.id}_${(f.intensity * 100).round()}.cube';
-    addFile(
-        name,
-        Uint8List.fromList(utf8.encode(
-            bakeCube(preset.name, preset.look!, intensity: f.intensity))));
+    final text = preset.cube != null
+        ? preset.cube!.toText(f.intensity)
+        : bakeCube(preset.name, preset.look!, intensity: f.intensity);
+    addFile(name, Uint8List.fromList(utf8.encode(text)));
     final adj = adjustMatrix(f);
     return _isIdentityMatrix(adj)
         ? 'lut3d=file=$name'

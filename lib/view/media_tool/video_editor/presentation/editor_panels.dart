@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 
 import '../../screen/widget/media_ui.dart';
@@ -970,6 +971,40 @@ class _FilterPanelState extends State<_FilterPanel> {
 
   VideoEditorController get controller => widget.controller;
 
+  Future<void> _importCube() async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['cube'],
+        allowMultiple: true,
+        withData: true,
+      );
+      if (result == null) return;
+      String? firstError;
+      var added = 0;
+      for (final file in result.files) {
+        final bytes = file.bytes;
+        if (bytes == null) continue;
+        final error = controller.importCubeLut(
+            file.name, String.fromCharCodes(bytes),
+            apply: added == 0 && result.files.length == 1);
+        if (error == null) {
+          added++;
+        } else {
+          firstError ??= '${file.name}: $error';
+        }
+      }
+      if (added > 0) setState(() => _category = categoryCustom);
+      if (firstError != null) {
+        messenger?.showSnackBar(
+            SnackBar(content: Text('LUT import failed — $firstError')));
+      }
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(content: Text('LUT import failed: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final clip = controller.selectedClip;
@@ -987,7 +1022,7 @@ class _FilterPanelState extends State<_FilterPanel> {
     }
     final filter = clip.filter;
     final shown = [
-      for (final p in filterPresets)
+      for (final p in [...filterPresets, ...customLuts])
         if (_category == 'All' || p.category == _category) p,
     ];
     return ListView(
@@ -1013,6 +1048,20 @@ class _FilterPanelState extends State<_FilterPanel> {
               ),
           ],
         ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: _importCube,
+          icon: const Icon(Icons.upload_file_rounded, size: 18),
+          label: const Text('Import LUT (.cube)'),
+        ),
+        if (_category == categoryCustom && customLuts.isEmpty)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Text(
+                'No LUTs yet. Import a 3D .cube file (Resolve, Lightroom, '
+                'Photoshop, free LUT packs…). LUTs stay for this session.',
+                style: TextStyle(color: Colors.white38, fontSize: 11)),
+          ),
         const SizedBox(height: 10),
         GridView.builder(
           shrinkWrap: true,
@@ -1027,7 +1076,7 @@ class _FilterPanelState extends State<_FilterPanel> {
           itemBuilder: (context, i) {
             final p = shown[i];
             final selected = filter.preset == p.id;
-            return InkWell(
+            final tile = InkWell(
               borderRadius: BorderRadius.circular(10),
               onTap: () => controller
                   .setSelectedClipFilter(filter.copyWith(preset: p.id)),
@@ -1063,6 +1112,25 @@ class _FilterPanelState extends State<_FilterPanel> {
                           fontSize: 10)),
                 ],
               ),
+            );
+            if (p.category != categoryCustom) return tile;
+            return Stack(
+              children: [
+                Positioned.fill(child: tile),
+                Positioned(
+                  top: 3,
+                  right: 3,
+                  child: GestureDetector(
+                    onTap: () => controller.removeCustomLut(p.id),
+                    child: const CircleAvatar(
+                      radius: 9,
+                      backgroundColor: Colors.black54,
+                      child: Icon(Icons.close_rounded,
+                          size: 12, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         ),

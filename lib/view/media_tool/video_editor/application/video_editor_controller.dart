@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../domain/editor_catalog.dart';
 import '../domain/editor_template.dart';
+import '../domain/filter_catalog.dart';
 import '../domain/video_editor_project.dart';
 import '../domain/ids.dart';
 
@@ -154,6 +155,32 @@ class VideoEditorController extends ChangeNotifier {
     _isPlaying = false;
     final index = _project.clips.length - 1;
     _position = newClipStart + transitionWindow(index);
+    notifyListeners();
+  }
+
+  /// Imports a `.cube` LUT. Returns an error message, or null on success.
+  String? importCubeLut(String fileName, String text, {bool apply = true}) {
+    final CubeLut cube;
+    try {
+      cube = CubeLut.parse(text);
+    } on FormatException catch (e) {
+      return e.message;
+    }
+    final base =
+        fileName.replaceFirst(RegExp(r'\.cube$', caseSensitive: false), '');
+    final name = cube.title.isNotEmpty ? cube.title : base;
+    final preset = FilterPreset.cube('cube_${nextStamp()}', name, cube);
+    customLuts.add(preset);
+    if (apply && selectedClip != null) {
+      setSelectedClipFilter(selectedClip!.filter.copyWith(preset: preset.id));
+    } else {
+      notifyListeners();
+    }
+    return null;
+  }
+
+  void removeCustomLut(String id) {
+    customLuts.removeWhere((p) => p.id == id);
     notifyListeners();
   }
 
