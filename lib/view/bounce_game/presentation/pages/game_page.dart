@@ -51,7 +51,8 @@ class _GamePageState extends State<GamePage> {
                                       alignment: Alignment(
                                           -_wall.dx + index * 0.18, 0),
                                       child: WallObject(
-                                        wall: _wall, key: null,
+                                        wall: _wall,
+                                        key: null,
                                       )))),
                         )),
                         Expanded(flex: 4, child: Playground()),
@@ -64,7 +65,8 @@ class _GamePageState extends State<GamePage> {
                                     alignment:
                                         Alignment(-_wall.dx + index * 0.18, 0),
                                     child: WallObject(
-                                      wall: _wall, key: null,
+                                      wall: _wall,
+                                      key: null,
                                     ))),
                           ],
                         )),

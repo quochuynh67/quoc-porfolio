@@ -11,7 +11,9 @@ class PersonalInfo extends StatelessWidget {
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(height: defaultPadding/2,),
+        SizedBox(
+          height: defaultPadding / 2,
+        ),
         AreaInfoText(title: 'Contact', text: '0762985603'),
         AreaInfoText(title: 'Email', text: 'quocb14005xx@gmail.com'),
         AreaInfoText(title: 'LinkedIn', text: '@huynh-quoc-8480b1127'),
@@ -20,7 +22,10 @@ class PersonalInfo extends StatelessWidget {
         SizedBox(
           height: defaultPadding,
         ),
-        Text('Skills',style: TextStyle(color: Colors.white),),
+        Text(
+          'Skills',
+          style: TextStyle(color: Colors.white),
+        ),
         SizedBox(
           height: defaultPadding,
         ),

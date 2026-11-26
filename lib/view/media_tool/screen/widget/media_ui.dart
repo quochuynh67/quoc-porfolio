@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../res/constants.dart';
 
-/// Shared surfaces for the Media Studio tabs. Lighter than [bgColor] so panels
+/// Shared surfaces for the Quốc Media Tools tabs. Lighter than [bgColor] so panels
 /// stay readable against the dark page background.
 const mediaPanelColor = Color(0xFF1B2133);
 const mediaPanelBorder = Color(0x26FFFFFF);

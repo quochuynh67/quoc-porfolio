@@ -10,6 +10,9 @@ class Project {
   final ProjectSection section;
   final String? cover;
 
+  /// Opens an in-app page (see app_navigation.dart) instead of a web link.
+  final int? pageIndex;
+
   /// Small pre-scaled JPEG (`thumb_<name>.jpg` next to the original) used on
   /// cards. Avoids decoding multi-megapixel screenshots on the web, which
   /// triggers CanvasKit "texImage2D: source data has been detached" and
@@ -27,7 +30,8 @@ class Project {
       {this.githubLink,
       this.tags = const [],
       this.section = ProjectSection.company,
-      this.cover});
+      this.cover,
+      this.pageIndex});
 }
 
 List<Project> projectList = [
@@ -140,5 +144,14 @@ List<Project> projectList = [
     tags: ['personal', 'react', 'typescript', 'realtime', 'electron', 'AI'],
     section: ProjectSection.personal,
     cover: 'assets/images/projects/67talk/67talk-device-mockup-16x9.png',
+  ),
+  Project(
+    'Quốc Media Tools',
+    'Convert, compose and export media right in the browser: quick FFmpeg tools and a full vlog editor with animated text, stickers, GPU shader transitions, LUT colour grading and MP4 export.',
+    ['assets/images/quoc_logo.png'],
+    null,
+    tags: ['personal', 'flutter web', 'ffmpeg', 'video editor', 'shaders'],
+    section: ProjectSection.personal,
+    pageIndex: 3,
   ),
 ];

@@ -56,29 +56,29 @@ class Results {
 
   Results(
       {this.id,
-        this.user,
-        this.name,
-        this.status,
-        this.likeCount,
-        this.viewCount,
-        this.resourceCount,
-        this.commentCount,
-        this.resource,
-        this.scrapVideo,
-        this.duration,
-        this.publishedAt,
-        this.createdAt,
-        this.updatedAt,
-        this.language,
-        this.description,
-        this.phase,
-        this.unblockedAt,
-        this.placeCount,
-        this.source,
-        this.thumbnails,
-        this.tags,
-        this.categories,
-        this.spots});
+      this.user,
+      this.name,
+      this.status,
+      this.likeCount,
+      this.viewCount,
+      this.resourceCount,
+      this.commentCount,
+      this.resource,
+      this.scrapVideo,
+      this.duration,
+      this.publishedAt,
+      this.createdAt,
+      this.updatedAt,
+      this.language,
+      this.description,
+      this.phase,
+      this.unblockedAt,
+      this.placeCount,
+      this.source,
+      this.thumbnails,
+      this.tags,
+      this.categories,
+      this.spots});
 
   Results.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -101,7 +101,7 @@ class Results {
     unblockedAt = json['unblocked_at'];
     placeCount = json['place_count'];
     source =
-    json['source'] != null ? new Source.fromJson(json['source']) : null;
+        json['source'] != null ? new Source.fromJson(json['source']) : null;
     if (json['thumbnails'] != null) {
       thumbnails = <Thumbnails>[];
       json['thumbnails'].forEach((v) {
@@ -181,7 +181,7 @@ class User {
   User.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     nickname = json['nickname'];
-    photoURL =json['avatar']?['url'] ?? json['photoURL'];
+    photoURL = json['avatar']?['url'] ?? json['photoURL'];
     statusWithMe = json['statusWithMe'] != null
         ? new StatusWithMe.fromJson(json['statusWithMe'])
         : null;
@@ -234,11 +234,11 @@ class Source {
 
   Source(
       {this.id,
-        this.url,
-        this.streamUrl,
-        this.responsiveUrl,
-        this.scaleWidth,
-        this.scaleHeight});
+      this.url,
+      this.streamUrl,
+      this.responsiveUrl,
+      this.scaleWidth,
+      this.scaleHeight});
 
   Source.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -274,7 +274,7 @@ class ResponsiveUrl {
 
   ResponsiveUrl.fromJson(Map<String, dynamic> json) {
     medium =
-    json['medium'] != null ? new Medium.fromJson(json['medium']) : null;
+        json['medium'] != null ? new Medium.fromJson(json['medium']) : null;
     low = json['low'] != null ? new Medium.fromJson(json['low']) : null;
     high = json['high'] != null ? new Medium.fromJson(json['high']) : null;
   }
@@ -323,7 +323,7 @@ class Thumbnails {
   Thumbnails.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     formats =
-    json['formats'] != null ? new Formats.fromJson(json['formats']) : null;
+        json['formats'] != null ? new Formats.fromJson(json['formats']) : null;
     url = json['url'];
     streamUrl = json['streamUrl'];
     responsiveUrl = json['responsiveUrl'];
@@ -408,14 +408,14 @@ class Categories {
 
   Categories(
       {this.id,
-        this.title,
-        this.publishedAt,
-        this.createdAt,
-        this.updatedAt,
-        this.label,
-        this.order,
-        this.thumbnail,
-        this.background});
+      this.title,
+      this.publishedAt,
+      this.createdAt,
+      this.updatedAt,
+      this.label,
+      this.order,
+      this.thumbnail,
+      this.background});
 
   Categories.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -496,21 +496,21 @@ class Thumbnail {
 
   Thumbnail(
       {this.id,
-        this.name,
-        this.width,
-        this.height,
-        this.formats,
-        this.hash,
-        this.ext,
-        this.mime,
-        this.size,
-        this.url,
-        this.previewUrl,
-        this.createdAt,
-        this.updatedAt,
-        this.waveform,
-        this.streamUrl,
-        this.responsiveUrl});
+      this.name,
+      this.width,
+      this.height,
+      this.formats,
+      this.hash,
+      this.ext,
+      this.mime,
+      this.size,
+      this.url,
+      this.previewUrl,
+      this.createdAt,
+      this.updatedAt,
+      this.waveform,
+      this.streamUrl,
+      this.responsiveUrl});
 
   Thumbnail.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -573,21 +573,21 @@ class Background {
 
   Background(
       {this.id,
-        this.name,
-        this.width,
-        this.height,
-        this.formats,
-        this.hash,
-        this.ext,
-        this.mime,
-        this.size,
-        this.url,
-        this.previewUrl,
-        this.createdAt,
-        this.updatedAt,
-        this.waveform,
-        this.streamUrl,
-        this.responsiveUrl});
+      this.name,
+      this.width,
+      this.height,
+      this.formats,
+      this.hash,
+      this.ext,
+      this.mime,
+      this.size,
+      this.url,
+      this.previewUrl,
+      this.createdAt,
+      this.updatedAt,
+      this.waveform,
+      this.streamUrl,
+      this.responsiveUrl});
 
   Background.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -595,7 +595,7 @@ class Background {
     width = json['width'];
     height = json['height'];
     formats =
-    json['formats'] != null ? new Formats.fromJson(json['formats']) : null;
+        json['formats'] != null ? new Formats.fromJson(json['formats']) : null;
     hash = json['hash'];
     ext = json['ext'];
     mime = json['mime'];
@@ -646,14 +646,14 @@ class Small {
 
   Small(
       {this.ext,
-        this.url,
-        this.hash,
-        this.mime,
-        this.name,
-        this.path,
-        this.size,
-        this.width,
-        this.height});
+      this.url,
+      this.hash,
+      this.mime,
+      this.name,
+      this.path,
+      this.size,
+      this.width,
+      this.height});
 
   Small.fromJson(Map<String, dynamic> json) {
     ext = json['ext'];
@@ -692,11 +692,11 @@ class Spots {
 
   Spots(
       {this.id,
-        this.startTime,
-        this.gpsString,
-        this.order,
-        this.addressName,
-        this.thumbnail});
+      this.startTime,
+      this.gpsString,
+      this.order,
+      this.addressName,
+      this.thumbnail});
 
   Spots.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -726,7 +726,6 @@ class Spots {
     return data;
   }
 }
-
 
 class Pagination {
   int? page;

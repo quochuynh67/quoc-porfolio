@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/navigation/app_navigation.dart';
 import '../../../features/projects/domain/project.dart';
 
 class ProjectLinks extends StatelessWidget {
@@ -25,9 +26,11 @@ class ProjectLinks extends StatelessWidget {
           ),
         const Spacer(),
         TextButton.icon(
-          onPressed: link == null || link.isEmpty
-              ? null
-              : () => launchUrl(Uri.parse(link)),
+          onPressed: project.pageIndex != null
+              ? () => goToPage(project.pageIndex!)
+              : link == null || link.isEmpty
+                  ? null
+                  : () => launchUrl(Uri.parse(link)),
           icon: const Icon(Icons.open_in_new_rounded, size: 16),
           label: const Text('Open project'),
           style: TextButton.styleFrom(

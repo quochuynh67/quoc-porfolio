@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:math';
 
@@ -26,7 +25,8 @@ class MyProvider extends ChangeNotifier {
   Ring _ring2 = Ring(dx: 2.12, impactDx: 2.12 - 0.05, dy: -0.54);
   Thorn _thorn1 = Thorn();
   Thorn _thorn2 = Thorn(dx: 3.32);
-  Thorn _movingThorn = Thorn(dx: 7.0, url: 'assets/images/projects/bounce/moving_thorn.png');
+  Thorn _movingThorn =
+      Thorn(dx: 7.0, url: 'assets/images/projects/bounce/moving_thorn.png');
   Finish _finish = Finish(dx: 7.5);
 
 //<----------------------------------Components-------------------------------->

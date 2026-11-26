@@ -20,6 +20,13 @@ class OtherModel {
 
 List<OtherModel> otherList = [
   OtherModel(
+    name: 'Dev Journal',
+    type: 'Engineering blog & notes',
+    date: 'Living knowledge base',
+    skills: ['Flutter', 'Architecture', 'AI workflow', 'Vibe coding'],
+    pageIndex: 9,
+  ),
+  OtherModel(
     name: 'Đa ngôn ngữ cho Flutter',
     type: 'Flutter Tool',
     date: '25 May 2026',
@@ -31,13 +38,6 @@ List<OtherModel> otherList = [
       'localization manager'
     ],
     pageIndex: 8,
-  ),
-  OtherModel(
-    name: 'Media Tools',
-    type: 'Flutter tools',
-    date: 'Portfolio app',
-    skills: ['FFmpeg', 'Video processing', 'Vlog maker', 'Quote maker'],
-    pageIndex: 3,
   ),
   OtherModel(
     name: 'Jx2 Web 2D & 3D',

@@ -1,0 +1,105 @@
+#version 460 core
+// gl-transitions (https://gl-transitions.com) — BowTie by KMojek, MIT.
+#include <flutter/runtime_effect.glsl>
+
+uniform vec2 uSize;
+uniform float uProgress;
+uniform sampler2D uFrom;
+uniform sampler2D uTo;
+
+out vec4 fragColor;
+
+float progress = 0.0;
+float ratio = 1.0;
+vec4 getFromColor(vec2 uv) { return texture(uFrom, vec2(uv.x, 1.0 - uv.y)); }
+vec4 getToColor(vec2 uv) { return texture(uTo, vec2(uv.x, 1.0 - uv.y)); }
+
+// Author: KMojek
+// License: MIT
+// Description: Two triangles grow from the top and bottom edges into a bow tie that reveals the incoming image, with an adjustable shape, and can run in reverse
+// Tags: wipe, shape
+
+const float adjust = 0.5;
+// @param Run the wipe in reverse
+const bool reverse = false;
+
+float check(vec2 p1, vec2 p2, vec2 p3)
+{
+  return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+}
+
+bool pointInTriangle(vec2 pt, vec2 p1, vec2 p2, vec2 p3)
+{
+
+    bool b1 = check(pt, p1, p2) < 0.0;
+    bool b2 = check(pt, p2, p3) < 0.0;
+    bool b3 = check(pt, p3, p1) < 0.0;
+    return b1 == b2 && b2 == b3;
+}
+
+const float height = 0.5;
+
+// Played backwards, the shape that shrinks shows the outgoing image.
+vec4 revealed(vec2 uv) {
+  return reverse ? getFromColor(uv) : getToColor(uv);
+}
+
+vec4 covering(vec2 uv) {
+  return reverse ? getToColor(uv) : getFromColor(uv);
+}
+
+vec4 transition_firstHalf( vec2 uv, float prog )
+{
+  if ( uv.y < 0.5 )
+  {
+    vec2 botLeft = vec2( -0., prog-height );
+    vec2 botRight = vec2( 1., prog-height );
+    vec2 tip = vec2( adjust, prog );
+    if ( pointInTriangle( uv, botLeft, botRight, tip ) )
+        return revealed(uv);
+    }
+  else
+  {
+    vec2 topLeft = vec2( -0., 1.-prog+height );
+    vec2 topRight = vec2( 1., 1.-prog+height );
+    vec2 tip = vec2( adjust, 1.-prog );
+    if ( pointInTriangle( uv, topLeft, topRight, tip ) )
+      return revealed( uv );
+  }
+  return covering( uv );
+}
+
+vec4 transition_secondHalf( vec2 uv, float prog )
+{
+  if ( uv.x > adjust )
+  {
+    vec2 top = vec2( prog + height,  1. );
+    vec2 bot = vec2( prog + height, -0. );
+    vec2 tip = vec2( mix( adjust, 1.0, 2.0 * (prog - 0.5) ), 0.5 );
+    if ( pointInTriangle( uv, top, bot, tip) )
+      return covering( uv );
+  }
+  else
+  {
+    vec2 top = vec2( 1.0-prog - height,  1. );
+    vec2 bot = vec2( 1.0-prog - height, -0. );
+    vec2 tip = vec2( mix( adjust, 0.0, 2.0 * (prog - 0.5)  ), 0.5 );
+    if ( pointInTriangle( uv, top, bot, tip) )
+      return covering( uv );
+  }
+  return revealed( uv );
+}
+
+vec4 transition (vec2 uv) {
+  if ( reverse )
+    return ( progress < 0.5 ) ? transition_secondHalf( uv, 1.-progress ) : transition_firstHalf( uv, 1.-progress );
+  else
+    return ( progress < 0.5 ) ? transition_firstHalf( uv, progress ) : transition_secondHalf( uv, progress );
+}
+
+void main() {
+  vec2 frag = FlutterFragCoord().xy / uSize;
+  progress = uProgress;
+  ratio = uSize.x / uSize.y;
+  fragColor = transition(vec2(frag.x, 1.0 - frag.y));
+}

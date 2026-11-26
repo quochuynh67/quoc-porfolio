@@ -7,6 +7,7 @@ import 'package:flutter_portfolio/view/games/games_page.dart';
 import 'package:flutter_portfolio/view/projects/project_view.dart';
 import 'package:flutter_portfolio/view/retro_game/retro_game_page.dart';
 import 'package:flutter_portfolio/view/vlog/feed_page.dart';
+import 'package:flutter_portfolio/view/journal/dev_journal_page.dart';
 
 import '../../core/navigation/app_navigation.dart';
 import '../customer_service/cs_screen.dart';
@@ -63,6 +64,7 @@ class HomePage extends StatelessWidget {
         const GamesPage(),
         const RetroGamePage(),
         const LocalizationManagerPage(),
+        const DevJournalPage(),
       ],
     );
   }

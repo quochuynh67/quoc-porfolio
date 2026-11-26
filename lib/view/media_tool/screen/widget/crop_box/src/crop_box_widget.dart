@@ -153,7 +153,8 @@ class CropBox extends StatefulWidget {
       this.backgroundColor,
       this.maskColor,
       this.orientation = 0,
-      this.enable = true}): super(key: key);
+      this.enable = true})
+      : super(key: key);
 
   final int orientation;
 
@@ -275,7 +276,6 @@ class _CropBoxState extends State<CropBox> {
       _realWidth = _realHeight * _clipAspectRatio;
     }
     _resizeClipSize = Size(_realWidth, _realHeight);
-
   }
 
   /// Calculate the initial material placement position
@@ -338,7 +338,6 @@ class _CropBoxState extends State<CropBox> {
               _scale;
       _deltaPoint = Offset(_scaledLeft, _scaledTop);
     }
-
   }
 
   /// Determine if the limit is exceeded
@@ -392,8 +391,7 @@ class _CropBoxState extends State<CropBox> {
       resultRect = Rect.fromLTRB(left, top, right, bottom);
       try {
         caculateInitClipPosition();
-      } catch (e) {
-      }
+      } catch (e) {}
     }
   }
 
@@ -505,9 +503,7 @@ class _CropBoxState extends State<CropBox> {
         setState(() {});
       });
     }
-    if(widget.orientation == 90 || widget.orientation == 270) {
-
-    }
+    if (widget.orientation == 90 || widget.orientation == 270) {}
 
     return FutureBuilder(
         future: _loading,
@@ -546,8 +542,8 @@ class _CropBoxState extends State<CropBox> {
                                 ? DrawCircleLight(
                                     clipRect: _cropBoxRealRect,
                                     centerPoint: _originPos,
-                                    cropBoxBorder: widget.cropBoxBorder ??
-                                        CropBoxBorder(),
+                                    cropBoxBorder:
+                                        widget.cropBoxBorder ?? CropBoxBorder(),
                                     maskColor: widget.maskColor)
                                 : DrawRectLight(
                                     clipRect: _cropBoxRealRect,
@@ -579,7 +575,7 @@ class _CropBoxState extends State<CropBox> {
   void _handleScaleStart(ScaleStartDetails details) {
     if (!widget.enable) return;
     bool touchOnMask = isTouchOnMask(details.localFocalPoint);
-    if(touchOnMask) return;
+    if (touchOnMask) return;
     _tmpScale = _scale;
     _lastFocalPoint = details.focalPoint;
 
@@ -591,7 +587,7 @@ class _CropBoxState extends State<CropBox> {
   void _handleScaleUpdate(Size size, ScaleUpdateDetails details) {
     if (!widget.enable) return;
     bool touchOnMask = isTouchOnMask(details.localFocalPoint);
-    if(touchOnMask) return;
+    if (touchOnMask) return;
     setState(() {
       _scale = min(widget.maxScale, max(_tmpScale * details.scale, 1.0));
       if (details.scale == 1) {

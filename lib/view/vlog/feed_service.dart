@@ -29,7 +29,9 @@ class FeedService {
       if (response.statusCode == 200) {
         List result = jsonDecode(response.body) as List;
         print('Parsed hotel data: $result');
-        return result.map((e) => HotelResponse.fromJson(e)).toList(); // <-- FIXED
+        return result
+            .map((e) => HotelResponse.fromJson(e))
+            .toList(); // <-- FIXED
       } else {
         return null;
       }
@@ -38,5 +40,4 @@ class FeedService {
       return null;
     }
   }
-
 }

@@ -13,7 +13,10 @@ class Knowledges extends StatelessWidget {
         Divider(),
         Padding(
           padding: EdgeInsets.symmetric(vertical: 10),
-          child: Text('Knowledge',style: TextStyle(color: Colors.white),),
+          child: Text(
+            'Knowledge',
+            style: TextStyle(color: Colors.white),
+          ),
         ),
         KnowledgeText(knowledge: 'Flutter, Dart'),
         KnowledgeText(knowledge: 'Android, Java/Kotlin'),
@@ -23,5 +26,4 @@ class Knowledges extends StatelessWidget {
       ],
     );
   }
-
 }

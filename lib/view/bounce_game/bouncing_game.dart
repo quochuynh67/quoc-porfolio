@@ -25,9 +25,8 @@ class BouncingGame extends StatelessWidget {
         title: 'Bounce Flutter',
         navigatorKey: navigatorKey,
         home: GamePage(),
-        theme: ThemeData.light().copyWith(
-          textTheme: GoogleFonts.pressStart2pTextTheme()
-        ),
+        theme: ThemeData.light()
+            .copyWith(textTheme: GoogleFonts.pressStart2pTextTheme()),
       ),
     );
   }

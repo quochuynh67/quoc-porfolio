@@ -102,23 +102,22 @@ class _RoomsPageState extends State<RoomsPage> {
                     pagingController: _controller,
                     builderDelegate: PagedChildBuilderDelegate<types.Room>(
                       itemBuilder: (context, room, index) => RoomTile(
-                        room: room,
-                        onTap: (room) {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => RoomPage(
-                                room: room,
+                          room: room,
+                          onTap: (room) {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => RoomPage(
+                                  room: room,
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                        onLongPress: (room) async {
-                          await SupabaseChatCore.instance.deleteRoom(room.id);
-                          _fetchPage(0);
-                          _controller.nextPageKey = 0;
-                          _controller.refresh();
-                        }
-                      ),
+                            );
+                          },
+                          onLongPress: (room) async {
+                            await SupabaseChatCore.instance.deleteRoom(room.id);
+                            _fetchPage(0);
+                            _controller.nextPageKey = 0;
+                            _controller.refresh();
+                          }),
                     ),
                   );
                 },

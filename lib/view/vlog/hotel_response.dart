@@ -54,16 +54,14 @@ class HotelResponse {
       formattedAddress: json['formatted_address'],
       phoneNumber: json['phone_number'],
       intlPhoneNumber: json['intl_phone_number'],
-      photos:
-      (json['photos'] as List).map((e) => Photo.fromJson(e)).toList(),
+      photos: (json['photos'] as List).map((e) => Photo.fromJson(e)).toList(),
       rating: (json['rating'] as num).toDouble(),
       userRatingsTotal: json['user_ratings_total'],
       hasReview: json['has_review'],
       location: Location.fromJson(json['location']),
       website: json['website'],
-      product: json['product'] != null
-          ? Product.fromJson(json['product'])
-          : null,
+      product:
+          json['product'] != null ? Product.fromJson(json['product']) : null,
     );
   }
 }
@@ -159,7 +157,6 @@ class Product {
     );
   }
 }
-
 
 class Label {
   final String en;
