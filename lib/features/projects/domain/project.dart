@@ -122,11 +122,17 @@ List<Project> projectList = [
   Project(
     'tattantat67k1',
     'A personal collection inspired by childhood memories, hometown culture, and the retro games I grew up with.',
-    ['assets/images/quoc_logo.png'],
+    [
+      'assets/images/projects/tattantat/tattantat-mockup-16x9.png',
+      'assets/images/projects/tattantat/tattantat-places.png',
+      'assets/images/projects/tattantat/tattantat-community.png',
+      'assets/images/projects/tattantat/tattantat-mobile.png',
+    ],
     'https://tattantat67k1.web.app/',
     githubLink: 'https://github.com/quochuynh67/quoc-porfolio',
     tags: ['personal', 'flutter web', 'retro game'],
     section: ProjectSection.personal,
+    cover: 'assets/images/projects/tattantat/tattantat-mockup-16x9.png',
   ),
   Project(
     '67Talk',
@@ -148,10 +154,16 @@ List<Project> projectList = [
   Project(
     'Quốc Media Tools',
     'Convert, compose and export media right in the browser: quick FFmpeg tools and a full vlog editor with animated text, stickers, GPU shader transitions, LUT colour grading and MP4 export.',
-    ['assets/images/quoc_logo.png'],
+    [
+      'assets/images/projects/media_tools/media-tools-mockup-16x9.png',
+      'assets/images/projects/media_tools/media-tools-transitions.png',
+      'assets/images/projects/media_tools/media-tools-filters.png',
+      'assets/images/projects/media_tools/media-tools-quick.png',
+    ],
     null,
     tags: ['personal', 'flutter web', 'ffmpeg', 'video editor', 'shaders'],
     section: ProjectSection.personal,
+    cover: 'assets/images/projects/media_tools/media-tools-mockup-16x9.png',
     pageIndex: 3,
   ),
 ];
