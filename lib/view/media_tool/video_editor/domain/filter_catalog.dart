@@ -13,27 +13,34 @@ import 'package:flutter/foundation.dart';
 @immutable
 class FilterPreset {
   const FilterPreset._(
-      this.id, this.name, this.category, this._matrix, this.look);
+      this.id, this.name, this.category, this._matrix, this.look, this.cube);
 
   factory FilterPreset(
           String id, String name, String category, List<double> matrix) =>
-      FilterPreset._(id, name, category, matrix, null);
+      FilterPreset._(id, name, category, matrix, null, null);
 
   factory FilterPreset.lut(
           String id, String name, String category, LookSpec look) =>
-      FilterPreset._(id, name, category, null, look);
+      FilterPreset._(id, name, category, null, look, null);
+
+  /// A LUT imported from a `.cube` file.
+  factory FilterPreset.cube(String id, String name, CubeLut cube) =>
+      FilterPreset._(id, name, categoryCustom, null, null, cube);
 
   final String id;
   final String name;
   final String category;
   final List<double>? _matrix;
   final LookSpec? look;
+  final CubeLut? cube;
 
-  bool get isLut => look != null;
+  bool get isLut => look != null || cube != null;
 
   /// 4x5 colour matrix used for the live preview.
   List<double> get matrix =>
-      _matrix ?? _fitted.putIfAbsent(id, () => fitMatrix(look!));
+      _matrix ??
+      _fitted.putIfAbsent(
+          id, () => fitMatrixFn(cube != null ? cube!.sample : look!.apply));
 }
 
 final _fitted = <String, List<double>>{};
@@ -135,7 +142,9 @@ String bakeCube(String title, LookSpec look,
 }
 
 /// Least-squares fit of a 4x5 colour matrix (offsets in 0..255) to [look].
-List<double> fitMatrix(LookSpec look) {
+List<double> fitMatrix(LookSpec look) => fitMatrixFn(look.apply);
+
+List<double> fitMatrixFn(List<double> Function(double, double, double) fn) {
   const n = 9;
   final xs = <List<double>>[];
   final ys = <List<double>>[];
@@ -144,7 +153,7 @@ List<double> fitMatrix(LookSpec look) {
       for (var b = 0; b < n; b++) {
         final x = [r / (n - 1), g / (n - 1), b / (n - 1)];
         xs.add(x);
-        ys.add(look.apply(x[0], x[1], x[2]));
+        ys.add(fn(x[0], x[1], x[2]));
       }
     }
   }
@@ -281,6 +290,7 @@ const categoryCinema = 'Cinema LUT';
 const categoryFilm = 'Film LUT';
 const categoryMood = 'Mood LUT';
 const categoryVn = 'Việt Nam LUT';
+const categoryCustom = 'My LUTs';
 
 const filterCategories = <String>[
   categoryBasic,
@@ -292,6 +302,7 @@ const filterCategories = <String>[
   categoryTint,
   categoryRetro,
   categoryDuo,
+  categoryCustom,
 ];
 
 final filterPresets = <FilterPreset>[
@@ -862,5 +873,131 @@ final filterPresets = <FilterPreset>[
           highlight: [.04, .04, -.03])),
 ];
 
-FilterPreset filterPresetById(String id) => filterPresets
-    .firstWhere((p) => p.id == id, orElse: () => filterPresets.first);
+/// LUTs imported by the user in this session (`.cube` files).
+final customLuts = <FilterPreset>[];
+
+FilterPreset filterPresetById(String id) {
+  for (final p in filterPresets) {
+    if (p.id == id) return p;
+  }
+  for (final p in customLuts) {
+    if (p.id == id) return p;
+  }
+  return filterPresets.first;
+}
+
+/// A parsed Adobe/Resolve `.cube` 3D LUT.
+class CubeLut {
+  CubeLut._(
+      this.title, this.size, this.data, this.dmin, this.dmax, this.source);
+
+  final String title;
+  final int size;
+
+  /// RGB triplets, red varying fastest.
+  final List<double> data;
+  final List<double> dmin;
+  final List<double> dmax;
+  final String source;
+
+  /// Throws [FormatException] with a readable message.
+  static CubeLut parse(String text) {
+    var title = '';
+    var size = 0;
+    var dmin = [0.0, 0.0, 0.0];
+    var dmax = [1.0, 1.0, 1.0];
+    final data = <double>[];
+    List<double> nums(List<String> p) => [
+          for (final v in p.skip(1))
+            double.tryParse(v) ?? (throw FormatException('Bad number "$v"')),
+        ];
+    for (final raw in text.split(RegExp(r'\r?\n'))) {
+      final line = raw.trim();
+      if (line.isEmpty || line.startsWith('#')) continue;
+      final parts = line.split(RegExp(r'\s+'));
+      final key = parts.first.toUpperCase();
+      if (key == 'TITLE') {
+        title = line.substring(5).trim().replaceAll('"', '');
+      } else if (key == 'LUT_3D_SIZE') {
+        size = int.tryParse(parts.length > 1 ? parts[1] : '') ?? 0;
+      } else if (key == 'LUT_1D_SIZE') {
+        throw const FormatException('1D LUTs are not supported (3D only).');
+      } else if (key == 'DOMAIN_MIN') {
+        dmin = nums(parts);
+      } else if (key == 'DOMAIN_MAX') {
+        dmax = nums(parts);
+      } else if (double.tryParse(parts.first) != null) {
+        if (parts.length < 3) throw const FormatException('Bad data row.');
+        data
+          ..add(double.parse(parts[0]))
+          ..add(double.parse(parts[1]))
+          ..add(double.parse(parts[2]));
+      }
+    }
+    if (size < 2 || size > 129) {
+      throw const FormatException('Missing or invalid LUT_3D_SIZE.');
+    }
+    if (dmin.length != 3 || dmax.length != 3) {
+      throw const FormatException('Bad DOMAIN_MIN / DOMAIN_MAX.');
+    }
+    final expected = size * size * size * 3;
+    if (data.length != expected) {
+      throw FormatException(
+          'Expected ${expected ~/ 3} colour rows for size $size, '
+          'found ${data.length ~/ 3}.');
+    }
+    return CubeLut._(title, size, data, dmin, dmax, text);
+  }
+
+  /// Trilinear lookup for r, g, b in 0..1.
+  List<double> sample(double r, double g, double b) {
+    final n = size - 1;
+    final pos = [
+      for (final (i, v) in [r, g, b].indexed)
+        (((v - dmin[i]) / (dmax[i] - dmin[i])) * n).clamp(0.0, n.toDouble()),
+    ];
+    final i0 = [for (final p in pos) p.floor().clamp(0, n - 1)];
+    final f = [for (var k = 0; k < 3; k++) pos[k] - i0[k]];
+    final out = [0.0, 0.0, 0.0];
+    for (var corner = 0; corner < 8; corner++) {
+      final dr = corner & 1, dg = (corner >> 1) & 1, db = (corner >> 2) & 1;
+      final w = (dr == 1 ? f[0] : 1 - f[0]) *
+          (dg == 1 ? f[1] : 1 - f[1]) *
+          (db == 1 ? f[2] : 1 - f[2]);
+      if (w == 0) continue;
+      final idx =
+          (((i0[2] + db) * size + (i0[1] + dg)) * size + (i0[0] + dr)) * 3;
+      for (var c = 0; c < 3; c++) {
+        out[c] += data[idx + c] * w;
+      }
+    }
+    return out;
+  }
+
+  /// `.cube` text blended with the identity by [intensity] (1 = as imported).
+  String toText(double intensity) {
+    if (intensity >= 1) return source;
+    final b = StringBuffer()
+      ..writeln('TITLE "${title.isEmpty ? 'LUT' : title}"')
+      ..writeln('LUT_3D_SIZE $size')
+      ..writeln('DOMAIN_MIN ${dmin.join(' ')}')
+      ..writeln('DOMAIN_MAX ${dmax.join(' ')}');
+    final n = size - 1;
+    var idx = 0;
+    for (var bi = 0; bi < size; bi++) {
+      for (var gi = 0; gi < size; gi++) {
+        for (var ri = 0; ri < size; ri++) {
+          final inp = [ri, gi, bi];
+          final row = <String>[];
+          for (var c = 0; c < 3; c++) {
+            final x = dmin[c] + inp[c] / n * (dmax[c] - dmin[c]);
+            row.add((x + (data[idx + c] - x) * intensity).toStringAsFixed(5));
+          }
+          b.writeln(row.join(' '));
+          idx += 3;
+        }
+      }
+    }
+    return b.toString();
+  }
+}
