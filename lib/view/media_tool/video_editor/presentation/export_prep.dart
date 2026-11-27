@@ -17,6 +17,12 @@ typedef RenderProgress = void Function(String label, double fraction);
 const overlayFps = 20;
 const _maxFrames = 400;
 
+/// Gives the browser a macrotask between expensive PNG encodes. `async` by
+/// itself does not guarantee a paint opportunity on Flutter Web; a short
+/// timer lets progress, cancel and input events run between exported frames.
+Future<void> _yieldToBrowser() =>
+    Future<void>.delayed(const Duration(milliseconds: 1));
+
 /// Builds a media layer that remains valid when wrapped by RepaintBoundary.
 /// Do not return Positioned here: shader export wraps each layer before it is
 /// inserted into a Stack, so Positioned would receive the wrong parent data.
@@ -196,10 +202,9 @@ Future<Map<String, OverlaySequence>> renderSequences(
             ));
             if (ownsB && !identical(frameA, frameB)) frameB?.dispose();
             done++;
-            if (k % 3 == 0) {
-              tick('Rendering transition $index: '
-                  '${incoming.transition.label}');
-            }
+            tick('Rendering transition $index: ${incoming.transition.label} '
+                '· ${k + 1}/${job.frames}');
+            await _yieldToBrowser();
           }
         } finally {
           if (ownsA) frameA?.dispose();
@@ -230,7 +235,9 @@ Future<Map<String, OverlaySequence>> renderSequences(
           );
           frames.add(await capture(settle: k == 0));
           done++;
-          if (k % 4 == 0) tick('Rendering transition effect ${job.index}');
+          tick('Rendering transition effect ${job.index} '
+              '· ${k + 1}/${job.frames}');
+          await _yieldToBrowser();
         }
         result['fx:${job.index}'] = OverlaySequence(frames, overlayFps);
         continue;
@@ -281,7 +288,8 @@ Future<Map<String, OverlaySequence>> renderSequences(
         frames.add(await capture(settle: k == 0));
         frame?.dispose();
         done++;
-        if (k % 4 == 0) tick('Rendering $label');
+        tick('Rendering $label · ${k + 1}/${job.frames}');
+        await _yieldToBrowser();
       }
       source?.dispose();
       if (frames.isNotEmpty && !isCancelled()) {

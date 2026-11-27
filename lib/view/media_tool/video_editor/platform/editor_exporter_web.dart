@@ -63,6 +63,11 @@ class _WebExporter implements EditorExporter {
     final mgr = FfmpegManager.instance;
     final log = <String>[];
     final fallbacks = <String>[];
+    var activeLabel = '';
+    var activeStart = 0.0;
+    var activeSpan = 0.0;
+    double? activeDuration;
+    var lastProgressAt = DateTime.fromMillisecondsSinceEpoch(0);
     // The single-thread core terminates its runtime after every command, so
     // each command runs on a freshly loaded core. Files live in this store and
     // are copied in/out around each command.
@@ -79,6 +84,22 @@ class _WebExporter implements EditorExporter {
           onLog?.call(l.message);
           log.add(l.message);
           if (log.length > 400) log.removeRange(0, 100);
+          final now = DateTime.now();
+          if (activeDuration != null &&
+              activeDuration > 0 &&
+              now.difference(lastProgressAt) >=
+                  const Duration(milliseconds: 180)) {
+            final rendered = _ffmpegTime(l.message);
+            if (rendered != null) {
+              final within = (rendered / activeDuration).clamp(0.0, .94);
+              onProgress(
+                '$activeLabel · ${_clock(rendered)} / '
+                '${_clock(activeDuration)}',
+                activeStart + activeSpan * within,
+              );
+              lastProgressAt = now;
+            }
+          }
         });
         for (final n in _neededFiles(args, store)) {
           ff.writeFile(n, store[n]!);
@@ -134,7 +155,12 @@ class _WebExporter implements EditorExporter {
         if (_cancelled) {
           return const ExportOutcome.failure('Export cancelled.', []);
         }
-        onProgress(step.label, i / total);
+        activeLabel = step.label;
+        activeStart = i / total;
+        activeSpan = 1 / total;
+        activeDuration = _outputDuration(step.args);
+        lastProgressAt = DateTime.fromMillisecondsSinceEpoch(0);
+        onProgress(step.label, activeStart);
         var error = await exec(step.args);
         if (error != null && step.fallbackArgs != null && !_cancelled) {
           fallbacks.add(step.label);
@@ -171,6 +197,28 @@ class _WebExporter implements EditorExporter {
       return ExportOutcome.failure(
           e.toString(), log.length > 14 ? log.sublist(log.length - 14) : log);
     }
+  }
+
+  double? _outputDuration(List<String> args) {
+    for (var i = args.length - 2; i >= 0; i--) {
+      if (args[i] == '-t') return double.tryParse(args[i + 1]);
+    }
+    return null;
+  }
+
+  double? _ffmpegTime(String line) {
+    final match = RegExp(r'time=(\d+):(\d+):(\d+(?:\.\d+)?)').firstMatch(line);
+    if (match == null) return null;
+    return int.parse(match.group(1)!) * 3600 +
+        int.parse(match.group(2)!) * 60 +
+        double.parse(match.group(3)!);
+  }
+
+  String _clock(double seconds) {
+    final whole = seconds.floor();
+    final minutes = whole ~/ 60;
+    final rest = whole % 60;
+    return '$minutes:${rest.toString().padLeft(2, '0')}';
   }
 
   /// Files from [store] a command reads: exact names, `%04d` sequences, and
