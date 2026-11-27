@@ -234,10 +234,6 @@ ExportPlan buildExportPlan(ExportRequest r) {
   final steps = <ExportStep>[];
   final cleanup = <String>[];
   final warnings = <String>[];
-  if (r.project.clips.any((c) => c.transition.isShader)) {
-    warnings.add('Shader transitions (gl-transitions) are previewed with GPU '
-        'shaders; the export uses the closest FFmpeg transition instead.');
-  }
   final parts = <String>[];
 
   final fit = project.fitContain
@@ -348,39 +344,63 @@ ExportPlan buildExportPlan(ExportRequest r) {
       parts.add('c$i.mp4');
       continue;
     }
-    final prevDur = clips[i - 1].duration;
-    final lastAt = prevDur > const Duration(milliseconds: 150)
-        ? prevDur - const Duration(milliseconds: 100)
-        : Duration.zero;
-    final last = 'last$i.png';
     final tr = 't$i.mp4';
     final main = 'm$i.mp4';
     final win = sec(window);
-    steps.add(ExportStep('Transition $i: grab frame', [
-      '-ss',
-      sec(lastAt),
-      '-i',
-      'c${i - 1}.mp4',
-      '-frames:v',
-      '1',
-      last,
-    ]));
-    List<String> trArgs(String xf) => [
-          '-loop', '1', '-framerate', '$_fps', '-t', win, '-i', last, //
-          '-i', 'c$i.mp4',
-          '-filter_complex',
-          '[0:v]fps=$_fps,format=yuv420p,setsar=1[a];'
-              '[1:v]trim=duration=$win,setpts=PTS-STARTPTS,fps=$_fps,'
-              'format=yuv420p,setsar=1[b];'
-              '[a][b]xfade=transition=$xf:duration=$win:offset=0[v];'
-              '[1:a]atrim=duration=$win,asetpts=PTS-STARTPTS[aud]',
-          '-map', '[v]', '-map', '[aud]', ..._encode, '-t', win, tr,
-        ];
-    steps.add(ExportStep(
-      'Transition $i: ${c.transition.label}',
-      trArgs(xfadeFor(c.transition, c.shaderId)),
-      fallbackArgs: trArgs('fade'),
-    ));
+    final rendered = r.sequences['transition:$i'];
+    String? last;
+    if (rendered != null && rendered.frames.isNotEmpty) {
+      final prefix = 'transition${i}_';
+      for (var k = 0; k < rendered.frames.length; k++) {
+        final name = '$prefix${k.toString().padLeft(4, '0')}.png';
+        inputs[name] = rendered.frames[k];
+        cleanup.add(name);
+      }
+      steps.add(ExportStep('Transition $i: ${c.transition.label}', [
+        '-framerate', '${rendered.fps}', '-i', '$prefix%04d.png', //
+        '-i', 'c$i.mp4',
+        '-filter_complex',
+        '[0:v]fps=$_fps,format=yuv420p,setsar=1[v];'
+            '[1:a]atrim=duration=$win,asetpts=PTS-STARTPTS[aud]',
+        '-map', '[v]', '-map', '[aud]', ..._encode, '-t', win, tr,
+      ]));
+    } else {
+      if (c.transition.isShader) {
+        warnings.add(
+            'Shader transition "${shaderById(c.shaderId)?.name ?? 'Unknown'}" '
+            'could not be pre-rendered; export used the closest FFmpeg effect.');
+      }
+      final prevDur = clips[i - 1].duration;
+      final lastAt = prevDur > const Duration(milliseconds: 150)
+          ? prevDur - const Duration(milliseconds: 100)
+          : Duration.zero;
+      last = 'last$i.png';
+      steps.add(ExportStep('Transition $i: grab frame', [
+        '-ss',
+        sec(lastAt),
+        '-i',
+        'c${i - 1}.mp4',
+        '-frames:v',
+        '1',
+        last,
+      ]));
+      List<String> trArgs(String xf) => [
+            '-loop', '1', '-framerate', '$_fps', '-t', win, '-i', last!, //
+            '-i', 'c$i.mp4',
+            '-filter_complex',
+            '[0:v]fps=$_fps,format=yuv420p,setsar=1[a];'
+                '[1:v]trim=duration=$win,setpts=PTS-STARTPTS,fps=$_fps,'
+                'format=yuv420p,setsar=1[b];'
+                '[a][b]xfade=transition=$xf:duration=$win:offset=0[v];'
+                '[1:a]atrim=duration=$win,asetpts=PTS-STARTPTS[aud]',
+            '-map', '[v]', '-map', '[aud]', ..._encode, '-t', win, tr,
+          ];
+      steps.add(ExportStep(
+        'Transition $i: ${c.transition.label}',
+        trArgs(xfadeFor(c.transition, c.shaderId)),
+        fallbackArgs: trArgs('fade'),
+      ));
+    }
     // Effect pack (sprite sheet frames or WebM/MP4) on top of the transition.
     var trFinal = tr;
     final fx = c.transition == EditorTransition.fx ? c.fx : null;
@@ -429,9 +449,8 @@ ExportPlan buildExportPlan(ExportRequest r) {
       parts.add(main);
       cleanup.add(main);
     }
-    cleanup
-      ..add(last)
-      ..add(tr);
+    if (last != null) cleanup.add(last);
+    cleanup.add(tr);
   }
 
   // 3) Join.

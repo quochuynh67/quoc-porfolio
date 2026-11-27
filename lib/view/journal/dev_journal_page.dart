@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../media_tool/video_editor/domain/shader_catalog.dart';
+import '../media_tool/video_editor/presentation/gl_transition_view.dart';
+
 class JournalArticle {
   const JournalArticle({
     required this.title,
@@ -14,6 +17,7 @@ class JournalArticle {
     this.heroImage,
     this.heroCaption,
     this.featured = false,
+    this.interactiveShaderGallery = false,
   });
 
   final String title;
@@ -27,6 +31,7 @@ class JournalArticle {
   final String? heroImage;
   final String? heroCaption;
   final bool featured;
+  final bool interactiveShaderGallery;
 }
 
 const _articles = <JournalArticle>[
@@ -658,6 +663,218 @@ Telemetry nên đo time-to-first-frame, seek latency p50/p95, dropped frames, de
     ],
   ),
   JournalArticle(
+    title: 'Thực hành GL Transition: biến ảnh A thành ảnh B bằng GPU',
+    summary:
+        'Một tutorial từ số 0 về UV, texture, progress và FragmentShader trong Flutter, kèm gallery shader có thể kéo trực tiếp ngay trong bài viết.',
+    category: 'Media Engineering',
+    tags: ['GLSL', 'Flutter Shader', 'GPU', 'Interactive Lab', 'CanvasKit'],
+    readTime: '30 phút đọc',
+    date: '27 Thg 11, 2026',
+    icon: Icons.gradient_rounded,
+    featured: true,
+    interactiveShaderGallery: true,
+    content: [
+      (
+        'Bạn sẽ làm được gì sau bài này?',
+        '''Ta sẽ xây đúng bài toán đang xuất hiện trong Quốc Media Tools: có ảnh A, ảnh B và một thanh điều khiển từ trái sang phải. Khi `progress = 0`, output là A; khi `progress = 1`, output là B; ở giữa, GPU chạy một công thức transition cho từng pixel. Gallery phía trên bài là renderer thật, không phải GIF hay video dựng sẵn. Hãy kéo ngang trên từng card để quan sát ảnh thay đổi.
+
+Sau bài này, người mới có thể:
+
+- Hiểu texture, fragment, UV và uniform là gì.
+- Viết Fade và Diamond Wipe bằng GLSL.
+- Nạp hai ảnh vào `FragmentShader` của Flutter.
+- Điều khiển shader realtime bằng hover, drag hoặc slider.
+- Tránh các lỗi phổ biến như ảnh đen, sọc, đảo chiều và resource GPU bị hủy quá sớm.
+- Biết cách mở rộng từ hai ảnh tĩnh sang hai video.'''
+      ),
+      (
+        '1. Đừng bắt đầu bằng công thức phức tạp',
+        '''Hãy hình dung output là một tấm canvas gồm rất nhiều pixel. Fragment shader là một hàm nhỏ được GPU chạy song song cho từng pixel đó. Hàm nhận vị trí pixel hiện tại, đọc màu từ ảnh A/B và trả về màu cuối cùng.
+
+CPU không cần lặp bằng Dart qua hàng triệu pixel. Dart chỉ thay đổi vài giá trị nhỏ như `progress`; GPU đảm nhiệm phần tính màu. Đây là lý do slider có thể phản hồi ngay mà không cần render một file ảnh hoặc video mới.
+
+> Transition realtime là quá trình vẽ lại một frame trên GPU. Export là quá trình tạo và encode toàn bộ chuỗi frame. Hai việc dùng cùng công thức nhưng có vòng đời hoàn toàn khác nhau.'''
+      ),
+      (
+        '2. Bốn khái niệm cần nhớ',
+        '''- Texture: ảnh đã được đưa vào bộ nhớ GPU để shader có thể đọc nhanh.
+- Fragment: một điểm ảnh output mà shader đang tính màu.
+- UV: tọa độ chuẩn hóa của ảnh; góc trái trên gần `(0, 0)`, góc phải dưới gần `(1, 1)`.
+- Uniform: dữ liệu giống nhau cho mọi pixel trong một frame, ví dụ kích thước canvas và `progress`.
+
+`sampler2D uFrom` đại diện texture A, `sampler2D uTo` đại diện texture B. Hàm `texture(uFrom, uv)` lấy màu của A tại tọa độ UV hiện tại. Uniform `uProgress` thay đổi từ 0 đến 1 khi người dùng kéo.'''
+      ),
+      (
+        '3. Shader Fade nhỏ nhất có thể chạy',
+        '''```glsl
+#version 460 core
+#include <flutter/runtime_effect.glsl>
+
+uniform vec2 uSize;
+uniform float uProgress;
+uniform sampler2D uFrom;
+uniform sampler2D uTo;
+
+out vec4 fragColor;
+
+void main() {
+  vec2 uv = FlutterFragCoord().xy / uSize;
+  vec4 colorA = texture(uFrom, uv);
+  vec4 colorB = texture(uTo, uv);
+  fragColor = mix(colorA, colorB, uProgress);
+}
+```
+
+`FlutterFragCoord()` trả tọa độ pixel hiện tại. Chia cho `uSize` biến pixel thành UV 0..1. `mix(a, b, t)` nội suy: t bằng 0 trả a, t bằng 1 trả b và t bằng 0.5 lấy màu ở giữa.
+
+Đây là shader đầu tiên nên test. Nếu Fade còn sai thì chưa nên thêm blur, noise hay cube; lỗi thường nằm ở texture, uniform hoặc lifecycle chứ không nằm ở toán transition.'''
+      ),
+      (
+        '4. Diamond Wipe hoạt động ra sao?',
+        '''Fade thay đổi toàn bộ canvas cùng lúc. Diamond Wipe tạo một mặt nạ dựa trên khoảng cách Manhattan từ UV tới tâm `(0.5, 0.5)`:
+
+```glsl
+vec4 transition(vec2 uv) {
+  vec2 d = abs(uv - vec2(0.5));
+  float distanceToCenter = d.x + d.y;
+  float edge = smoothstep(
+    uProgress - 0.03,
+    uProgress + 0.03,
+    1.0 - distanceToCenter
+  );
+  return mix(texture(uFrom, uv), texture(uTo, uv), edge);
+}
+```
+
+Các pixel gần tâm được chuyển sang B trước, pixel xa tâm chuyển sau. `smoothstep` tạo biên mềm thay vì đường răng cưa. Trong bản production, cần điều chỉnh theo aspect ratio để hình thoi không bị kéo méo trên canvas dọc/ngang.'''
+      ),
+      (
+        '5. Nạp shader và hai ảnh trong Flutter',
+        '''Khai báo file shader trong `pubspec.yaml`, sau đó load program một lần:
+
+```yaml
+flutter:
+  shaders:
+    - shaders/transitions/diamondwipe.frag
+```
+
+```dart
+final program = await FragmentProgram.fromAsset(
+  'shaders/transitions/diamondwipe.frag',
+);
+final shader = program.fragmentShader();
+```
+
+Ảnh dùng trong shader phải là `dart:ui.Image`, không phải widget `Image`. Có thể decode asset bằng `instantiateImageCodec`, hoặc capture một `RepaintBoundary` khi nguồn là widget/frame đã compose. Hai ảnh demo trong gallery được decode đúng một lần và dùng chung cho các thumbnail để tránh tốn bộ nhớ.'''
+      ),
+      (
+        '6. Truyền uniform và vẽ lên Canvas',
+        '''```dart
+void paint(Canvas canvas, Size size) {
+  shader
+    ..setFloat(0, size.width)
+    ..setFloat(1, size.height)
+    ..setFloat(2, progress)
+    ..setImageSampler(0, imageA)
+    ..setImageSampler(1, imageB);
+
+  canvas.drawRect(
+    Offset.zero & size,
+    Paint()..shader = shader,
+  );
+}
+```
+
+Float uniforms được đánh số theo thứ tự khai báo nhưng không tính sampler. Vì `uSize` là `vec2`, index 0 và 1 là width/height; index 2 là progress. Sampler có bộ index riêng: A là 0, B là 1.
+
+Trong code mới hơn có thể dùng API truy cập uniform theo tên để giảm rủi ro sai index. Dù dùng cách nào, tất cả sampler shader yêu cầu phải được gán trước khi vẽ.'''
+      ),
+      (
+        '7. Biến con trỏ ngang thành progress',
+        '''Gallery dùng vị trí ngang của chuột/ngón tay thay cho animation tự chạy. Công thức rất đơn giản:
+
+```dart
+void updateProgress(Offset localPosition, double width) {
+  final value = (localPosition.dx / width).clamp(0.0, 1.0);
+  setState(() => progress = value);
+}
+
+GestureDetector(
+  onTapDown: (d) => updateProgress(d.localPosition, width),
+  onHorizontalDragUpdate: (d) =>
+      updateProgress(d.localPosition, width),
+  child: CustomPaint(painter: TransitionPainter(progress)),
+)
+```
+
+Trên web/desktop, thêm `MouseRegion.onHover`. Đường phân cách A/B chỉ là lớp UI giúp người đọc biết giá trị đang kéo; nó không cắt hai ảnh. Shader vẫn tính toàn bộ output tại progress hiện tại.'''
+      ),
+      (
+        '8. Bug ảnh đen và sọc mà gallery từng gặp',
+        '''Phiên bản đầu tạo một `FragmentShader` mới trong `paint()`, gọi `drawRect` rồi `dispose()` ngay. CanvasKit ghi lệnh vẽ trước nhưng có thể rasterize trên GPU sau đó. Khi GPU thực thi, resource đã bị hủy nên một số card thành đen, trắng hoặc các dải sọc.
+
+Giải pháp là để State sở hữu shader:
+
+```dart
+class TransitionState extends State<TransitionView> {
+  FragmentShader? shader;
+
+  @override
+  void dispose() {
+    shader?.dispose();
+    super.dispose();
+  }
+}
+```
+
+Painter chỉ cập nhật uniform và vẽ; không dispose shader trong cùng frame. Ngoài việc sửa corruption, cách này còn tránh compile/cấp phát GPU resource liên tục khi con trỏ di chuyển.'''
+      ),
+      (
+        '9. Orientation, aspect ratio và crop',
+        '''Hai ảnh có thể khác kích thước và tỷ lệ. Nếu lấy UV trực tiếp, cả hai sẽ bị ép vào canvas. Với demo đơn giản ta dùng hai ảnh cùng 3:2; trong editor thật, host cần map UV theo contain/cover và crop rect của từng nguồn.
+
+Một lỗi khác là trục Y giữa OpenGL ES, Skia, Impeller hoặc texture từ render target. Không nên thêm `1.0 - uv.y` theo thói quen. Hãy kiểm tra backend và nguồn texture; Flutter chỉ yêu cầu un-flip có điều kiện trong một số pipeline OpenGLES. Test bằng ảnh có chữ TOP/BOTTOM để nhận ra lỗi ngay.'''
+      ),
+      (
+        '10. Từ hai ảnh sang hai video',
+        '''Shader gần như không thay đổi. Điểm khác là texture A/B phải được cập nhật bằng đúng frame video tại mỗi timestamp. Trong vùng transition:
+
+```text
+progress = (timelineTime - transitionStart) / duration
+frameA   = decoderA.frameAt(sourceTimeA)
+frameB   = decoderB.frameAt(sourceTimeB)
+output   = shader(frameA, frameB, progress)
+```
+
+Preview tốt cần warm decoder B trước điểm cắt, dùng master clock chung, bỏ seek cũ khi người dùng scrub nhanh và có thể dùng proxy 720p. Không chạy FFmpeg sau mỗi lần kéo. FFmpeg phù hợp tạo proxy và export cuối; GPU compositor phù hợp preview realtime.'''
+      ),
+      (
+        '11. Checklist debug cho người mới',
+        '''- Output luôn là A: kiểm tra progress có thật sự thay đổi và B đã bind vào sampler 1 chưa.
+- Output luôn là B: kiểm tra thứ tự A/B và progress có bị clamp thành 1 không.
+- Card đen/trắng/sọc: kiểm tra shader/resource có bị dispose trước khi rasterize không.
+- Ảnh ngược đầu: kiểm tra Y orientation; đừng flip hai lần.
+- Hình méo: xử lý aspect ratio/crop trước khi chạy transition.
+- Chớp frame đầu: preload program, texture và decoder B trước tương tác.
+- Mobile không kéo được: hỗ trợ tap và horizontal drag, không chỉ hover.
+- Gallery giật: chỉ build item đang nhìn thấy, cache program/images và tái sử dụng shader.
+- Preview khác export: dùng chung project model, timing, crop và transition parameters.'''
+      ),
+      (
+        '12. Bài tập mở rộng',
+        '''Bắt đầu bằng Fade, sau đó tự làm ba bài:
+
+1. Directional Wipe: chuyển pixel sang B khi `uv.x < progress`.
+2. Circle Open: dùng `distance(uv, vec2(0.5))` để mở B từ tâm.
+3. Pixel Dissolve: dùng noise ổn định theo UV và so sánh với progress.
+
+Mỗi effect phải thỏa ba invariant: progress 0 trả đúng A, progress 1 trả đúng B và mọi UV ngoài vùng hợp lệ được xử lý có chủ đích. Sau đó thêm golden tests tại 0, 0.25, 0.5, 0.75 và 1.
+
+Tham khảo [gl-transitions repository](https://github.com/gl-transitions/gl-transitions) để đọc các công thức cộng đồng, và [Flutter fragment shader guide](https://docs.flutter.dev/ui/design/graphics/fragment-shaders) để hiểu contract của runtime Flutter. Hãy dùng gallery tương tác trong bài như một visual test trước khi đưa shader vào timeline editor.'''
+      ),
+    ],
+  ),
+  JournalArticle(
     title: 'Xây Video Editor realtime bằng Flutter Mobile',
     summary:
         'Kiến trúc timeline nhiều video, music, text, sticker, transition và preview tức thời trong lúc chỉnh sửa như một editor chuyên nghiệp.',
@@ -1085,8 +1302,14 @@ class _ArticleCard extends StatelessWidget {
                       child: Icon(article.icon, color: Colors.white, size: 12),
                     ),
                     const SizedBox(width: 8),
-                    const Text('Quốc Huỳnh',
-                        style: TextStyle(color: Colors.black87, fontSize: 12)),
+                    const Flexible(
+                      child: Text(
+                        'Quốc Huỳnh',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Colors.black87, fontSize: 12),
+                      ),
+                    ),
                     if (article.featured) ...[
                       const SizedBox(width: 8),
                       const Icon(Icons.star, size: 13, color: Colors.amber),
@@ -1109,7 +1332,7 @@ class _ArticleCard extends StatelessWidget {
                       style: const TextStyle(
                           color: Color(0xFF6B6B6B), height: 1.45)),
                   const SizedBox(height: 14),
-                  Row(children: [
+                  Wrap(spacing: 10, runSpacing: 6, children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 9, vertical: 5),
@@ -1121,7 +1344,6 @@ class _ArticleCard extends StatelessWidget {
                           style: const TextStyle(
                               color: Colors.black54, fontSize: 11)),
                     ),
-                    const SizedBox(width: 10),
                     Text(article.readTime,
                         style: const TextStyle(
                             color: Colors.black45, fontSize: 11)),
@@ -1229,6 +1451,10 @@ class _ArticleDialog extends StatelessWidget {
                             fontFamily: 'Georgia',
                             fontSize: 21,
                             height: 1.6)),
+                    if (article.interactiveShaderGallery) ...[
+                      const SizedBox(height: 28),
+                      const _ShaderArticleGallery(),
+                    ],
                     const Divider(height: 48, color: Color(0xFFE6E6E6)),
                     for (final section in article.content) ...[
                       Text(section.$1,
@@ -1247,6 +1473,210 @@ class _ArticleDialog extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ShaderArticleGallery extends StatefulWidget {
+  const _ShaderArticleGallery();
+
+  @override
+  State<_ShaderArticleGallery> createState() => _ShaderArticleGalleryState();
+}
+
+class _ShaderArticleGalleryState extends State<_ShaderArticleGallery> {
+  final _scrollController = ScrollController();
+
+  static const _ids = <String>[
+    'fade',
+    'diamondwipe',
+    'dreamy',
+    'crosswarp',
+    'cube',
+    'pixelize',
+    'glitchmemories',
+    'circleopen',
+  ];
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    final items = [
+      for (final id in _ids)
+        if (shaderById(id) case final ShaderInfo info) info,
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(compact ? 14 : 20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111827),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x26000000),
+            blurRadius: 24,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.science_outlined, color: Color(0xFF67E8F9), size: 21),
+              SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  'Interactive GL transition lab',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              _LiveBadge(),
+            ],
+          ),
+          const SizedBox(height: 7),
+          const Text(
+            'Cuộn ngang để xem gallery. Di chuột hoặc kéo từ trái sang phải '
+            'trên từng ảnh để điều khiển progress A → B.',
+            style: TextStyle(
+              color: Color(0xFFCBD5E1),
+              fontSize: 13,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: compact ? 196 : 220,
+            child: Scrollbar(
+              controller: _scrollController,
+              thumbVisibility: true,
+              scrollbarOrientation: ScrollbarOrientation.bottom,
+              child: ListView.separated(
+                controller: _scrollController,
+                padding: const EdgeInsets.only(bottom: 12),
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 14),
+                itemBuilder: (context, index) => _ShaderLabCard(
+                  info: items[index],
+                  compact: compact,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Row(
+            children: [
+              Icon(Icons.swipe_rounded, color: Colors.white38, size: 16),
+              SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  '0% = ảnh A · 50% = shader đang trộn · 100% = ảnh B',
+                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShaderLabCard extends StatelessWidget {
+  const _ShaderLabCard({required this.info, required this.compact});
+
+  final ShaderInfo info;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = compact ? 240.0 : 290.0;
+    return SizedBox(
+      width: width,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(13),
+                border: Border.all(color: Colors.white12),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black26, blurRadius: 12),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: ShaderScrubThumb(shaderId: info.id),
+              ),
+            ),
+          ),
+          const SizedBox(height: 9),
+          Text(
+            info.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${info.category} · ${info.author}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white38, fontSize: 10),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LiveBadge extends StatelessWidget {
+  const _LiveBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFF064E3B),
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: const Color(0xFF34D399)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(radius: 3, backgroundColor: Color(0xFF6EE7B7)),
+          SizedBox(width: 6),
+          Text(
+            'GPU LIVE',
+            style: TextStyle(
+              color: Color(0xFFA7F3D0),
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .8,
+            ),
+          ),
+        ],
       ),
     );
   }

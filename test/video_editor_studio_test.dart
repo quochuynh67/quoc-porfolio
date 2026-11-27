@@ -295,7 +295,7 @@ void shaderTests() {
     }
   });
 
-  test('a shader transition keeps its shader id and exports via xfade', () {
+  test('a shader transition keeps its shader id for preview and export', () {
     final c = _seeded();
     c.selectClip(c.project.clips[1].id);
     c.updateSelectedTransition(EditorTransition.shader, shaderId: 'flag_vn');

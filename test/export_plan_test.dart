@@ -125,15 +125,15 @@ void main() {
             fx: const EditorFx(
                 id: 's', name: 'Boom', sprite: SpriteSpec(cols: 2, rows: 2))),
       ],
-      overlays: [
-        const EditorOverlay(
+      overlays: const [
+        EditorOverlay(
           id: 'o1',
           type: EditorOverlayType.text,
           label: 'Hi',
           start: Duration(seconds: 1),
           duration: Duration(seconds: 3),
         ),
-        const EditorOverlay(
+        EditorOverlay(
           id: 'o2',
           type: EditorOverlayType.particles,
           label: 'confetti',
@@ -151,6 +151,9 @@ void main() {
       shortSide: 360,
       imagePngs: {'c3': png, 'c4': png},
       sequences: {
+        for (var i = 1; i < 4; i++)
+          'transition:$i':
+              OverlaySequence([for (var n = 0; n < 17; n++) overlayPng], 20),
         'o1': OverlaySequence([overlayPng], 20),
         'o2': OverlaySequence([for (var i = 0; i < 8; i++) overlayPng], 20),
         'fx:3': OverlaySequence([for (var i = 0; i < 17; i++) overlayPng], 20),
@@ -160,6 +163,13 @@ void main() {
     expect(plan.width, 360);
     expect(plan.height, 640);
     expect(plan.warnings, isEmpty);
+    expect(
+      plan.steps
+          .where((step) => step.label.startsWith('Transition'))
+          .every((step) => !step.args.join(' ').contains('xfade=')),
+      isTrue,
+      reason: 'pre-rendered transitions must be encoded exactly as previewed',
+    );
     for (final step in plan.steps) {
       expect(step.args.join(' '), isNot(contains('lavfi')),
           reason: 'the wasm core has no lavfi input');

@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import '../application/export_plan.dart';
 import '../domain/video_editor_project.dart';
 import '../platform/video_source.dart';
+import 'editor_transitions.dart';
 import 'editor_visuals.dart';
 import 'overlay_layer.dart';
 
@@ -58,8 +59,11 @@ Future<Map<String, OverlaySequence>> renderSequences(
   final clips = project.clips;
   for (var i = 1; i < clips.length; i++) {
     final c = clips[i];
+    final window = transitionWindowFor(clips, i);
+    if (c.transition != EditorTransition.none && window > Duration.zero) {
+      jobs.add(_Job.transition(i, window, _frameCount(window)));
+    }
     if (c.transition == EditorTransition.fx && c.fx?.sprite != null) {
-      final window = transitionWindowFor(clips, i);
       if (window > Duration.zero) {
         jobs.add(_Job.fx(i, c.fx!.sprite!, window, _frameCount(window)));
       }
@@ -110,6 +114,36 @@ Future<Map<String, OverlaySequence>> renderSequences(
   }
 
   final result = <String, OverlaySequence>{};
+  final clipSources = <String, VideoSource>{};
+  final stillFrames = <String, ui.Image>{};
+
+  Future<ui.Image?> frameFor(EditorClip clip, Duration time) async {
+    if (clip.type == EditorAssetType.image) {
+      final cached = stillFrames[clip.id];
+      if (cached != null) return cached;
+      final image = await decodeImageFromList(clip.bytes);
+      stillFrames[clip.id] = image;
+      return image;
+    }
+    var source = clipSources[clip.id];
+    if (source == null) {
+      source = VideoSource.create(clip.bytes);
+      await source.init();
+      clipSources[clip.id] = source;
+    }
+    await source.seekTo(time);
+    return source.grabFrame(force: true);
+  }
+
+  Widget mediaFrame(ui.Image? image) => Positioned.fill(
+        child: image == null
+            ? const ColoredBox(color: Colors.black)
+            : RawImage(
+                image: image,
+                fit: project.fitContain ? BoxFit.contain : BoxFit.cover,
+              ),
+      );
+
   var done = 0;
   void tick(String label) {
     onProgress(label, totalFrames == 0 ? 0 : done / totalFrames);
@@ -119,6 +153,54 @@ Future<Map<String, OverlaySequence>> renderSequences(
     for (final job in jobs) {
       if (isCancelled()) break;
       final frames = <Uint8List>[];
+
+      if (job.transitionIndex != null) {
+        final index = job.transitionIndex!;
+        final incoming = clips[index];
+        final outgoing = clips[index - 1];
+        final outgoingAt = outgoing.trimEnd - const Duration(milliseconds: 80);
+        final frameA = await frameFor(
+          outgoing,
+          outgoingAt < Duration.zero ? Duration.zero : outgoingAt,
+        );
+        final ownsA = outgoing.type == EditorAssetType.video;
+        try {
+          for (var k = 0; k < job.frames; k++) {
+            if (isCancelled()) break;
+            final p = job.frames <= 1 ? 0.0 : k / (job.frames - 1);
+            final incomingAt = incoming.trimStart +
+                Duration(
+                  microseconds:
+                      (job.window.inMicroseconds * p * incoming.speed).round(),
+                );
+            final frameB = await frameFor(incoming, incomingAt);
+            final ownsB = incoming.type == EditorAssetType.video;
+            content.value = buildTransitionFrame(
+              type: incoming.transition,
+              t: p,
+              outgoing: mediaFrame(frameA),
+              incoming: mediaFrame(frameB),
+              shaderId: incoming.shaderId,
+              staticContent: true,
+            );
+            frames.add(await capture(
+              settle: k == 0 || incoming.transition.isShader,
+            ));
+            if (ownsB && !identical(frameA, frameB)) frameB?.dispose();
+            done++;
+            if (k % 3 == 0) {
+              tick('Rendering transition $index: '
+                  '${incoming.transition.label}');
+            }
+          }
+        } finally {
+          if (ownsA) frameA?.dispose();
+        }
+        if (frames.isNotEmpty && !isCancelled()) {
+          result['transition:$index'] = OverlaySequence(frames, overlayFps);
+        }
+        continue;
+      }
 
       if (job.fxSprite != null) {
         final spec = job.fxSprite!;
@@ -201,6 +283,12 @@ Future<Map<String, OverlaySequence>> renderSequences(
   } finally {
     entry.remove();
     content.dispose();
+    for (final source in clipSources.values) {
+      source.dispose();
+    }
+    for (final image in stillFrames.values) {
+      image.dispose();
+    }
   }
   return result;
 }
@@ -208,13 +296,20 @@ Future<Map<String, OverlaySequence>> renderSequences(
 class _Job {
   _Job.overlay(EditorOverlay this.overlay, this.frames)
       : fxSprite = null,
+        transitionIndex = null,
         index = 0,
         window = Duration.zero;
   _Job.fx(this.index, SpriteSpec this.fxSprite, this.window, this.frames)
-      : overlay = null;
+      : overlay = null,
+        transitionIndex = null;
+  _Job.transition(this.transitionIndex, this.window, this.frames)
+      : overlay = null,
+        fxSprite = null,
+        index = transitionIndex!;
 
   final EditorOverlay? overlay;
   final SpriteSpec? fxSprite;
+  final int? transitionIndex;
   final int index;
   final Duration window;
   final int frames;
