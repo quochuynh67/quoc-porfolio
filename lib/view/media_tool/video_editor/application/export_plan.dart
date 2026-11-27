@@ -226,6 +226,47 @@ Duration transitionWindowFor(List<EditorClip> clips, int index) {
   return clip.transitionDuration < cap ? clip.transitionDuration : cap;
 }
 
+/// Source timestamps for the two moving shots inside a transition.
+///
+/// A transition occupies the beginning of the incoming clip on the project
+/// timeline. During that same window the outgoing clip must keep moving
+/// through its tail; freezing it at [EditorClip.trimEnd] makes even a correct
+/// shader feel like a still image followed by a jump cut.
+({Duration outgoing, Duration incoming}) transitionFrameTimes(
+  EditorClip outgoing,
+  EditorClip incoming,
+  Duration window,
+  double progress,
+) {
+  final p = progress.clamp(0.0, 1.0);
+  final outgoingTail = (window.inMicroseconds * outgoing.speed).round();
+  final incomingHead = (window.inMicroseconds * incoming.speed).round();
+
+  Duration clamp(EditorClip clip, int microseconds) {
+    final end =
+        clip.sourceDuration != null && clip.sourceDuration! < clip.trimEnd
+            ? clip.sourceDuration!
+            : clip.trimEnd;
+    return Duration(
+      microseconds: microseconds.clamp(
+        clip.trimStart.inMicroseconds,
+        end.inMicroseconds,
+      ),
+    );
+  }
+
+  return (
+    outgoing: clamp(
+      outgoing,
+      outgoing.trimEnd.inMicroseconds - (outgoingTail * (1 - p)).round(),
+    ),
+    incoming: clamp(
+      incoming,
+      incoming.trimStart.inMicroseconds + (incomingHead * p).round(),
+    ),
+  );
+}
+
 ExportPlan buildExportPlan(ExportRequest r) {
   final project = r.project;
   final clips = project.clips;

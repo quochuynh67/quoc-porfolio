@@ -13,6 +13,39 @@ void main() {
   late Directory tmp;
   late bool hasFfmpeg;
 
+  test('transition frame times keep both video shots moving', () {
+    final outgoing = EditorClip(
+      id: 'out',
+      name: 'out',
+      type: EditorAssetType.video,
+      bytes: Uint8List(0),
+      duration: const Duration(seconds: 5),
+      trimStart: const Duration(seconds: 2),
+      speed: 1.5,
+    );
+    final incoming = EditorClip(
+      id: 'in',
+      name: 'in',
+      type: EditorAssetType.video,
+      bytes: Uint8List(0),
+      duration: const Duration(seconds: 4),
+      trimStart: const Duration(seconds: 1),
+      speed: 2,
+    );
+    const window = Duration(milliseconds: 800);
+
+    final start = transitionFrameTimes(outgoing, incoming, window, 0);
+    final middle = transitionFrameTimes(outgoing, incoming, window, .5);
+    final end = transitionFrameTimes(outgoing, incoming, window, 1);
+
+    expect(start.outgoing, const Duration(milliseconds: 8300));
+    expect(middle.outgoing, const Duration(milliseconds: 8900));
+    expect(end.outgoing, const Duration(milliseconds: 9500));
+    expect(start.incoming, const Duration(seconds: 1));
+    expect(middle.incoming, const Duration(milliseconds: 1800));
+    expect(end.incoming, const Duration(milliseconds: 2600));
+  });
+
   setUpAll(() async {
     hasFfmpeg = (await Process.run('which', ['ffmpeg'])).exitCode == 0;
     tmp = await Directory.systemTemp.createTemp('export_plan_');

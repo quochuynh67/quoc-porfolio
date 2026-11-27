@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
-import 'dart:ui' show FontFeature;
 
 import 'package:flutter/material.dart';
 
 import '../../screen/widget/media_ui.dart';
+import '../application/export_plan.dart';
 import '../application/video_editor_controller.dart';
 import '../domain/editor_catalog.dart';
 import '../domain/shader_catalog.dart';
@@ -186,10 +186,18 @@ class _EditorPreviewState extends State<EditorPreview> {
         }
         if (clip.id == active?.id) {
           final local = _editor.activeClipPosition;
-          final target = clip.trimStart +
-              Duration(
-                  microseconds: (local.inMicroseconds * clip.speed).round());
-          source.setVolume(clip.volume);
+          final target = transition == null
+              ? clip.trimStart +
+                  Duration(
+                    microseconds: (local.inMicroseconds * clip.speed).round(),
+                  )
+              : transitionFrameTimes(
+                  transition.outgoing,
+                  transition.incoming,
+                  _editor.transitionWindow(_editor.activeClipIndex),
+                  transition.progress,
+                ).incoming;
+          source.setVolume(clip.volume * (transition?.progress ?? 1));
           source.setSpeed(clip.speed);
           final drift = (source.position - target).inMilliseconds.abs();
           if (playing) {
@@ -199,13 +207,25 @@ class _EditorPreviewState extends State<EditorPreview> {
             source.pause();
             if (drift > 40) source.seek(target);
           }
-        } else {
-          // Outgoing shot: frozen on its last frame under the transition.
-          source.pause();
-          final last = clip.trimEnd - const Duration(milliseconds: 80);
-          if ((source.position - last).inMilliseconds.abs() > 120) {
-            source.seek(last < Duration.zero ? Duration.zero : last);
+        } else if (transition != null && clip.id == transition.outgoing.id) {
+          final target = transitionFrameTimes(
+            transition.outgoing,
+            transition.incoming,
+            _editor.transitionWindow(_editor.activeClipIndex),
+            transition.progress,
+          ).outgoing;
+          source.setVolume(clip.volume * (1 - transition.progress));
+          source.setSpeed(clip.speed);
+          final drift = (source.position - target).inMilliseconds.abs();
+          if (playing) {
+            if (drift > 120) source.seek(target);
+            source.play();
+          } else {
+            source.pause();
+            if (drift > 20) source.seek(target);
           }
+        } else {
+          source.pause();
         }
       } else if (key.startsWith('audio:')) {
         final id = key.substring(6);
@@ -687,7 +707,7 @@ class PlaybackControls extends StatelessWidget {
             style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 12,
-                fontFeatures: [FontFeature.tabularFigures()]),
+                fontFeatures: [ui.FontFeature.tabularFigures()]),
           ),
         ],
       ),

@@ -172,42 +172,41 @@ Future<Map<String, OverlaySequence>> renderSequences(
         final index = job.transitionIndex!;
         final incoming = clips[index];
         final outgoing = clips[index - 1];
-        final outgoingAt = outgoing.trimEnd - const Duration(milliseconds: 80);
-        final frameA = await frameFor(
-          outgoing,
-          outgoingAt < Duration.zero ? Duration.zero : outgoingAt,
-        );
-        final ownsA = outgoing.type == EditorAssetType.video;
-        try {
-          for (var k = 0; k < job.frames; k++) {
-            if (isCancelled()) break;
-            final p = job.frames <= 1 ? 0.0 : k / (job.frames - 1);
-            final incomingAt = incoming.trimStart +
-                Duration(
-                  microseconds:
-                      (job.window.inMicroseconds * p * incoming.speed).round(),
-                );
-            final frameB = await frameFor(incoming, incomingAt);
-            final ownsB = incoming.type == EditorAssetType.video;
-            content.value = buildTransitionFrame(
-              type: incoming.transition,
-              t: p,
-              outgoing: mediaFrame(frameA),
-              incoming: mediaFrame(frameB),
-              shaderId: incoming.shaderId,
-              staticContent: true,
+        for (var k = 0; k < job.frames; k++) {
+          if (isCancelled()) break;
+          final p = job.frames <= 1 ? 0.0 : k / (job.frames - 1);
+          final times = transitionFrameTimes(outgoing, incoming, job.window, p);
+          final frameA = await frameFor(outgoing, times.outgoing);
+          final frameB = await frameFor(incoming, times.incoming);
+          final ownsA = outgoing.type == EditorAssetType.video;
+          final ownsB = incoming.type == EditorAssetType.video;
+          try {
+            // A fresh shader state is required for every exported frame.
+            // staticContent captures once by design, so reusing the state
+            // would keep the first pair of video textures for the whole
+            // transition even though progress continues to change.
+            content.value = KeyedSubtree(
+              key: ValueKey('transition-$index-$k'),
+              child: buildTransitionFrame(
+                type: incoming.transition,
+                t: p,
+                outgoing: mediaFrame(frameA),
+                incoming: mediaFrame(frameB),
+                shaderId: incoming.shaderId,
+                staticContent: true,
+              ),
             );
             frames.add(await capture(
               settle: k == 0 || incoming.transition.isShader,
             ));
+          } finally {
+            if (ownsA) frameA?.dispose();
             if (ownsB && !identical(frameA, frameB)) frameB?.dispose();
-            done++;
-            tick('Rendering transition $index: ${incoming.transition.label} '
-                '· ${k + 1}/${job.frames}');
-            await _yieldToBrowser();
           }
-        } finally {
-          if (ownsA) frameA?.dispose();
+          done++;
+          tick('Rendering transition $index: ${incoming.transition.label} '
+              '· ${k + 1}/${job.frames}');
+          await _yieldToBrowser();
         }
         if (frames.isNotEmpty && !isCancelled()) {
           result['transition:$index'] = OverlaySequence(frames, overlayFps);
