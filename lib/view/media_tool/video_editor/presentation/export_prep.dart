@@ -17,6 +17,18 @@ typedef RenderProgress = void Function(String label, double fraction);
 const overlayFps = 20;
 const _maxFrames = 400;
 
+/// Builds a media layer that remains valid when wrapped by RepaintBoundary.
+/// Do not return Positioned here: shader export wraps each layer before it is
+/// inserted into a Stack, so Positioned would receive the wrong parent data.
+@visibleForTesting
+Widget exportMediaFrame(ui.Image? image, {required BoxFit fit}) => ColoredBox(
+      color: Colors.black,
+      child: SizedBox.expand(
+        child:
+            image == null ? const SizedBox() : RawImage(image: image, fit: fit),
+      ),
+    );
+
 /// Re-encodes any decodable image as PNG (FFmpeg-friendly).
 Future<Uint8List> imageToPng(Uint8List bytes) async {
   final image = await decodeImageFromList(bytes);
@@ -135,13 +147,9 @@ Future<Map<String, OverlaySequence>> renderSequences(
     return source.grabFrame(force: true);
   }
 
-  Widget mediaFrame(ui.Image? image) => Positioned.fill(
-        child: image == null
-            ? const ColoredBox(color: Colors.black)
-            : RawImage(
-                image: image,
-                fit: project.fitContain ? BoxFit.contain : BoxFit.cover,
-              ),
+  Widget mediaFrame(ui.Image? image) => exportMediaFrame(
+        image,
+        fit: project.fitContain ? BoxFit.contain : BoxFit.cover,
       );
 
   var done = 0;

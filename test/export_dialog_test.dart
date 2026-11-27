@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_portfolio/view/media_tool/video_editor/domain/video_editor_project.dart';
 import 'package:flutter_portfolio/view/media_tool/video_editor/presentation/export_dialog.dart';
+import 'package:flutter_portfolio/view/media_tool/video_editor/presentation/export_prep.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 final Uint8List _png = base64Decode(
@@ -46,6 +47,22 @@ VideoEditorProject _project() => VideoEditorProject(
     );
 
 void main() {
+  testWidgets('export media frame is valid below a repaint boundary',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: SizedBox(
+        width: 240,
+        height: 240,
+        child: RepaintBoundary(
+          child: exportMediaFrame(null, fit: BoxFit.cover),
+        ),
+      ),
+    ));
+
+    expect(find.byType(Positioned), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   Future<void> openDialog(WidgetTester tester, Size size) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
