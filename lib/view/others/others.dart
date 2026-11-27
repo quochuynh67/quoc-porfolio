@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../res/constants.dart';
 import '../../view model/responsive.dart';
 import 'components/others_grid.dart';
+import '../../core/localization/app_locale.dart';
 
 class OthersView extends StatelessWidget {
   final controller = Get.put(OtherController());
@@ -24,7 +25,11 @@ class OthersView extends StatelessWidget {
               const SizedBox(
                 height: defaultPadding,
               ),
-            const TitleText(prefix: 'Notes & ', title: 'Tools and Others'),
+            TitleText(
+              prefix: AppLocale.text('Notes & ', 'Ghi chú & '),
+              title: AppLocale.text(
+                  'Tools and Others', 'Công cụ và nội dung khác'),
+            ),
             const SizedBox(
               height: defaultPadding,
             ),

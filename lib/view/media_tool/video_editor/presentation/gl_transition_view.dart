@@ -48,7 +48,7 @@ class GlTransitionView extends StatefulWidget {
 class _GlTransitionViewState extends State<GlTransitionView> {
   final _outKey = GlobalKey();
   final _inKey = GlobalKey();
-  ui.FragmentProgram? _program;
+  ui.FragmentShader? _shader;
   ui.Image? _outImage;
   ui.Image? _inImage;
   bool _busy = false;
@@ -63,7 +63,8 @@ class _GlTransitionViewState extends State<GlTransitionView> {
   void didUpdateWidget(covariant GlTransitionView old) {
     super.didUpdateWidget(old);
     if (old.shaderId != widget.shaderId) {
-      _program = null;
+      _shader?.dispose();
+      _shader = null;
       _loadShader();
     }
   }
@@ -73,13 +74,18 @@ class _GlTransitionViewState extends State<GlTransitionView> {
     if (info == null) return;
     final id = widget.shaderId;
     final program = await _loadProgram(info.asset);
-    if (mounted && id == widget.shaderId) setState(() => _program = program);
+    if (mounted && id == widget.shaderId) {
+      setState(() {
+        _shader = program?.fragmentShader();
+      });
+    }
   }
 
   @override
   void dispose() {
     _outImage?.dispose();
     _inImage?.dispose();
+    _shader?.dispose();
     super.dispose();
   }
 
@@ -125,7 +131,7 @@ class _GlTransitionViewState extends State<GlTransitionView> {
   Widget build(BuildContext context) {
     _scheduleCapture();
     final t = widget.t.clamp(0.0, 1.0);
-    final ready = _program != null && _outImage != null && _inImage != null;
+    final ready = _shader != null && _outImage != null && _inImage != null;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -138,7 +144,7 @@ class _GlTransitionViewState extends State<GlTransitionView> {
         ),
         if (ready)
           CustomPaint(
-            painter: _ShaderPainter(_program!, _outImage!, _inImage!, t),
+            painter: _ShaderPainter(_shader!, _outImage!, _inImage!, t),
           ),
       ],
     );
@@ -146,22 +152,25 @@ class _GlTransitionViewState extends State<GlTransitionView> {
 }
 
 class _ShaderPainter extends CustomPainter {
-  _ShaderPainter(this.program, this.from, this.to, this.progress);
-  final ui.FragmentProgram program;
+  _ShaderPainter(this.shader, this.from, this.to, this.progress);
+  final ui.FragmentShader shader;
   final ui.Image from;
   final ui.Image to;
   final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final shader = program.fragmentShader()
+    // A FragmentShader is a native GPU resource. It must stay alive until the
+    // recorded canvas command has actually been rasterized. Disposing a newly
+    // created shader here used to work by accident on some native backends,
+    // but CanvasKit rasterizes later and produced blank/striped thumbnails.
+    shader
       ..setFloat(0, size.width)
       ..setFloat(1, size.height)
       ..setFloat(2, progress)
       ..setImageSampler(0, from)
       ..setImageSampler(1, to);
     canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
-    shader.dispose();
   }
 
   @override
@@ -197,7 +206,7 @@ class ShaderPhotoThumb extends StatefulWidget {
 }
 
 class _ShaderPhotoThumbState extends State<ShaderPhotoThumb> {
-  ui.FragmentProgram? _program;
+  ui.FragmentShader? _shader;
   (ui.Image, ui.Image)? _photos;
 
   @override
@@ -209,7 +218,17 @@ class _ShaderPhotoThumbState extends State<ShaderPhotoThumb> {
   @override
   void didUpdateWidget(covariant ShaderPhotoThumb old) {
     super.didUpdateWidget(old);
-    if (old.shaderId != widget.shaderId) _load();
+    if (old.shaderId != widget.shaderId) {
+      _shader?.dispose();
+      _shader = null;
+      _load();
+    }
+  }
+
+  @override
+  void dispose() {
+    _shader?.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -224,7 +243,7 @@ class _ShaderPhotoThumbState extends State<ShaderPhotoThumb> {
     if (photos == null) return;
     if (mounted && id == widget.shaderId) {
       setState(() {
-        _program = program;
+        _shader = program?.fragmentShader();
         _photos = photos;
       });
     }
@@ -233,14 +252,20 @@ class _ShaderPhotoThumbState extends State<ShaderPhotoThumb> {
   @override
   Widget build(BuildContext context) {
     final photos = _photos;
-    if (photos == null) return const ColoredBox(color: Color(0xFF1B1F2A));
-    final program = _program;
+    if (photos == null) {
+      return const Image(
+        image: AssetImage('assets/images/transitions/demo_a.jpg'),
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+      );
+    }
+    final shader = _shader;
     return RepaintBoundary(
       child: CustomPaint(
         size: Size.infinite,
-        painter: program == null
+        painter: shader == null
             ? _FadePainter(photos.$1, photos.$2, widget.t)
-            : _ShaderPainter(program, photos.$1, photos.$2, widget.t),
+            : _ShaderPainter(shader, photos.$1, photos.$2, widget.t),
       ),
     );
   }
@@ -268,10 +293,10 @@ class _FadePainter extends CustomPainter {
   bool shouldRepaint(covariant _FadePainter old) => old.t != t;
 }
 
-/// gl-transitions.com style tile: shows the first photo until the pointer
-/// hovers; then the pointer's x position scrubs the transition and a slider
-/// shows the progress. Only the hovered tile runs its shader, so a big grid
-/// stays cheap. [restProgress] pins a frame when not hovered (selected tile).
+/// Before/after style tile: the horizontal pointer position directly scrubs
+/// the shader from the outgoing image on the left to the incoming image on the
+/// right. Only the hovered tile runs its shader, so a big grid stays cheap.
+/// [restProgress] pins a frame when not hovered (selected tile).
 class ShaderScrubThumb extends StatefulWidget {
   const ShaderScrubThumb(
       {super.key, required this.shaderId, this.restProgress});
@@ -285,22 +310,26 @@ class ShaderScrubThumb extends StatefulWidget {
 class _ShaderScrubThumbState extends State<ShaderScrubThumb> {
   double? _t;
 
-  void _set(Offset p, double height) {
-    if (height <= 0) return;
-    setState(() => _t = (p.dy / height).clamp(0.0, 1.0));
+  void _set(Offset p, double width) {
+    if (width <= 0) return;
+    setState(() => _t = (p.dx / width).clamp(0.0, 1.0));
   }
 
   @override
   Widget build(BuildContext context) {
-    final t = _t ?? widget.restProgress;
+    final progress = _t ?? widget.restProgress ?? 0.0;
+    final interacting = _t != null;
     return LayoutBuilder(
       builder: (context, box) => MouseRegion(
-        onHover: (e) => _set(e.localPosition, box.maxHeight),
+        cursor: SystemMouseCursors.resizeLeftRight,
+        onEnter: (e) => _set(e.localPosition, box.maxWidth),
+        onHover: (e) => _set(e.localPosition, box.maxWidth),
         onExit: (_) => setState(() => _t = null),
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
-          onVerticalDragUpdate: (d) => _set(d.localPosition, box.maxHeight),
-          onVerticalDragEnd: (_) => setState(() => _t = null),
+          onTapDown: (d) => _set(d.localPosition, box.maxWidth),
+          onHorizontalDragStart: (d) => _set(d.localPosition, box.maxWidth),
+          onHorizontalDragUpdate: (d) => _set(d.localPosition, box.maxWidth),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Stack(
@@ -311,18 +340,28 @@ class _ShaderScrubThumbState extends State<ShaderScrubThumb> {
                   fit: BoxFit.cover,
                   gaplessPlayback: true,
                 ),
-                if (t != null)
-                  ShaderPhotoThumb(shaderId: widget.shaderId, t: t),
-                if (t != null)
-                  Positioned(
-                    top: 8,
-                    bottom: 8,
-                    right: 6,
-                    width: 10,
-                    child: IgnorePointer(
-                      child: CustomPaint(painter: _SliderPainter(t)),
-                    ),
+                // Keep the renderer mounted so its shader program and both
+                // textures are ready before the first pointer movement.
+                ShaderPhotoThumb(
+                  shaderId: widget.shaderId,
+                  t: progress,
+                ),
+                if (interacting)
+                  IgnorePointer(
+                    child: CustomPaint(painter: _BeforeAfterPainter(progress)),
                   ),
+                if (interacting) ...const [
+                  Positioned(
+                    left: 7,
+                    top: 7,
+                    child: _CompareLabel(text: 'A'),
+                  ),
+                  Positioned(
+                    right: 7,
+                    top: 7,
+                    child: _CompareLabel(text: 'B'),
+                  ),
+                ],
               ],
             ),
           ),
@@ -332,27 +371,76 @@ class _ShaderScrubThumbState extends State<ShaderScrubThumb> {
   }
 }
 
-class _SliderPainter extends CustomPainter {
-  _SliderPainter(this.t);
+class _CompareLabel extends StatelessWidget {
+  const _CompareLabel({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 9,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BeforeAfterPainter extends CustomPainter {
+  _BeforeAfterPainter(this.t);
   final double t;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final x = size.width / 2;
-    final track = Paint()
-      ..color = Colors.black54
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-    final fill = Paint()
-      ..color = Colors.cyanAccent
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-    final y = size.height * t;
-    canvas.drawLine(Offset(x, 0), Offset(x, size.height), track);
-    canvas.drawLine(Offset(x, 0), Offset(x, y), fill);
-    canvas.drawCircle(Offset(x, y), 4.5, Paint()..color = Colors.white);
+    final x = size.width * t;
+    final center = Offset(x, size.height / 2);
+    final shadow = Paint()
+      ..color = Colors.black45
+      ..strokeWidth = 4;
+    final line = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 1.5;
+    canvas.drawLine(Offset(x, 0), Offset(x, size.height), shadow);
+    canvas.drawLine(Offset(x, 0), Offset(x, size.height), line);
+    canvas.drawCircle(center, 10, Paint()..color = Colors.black54);
+    canvas.drawCircle(
+      center,
+      9,
+      Paint()
+        ..color = Colors.white.withValues(alpha: .95)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4,
+    );
+    final arrows = Path()
+      ..moveTo(x - 2, center.dy - 4)
+      ..lineTo(x - 6, center.dy)
+      ..lineTo(x - 2, center.dy + 4)
+      ..moveTo(x + 2, center.dy - 4)
+      ..lineTo(x + 6, center.dy)
+      ..lineTo(x + 2, center.dy + 4);
+    canvas.drawPath(
+      arrows,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _SliderPainter old) => old.t != t;
+  bool shouldRepaint(covariant _BeforeAfterPainter old) => old.t != t;
 }

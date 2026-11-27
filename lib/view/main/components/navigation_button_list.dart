@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_portfolio/core/navigation/app_navigation.dart';
+import 'package:flutter_portfolio/core/localization/app_locale.dart';
 
 import 'navigation_button.dart';
 
@@ -17,16 +18,24 @@ class NavigationButtonList extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(.05),
+              color: Colors.white.withValues(alpha: .05),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white.withOpacity(.08)),
+              border: Border.all(color: Colors.white.withValues(alpha: .08)),
             ),
             child: Row(
               children: [
-                NavigationTextButton(onTap: () => goToPage(0), text: 'Home'),
                 NavigationTextButton(
-                    onTap: () => goToPage(1), text: 'Projects'),
-                NavigationTextButton(onTap: () => goToPage(2), text: 'Others'),
+                  onTap: () => goToPage(0),
+                  text: AppLocale.text('Home', 'Trang chủ'),
+                ),
+                NavigationTextButton(
+                  onTap: () => goToPage(1),
+                  text: AppLocale.text('Projects', 'Dự án'),
+                ),
+                NavigationTextButton(
+                  onTap: () => goToPage(2),
+                  text: AppLocale.text('Others', 'Khác'),
+                ),
               ],
             ),
           ),

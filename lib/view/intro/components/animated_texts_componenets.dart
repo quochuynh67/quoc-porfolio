@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/localization/app_locale.dart';
 
 class AnimatedImageContainer extends StatefulWidget {
   const AnimatedImageContainer({super.key, this.width = 520});
@@ -274,7 +275,11 @@ class _MiniPortfolioHome extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    ...['Home', 'Projects', 'Others'].indexed.map(
+                    ...[
+                      AppLocale.text('Home', 'Trang chủ'),
+                      AppLocale.text('Projects', 'Dự án'),
+                      AppLocale.text('Others', 'Khác'),
+                    ].indexed.map(
                           (entry) => Padding(
                             padding: const EdgeInsets.only(left: 3),
                             child: MouseRegion(
@@ -386,7 +391,7 @@ class _MiniHome extends StatelessWidget {
       children: [
         const Spacer(),
         Text(
-          'My Personal Portfolio',
+          AppLocale.text('My Personal Portfolio', 'Portfolio của tôi'),
           style: TextStyle(
             color: Colors.white,
             fontSize: tiny ? 8 : 11,
@@ -395,7 +400,7 @@ class _MiniHome extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          'Mobile Developer',
+          AppLocale.text('Mobile Developer', 'Lập trình viên Mobile'),
           style: TextStyle(
             height: 1,
             foreground: Paint()
@@ -419,7 +424,10 @@ class _MiniHome extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          "I'm capable of creating excellent mobile apps,\nfrom concept to deployment.",
+          AppLocale.text(
+            "I'm capable of creating excellent mobile apps,\nfrom concept to deployment.",
+            'Xây dựng ứng dụng mobile chất lượng,\ntừ ý tưởng đến triển khai.',
+          ),
           style: TextStyle(color: Colors.white54, fontSize: tiny ? 5 : 6.5),
         ),
         const Spacer(),
@@ -441,7 +449,7 @@ class _MiniHome extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  'EXPLORE WORK',
+                  AppLocale.text('EXPLORE WORK', 'XEM DỰ ÁN'),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: tiny ? 4.5 : 5.5,
@@ -476,7 +484,7 @@ class _MiniProjects extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'SELECTED PROJECTS',
+            AppLocale.text('SELECTED PROJECTS', 'DỰ ÁN TIÊU BIỂU'),
             style: TextStyle(
               color: Colors.white70,
               fontSize: tiny ? 5 : 6.5,

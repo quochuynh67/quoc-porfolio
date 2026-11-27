@@ -140,7 +140,7 @@ class _ShaderBrowserState extends State<_ShaderBrowser> {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Hover a tile and move the pointer up and down to scrub the transition. Shaders come from gl-transitions.com '
+                'Hover a tile and move left or right to preview A → B. On touch, tap or drag horizontally. Shaders come from gl-transitions.com '
                 '(MIT); the flag curtains are original. Export uses the closest '
                 'FFmpeg transition.',
                 style: TextStyle(color: Colors.white38, fontSize: 10),

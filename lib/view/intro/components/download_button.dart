@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../res/constants.dart';
+import '../../../core/localization/app_locale.dart';
 
 class DownloadButton extends StatelessWidget {
   const DownloadButton({super.key});
@@ -42,7 +43,7 @@ class DownloadButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Download CV',
+                  AppLocale.text('Download CV', 'Tải CV'),
                   style: Theme.of(context).textTheme.labelSmall!.copyWith(
                       color: Colors.white,
                       letterSpacing: 1.2,

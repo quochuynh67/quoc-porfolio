@@ -5,6 +5,7 @@ import 'package:flutter_portfolio/view%20model/responsive.dart';
 import 'package:flutter_portfolio/view/projects/components/title_text.dart';
 import 'package:get/get.dart';
 import '../../features/projects/domain/project.dart';
+import '../../core/localization/app_locale.dart';
 import 'components/projects_grid.dart';
 
 class ProjectsView extends StatelessWidget {
@@ -80,15 +81,30 @@ class ProjectsView extends StatelessWidget {
                   const SizedBox(
                     height: defaultPadding,
                   ),
-                const TitleText(prefix: '', title: 'Projects'),
+                TitleText(
+                  prefix: '',
+                  title: AppLocale.text('Projects', 'Dự án'),
+                ),
                 const SizedBox(
                   height: defaultPadding * 1.5,
                 ),
-                section('Company', 'Products built with professional teams',
-                    companyProjects),
+                section(
+                  AppLocale.text('Company', 'Công ty'),
+                  AppLocale.text(
+                    'Products built with professional teams',
+                    'Sản phẩm được xây dựng cùng các đội ngũ chuyên nghiệp',
+                  ),
+                  companyProjects,
+                ),
                 const SizedBox(height: defaultPadding * 2),
-                section('Personal', 'Independent ideas and experiments',
-                    personalProjects),
+                section(
+                  AppLocale.text('Personal', 'Cá nhân'),
+                  AppLocale.text(
+                    'Independent ideas and experiments',
+                    'Ý tưởng và thử nghiệm độc lập',
+                  ),
+                  personalProjects,
+                ),
                 const SizedBox(height: defaultPadding * 2),
               ]),
             ),

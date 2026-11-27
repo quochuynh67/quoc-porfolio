@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_portfolio/res/constants.dart';
 import 'drawer_image.dart';
+import '../../../../core/localization/app_locale.dart';
 
 class About extends StatelessWidget {
   const About({super.key});
@@ -24,10 +25,10 @@ class About extends StatelessWidget {
             const SizedBox(
               height: defaultPadding / 4,
             ),
-            const Text(
-              'Mobile developer',
+            Text(
+              AppLocale.text('Mobile developer', 'Lập trình viên mobile'),
               textAlign: TextAlign.center,
-              style: TextStyle(fontWeight: FontWeight.w200, height: 1.5),
+              style: const TextStyle(fontWeight: FontWeight.w200, height: 1.5),
             ),
             const Spacer(
               flex: 2,

@@ -3,8 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_portfolio/view%20model/responsive.dart';
 import 'package:flutter_portfolio/view/intro/components/side_menu_button.dart';
 import 'package:flutter_portfolio/view/main/components/connect_button.dart';
-import '../../../res/constants.dart';
 import 'navigation_button_list.dart';
+import 'language_switch.dart';
 
 class TopNavigationBar extends StatelessWidget {
   const TopNavigationBar({super.key});
@@ -50,6 +50,8 @@ class TopNavigationBar extends StatelessWidget {
               const NavigationButtonList(),
             const Spacer(),
             const ConnectButton(),
+            const SizedBox(width: 10),
+            const LanguageSwitch(),
           ],
         ),
       ),

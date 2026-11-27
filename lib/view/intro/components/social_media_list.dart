@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_portfolio/view/intro/components/social_media_coloumn.dart';
 import '../../../res/constants.dart';
+import '../../../core/localization/app_locale.dart';
 
 class SocialMediaIconList extends StatelessWidget {
   const SocialMediaIconList({super.key});
@@ -20,7 +21,7 @@ class SocialMediaIconList extends StatelessWidget {
               RotatedBox(
                 quarterTurns: -3,
                 child: Text(
-                  'Follow Me',
+                  AppLocale.text('Follow Me', 'Theo dõi'),
                   style: Theme.of(context).textTheme.titleSmall!.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w500,

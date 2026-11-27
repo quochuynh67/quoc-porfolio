@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../view model/responsive.dart';
+import '../../../core/localization/app_locale.dart';
 
 class AnimatedDescriptionText extends StatelessWidget {
   const AnimatedDescriptionText(
@@ -14,7 +15,10 @@ class AnimatedDescriptionText extends StatelessWidget {
       duration: const Duration(milliseconds: 200),
       builder: (context, value, child) {
         return Text(
-          'I\'m capable of creating excellent mobile apps, handling every step from concept to deployment.',
+          AppLocale.text(
+            'I\'m capable of creating excellent mobile apps, handling every step from concept to deployment.',
+            'Tôi xây dựng ứng dụng mobile chất lượng, đảm nhiệm toàn bộ quy trình từ ý tưởng đến triển khai.',
+          ),
           maxLines: Responsive.isMobile(context) ? 4 : 3,
           style: TextStyle(color: Colors.grey, wordSpacing: 2, fontSize: value),
         );
